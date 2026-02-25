@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "シュクダイ・クエスト 〜勇者の宿題なぎ倒しRPG〜",
+    "slug": "rpg",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "rpg",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.zerocode.rpg"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.zerocode.rpg"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization"
+    ],
+    "locales": {
+      "ja": "./locales/ja.json",
+      "en": "./locales/en.json",
+      "zh": "./locales/zh.json",
+      "ko": "./locales/ko.json",
+      "es": "./locales/es.json",
+      "fr": "./locales/fr.json",
+      "de": "./locales/de.json",
+      "pt": "./locales/pt.json",
+      "ar": "./locales/ar.json",
+      "hi": "./locales/hi.json"
+    }
+  }
+}
