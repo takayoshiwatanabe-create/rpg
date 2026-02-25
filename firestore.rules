@@ -1,0 +1,260 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -----------------------------------------------------------------------
+    // Auth helpers
+    // -----------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Checks whether the signed-in user is the registered parent of `childId`.
+    // Relies on UserProfile.parentId stored in the child's user document.
+    function isParentOf(childId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(childId))
+        && get(/databases/$(database)/documents/users/$(childId)).data.parentId == request.auth.uid;
+    }
+
+    function canAccessUser(userId) {
+      return isSelf(userId) || isParentOf(userId);
+    }
+
+    // -----------------------------------------------------------------------
+    // Field validation helpers
+    // -----------------------------------------------------------------------
+
+    function isValidLocale(locale) {
+      return locale in ["ja", "en", "zh", "ko", "es", "fr", "de", "pt", "ar", "hi"];
+    }
+
+    function isValidRole(role) {
+      return role in ["child", "parent"];
+    }
+
+    function isValidSubject(subject) {
+      return subject in ["math", "japanese", "english", "science", "social", "other"];
+    }
+
+    function isValidDifficulty(difficulty) {
+      return difficulty in ["easy", "normal", "hard", "boss"];
+    }
+
+    function isValidQuestStatus(status) {
+      return status in ["pending", "inProgress", "completed", "failed"];
+    }
+
+    // Validates fields on a newly created quest.
+    // status must be "pending" — prevents clients from creating pre-completed
+    // quests to farm EXP/gold.
+    function isValidNewQuest() {
+      let d = request.resource.data;
+      return d.title is string
+        && d.title.size() >= 1
+        && d.title.size() <= 100
+        && d.heroId is string
+        && d.userId == request.auth.uid
+        && d.estimatedMinutes is int
+        && d.estimatedMinutes > 0
+        && d.estimatedMinutes <= 480
+        && isValidSubject(d.subject)
+        && isValidDifficulty(d.difficulty)
+        && d.status == "pending"
+        && d.createdAt is string;
+    }
+
+    // Only status, completedAt, and estimatedMinutes are mutable post-create.
+    // Terminal states (completed/failed) are irreversible — prevents un-doing
+    // a completed quest and re-farming its rewards.
+    function isValidQuestUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let immutable = ["heroId", "userId", "createdAt", "expReward", "goldReward", "subject", "difficulty", "title"];
+      let currentStatus = resource.data.status;
+      return !changed.hasAny(immutable)
+        && isValidQuestStatus(request.resource.data.status)
+        && !(currentStatus in ["completed", "failed"]);
+    }
+
+    // -----------------------------------------------------------------------
+    // /users/{userId}  — UserProfile
+    // -----------------------------------------------------------------------
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && canAccessUser(userId);
+
+      allow create: if isSignedIn()
+        && isSelf(userId)
+        && isValidRole(request.resource.data.role)
+        && isValidLocale(request.resource.data.locale)
+        && request.resource.data.createdAt is string;
+
+      allow update: if isSignedIn()
+        && isSelf(userId)
+        && isValidLocale(request.resource.data.locale)
+        // role and createdAt are immutable after creation
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["role", "createdAt"]);
+
+      // Hard delete is forbidden; use a `deletedAt` field for soft delete.
+      allow delete: if false;
+
+      // -----------------------------------------------------------------------
+      // /users/{userId}/heroes/{heroId}  — HeroProfile
+      // -----------------------------------------------------------------------
+
+      match /heroes/{heroId} {
+        allow read: if isSignedIn() && canAccessUser(userId);
+
+        allow create: if isSignedIn()
+          && isSelf(userId)
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() >= 1
+          && request.resource.data.displayName.size() <= 20;
+
+        allow update: if isSignedIn()
+          && isSelf(userId)
+          // id is immutable; prevent ownership transfer
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["id"]);
+
+        allow delete: if false;
+      }
+
+      // -----------------------------------------------------------------------
+      // /users/{userId}/settings/{settingId}  — AppSettings
+      // -----------------------------------------------------------------------
+
+      match /settings/{settingId} {
+        allow read: if isSignedIn() && canAccessUser(userId);
+
+        allow write: if isSignedIn()
+          && isSelf(userId)
+          && isValidLocale(request.resource.data.locale)
+          && request.resource.data.reducedMotion is bool
+          && request.resource.data.notificationsEnabled is bool;
+      }
+
+      // -----------------------------------------------------------------------
+      // /users/{userId}/subscription/{subId}  — Subscription
+      //
+      // Client is read-only. All writes are performed server-side via the
+      // Firebase Admin SDK (e.g., Stripe webhook Cloud Function).
+      // This enforces COPPA/freemium ethics: no client-side payment mutation.
+      // -----------------------------------------------------------------------
+
+      match /subscription/{subId} {
+        allow read: if isSignedIn() && canAccessUser(userId);
+        allow write: if false;
+      }
+
+      // -----------------------------------------------------------------------
+      // /users/{userId}/pushTokens/{tokenId}  — Device push tokens
+      //
+      // Each document id is the URL-encoded Expo Push Token.
+      // Only the owning device (same uid) may write; parents may not read
+      // children's device tokens (no need for parental supervision here).
+      // -----------------------------------------------------------------------
+
+      match /pushTokens/{tokenId} {
+        allow read: if isSignedIn() && isSelf(userId);
+
+        allow write: if isSignedIn()
+          && isSelf(userId)
+          && request.resource.data.token is string
+          && request.resource.data.token.size() > 0
+          && request.resource.data.platform is string
+          && isValidLocale(request.resource.data.locale)
+          && request.resource.data.updatedAt is string;
+
+        allow delete: if isSignedIn() && isSelf(userId);
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // /quests/{questId}  — Quest
+    //
+    // Documents include a `userId` field (set by the Firestore wrapper) that
+    // mirrors the owning user. This enables O(1) security rule evaluation
+    // without extra lookups.
+    // -----------------------------------------------------------------------
+
+    match /quests/{questId} {
+      // Confirm the hero actually belongs to the requesting user.
+      function heroIsOwned() {
+        return exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)/heroes/$(request.resource.data.heroId)
+        );
+      }
+
+      allow read: if isSignedIn()
+        && (isSelf(resource.data.userId) || isParentOf(resource.data.userId));
+
+      allow create: if isSignedIn()
+        && isValidNewQuest()
+        && heroIsOwned();
+
+      allow update: if isSignedIn()
+        && isSelf(resource.data.userId)
+        && isValidQuestUpdate();
+
+      allow delete: if false;
+    }
+
+    // -----------------------------------------------------------------------
+    // /battleSessions/{sessionId}  — BattleSession
+    //
+    // Same `userId` denormalisation pattern as quests.
+    // -----------------------------------------------------------------------
+
+    match /battleSessions/{sessionId} {
+      function sessionHeroIsOwned() {
+        return exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)/heroes/$(request.resource.data.heroId)
+        );
+      }
+
+      allow read: if isSignedIn()
+        && (isSelf(resource.data.userId) || isParentOf(resource.data.userId));
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.heroId is string
+        && request.resource.data.questId is string
+        && request.resource.data.startedAt is string
+        // Rewards must be zero on creation; they are set only when the battle
+        // ends via completeBattleSession — prevents clients from self-granting EXP.
+        && request.resource.data.expEarned == 0
+        && request.resource.data.goldEarned == 0
+        && sessionHeroIsOwned();
+
+      allow update: if isSignedIn()
+        && isSelf(resource.data.userId)
+        // Ownership and start metadata are immutable.
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(["userId", "heroId", "questId", "startedAt", "enemy"])
+        // Rewards must be non-negative integers.
+        && request.resource.data.expEarned is int
+        && request.resource.data.expEarned >= 0
+        && request.resource.data.goldEarned is int
+        && request.resource.data.goldEarned >= 0
+        // outcome must be a known value when present.
+        && (!("outcome" in request.resource.data)
+            || request.resource.data.outcome in ["victory", "defeat"]);
+
+      allow delete: if false;
+    }
+
+    // -----------------------------------------------------------------------
+    // Deny-all fallback
+    // -----------------------------------------------------------------------
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
