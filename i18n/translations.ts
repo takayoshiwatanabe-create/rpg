@@ -1,4 +1,5 @@
-export type Language = "ja" | "en" | "zh" | "ko" | "es" | "fr" | "de" | "pt" | "ar" | "hi";
+export type { Language } from "@/types";
+import type { Language } from "@/types";
 
 export const translations: Record<Language, Record<string, string>> = {
   ja: {
