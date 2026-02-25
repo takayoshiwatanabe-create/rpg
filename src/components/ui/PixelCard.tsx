@@ -1,0 +1,82 @@
+import React from "react";
+import { StyleSheet, View, type ViewProps } from "react-native";
+import { COLORS, PIXEL_BORDER, SHADOW, SPACING } from "@/constants/theme";
+import { PixelText } from "./PixelText";
+
+export type CardVariant =
+  | "default"   // standard card with pixel border
+  | "elevated"  // adds gold drop-shadow
+  | "highlighted"; // gold border + drop-shadow (for active/selected state)
+
+export type PixelCardProps = ViewProps & {
+  variant?: CardVariant;
+  title?: string;
+  children: React.ReactNode;
+};
+
+/**
+ * Container card styled as an 8-bit RPG panel.
+ *
+ * - `default`     — flat panel with a cream pixel border
+ * - `elevated`    — adds a gold drop-shadow for depth
+ * - `highlighted` — brighter gold border + shadow; use for selected quests or
+ *                   active hero stats
+ *
+ * Pass a `title` string to render an RPG-style header bar inside the card.
+ */
+export function PixelCard({
+  variant = "default",
+  title,
+  children,
+  style,
+  ...rest
+}: PixelCardProps) {
+  return (
+    <View
+      style={[
+        styles.card,
+        variant === "elevated" && styles.elevated,
+        variant === "highlighted" && styles.highlighted,
+        style,
+      ]}
+      {...rest}
+    >
+      {title !== undefined && (
+        <View style={styles.titleBar} accessibilityRole="header">
+          <PixelText variant="heading" color="gold">
+            {title}
+          </PixelText>
+        </View>
+      )}
+      <View style={styles.content}>{children}</View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: COLORS.bgCard,
+    borderWidth: PIXEL_BORDER.borderWidth,
+    borderColor: PIXEL_BORDER.borderColor,
+    borderRadius: PIXEL_BORDER.borderRadius,
+    overflow: "hidden",
+  },
+  elevated: {
+    ...SHADOW,
+  },
+  highlighted: {
+    ...SHADOW,
+    borderColor: COLORS.gold,
+    borderWidth: 3,
+  },
+  titleBar: {
+    backgroundColor: COLORS.bgMid,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderBottomWidth: 2,
+    borderBottomColor: PIXEL_BORDER.borderColor,
+  },
+  content: {
+    padding: SPACING.md,
+  },
+});
