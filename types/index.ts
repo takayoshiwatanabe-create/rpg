@@ -29,6 +29,7 @@ export interface HeroProfile {
 
 export interface Quest {
   id: string;
+  userId: string;
   heroId: string;
   title: string;
   subject: Subject;
@@ -40,6 +41,7 @@ export interface Quest {
   goldReward: number;
   createdAt: string;
   completedAt?: string;
+  deletedAt: string | null;
 }
 
 export interface BattleEnemy {
@@ -53,6 +55,7 @@ export interface BattleEnemy {
 
 export interface BattleSession {
   id: string;
+  userId: string;
   questId: string;
   heroId: string;
   enemy: BattleEnemy;

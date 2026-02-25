@@ -18,10 +18,24 @@ import {
   initializeAuth,
   getAuth,
   getReactNativePersistence,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut as _signOut,
+  onAuthStateChanged,
   type Auth,
+  type User,
+  type UserCredential,
+  type Unsubscribe as AuthUnsubscribe,
 } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
-import { getStorage, type FirebaseStorage } from "firebase/storage";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL as _getDownloadURL,
+  deleteObject,
+  type FirebaseStorage,
+} from "firebase/storage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
@@ -257,4 +271,74 @@ export function onNotificationResponse(
   handler: (response: Notifications.NotificationResponse) => void,
 ): Notifications.EventSubscription {
   return Notifications.addNotificationResponseReceivedListener(handler);
+}
+
+// ---------------------------------------------------------------------------
+// Auth helpers — centralise firebase/auth usage so callers never import it
+// directly. This lets us swap auth providers in one place if needed.
+// ---------------------------------------------------------------------------
+
+export async function signInWithEmail(
+  email: string,
+  password: string,
+): Promise<UserCredential> {
+  return signInWithEmailAndPassword(auth, email, password);
+}
+
+export async function signUpWithEmail(
+  email: string,
+  password: string,
+): Promise<UserCredential> {
+  return createUserWithEmailAndPassword(auth, email, password);
+}
+
+export async function signOut(): Promise<void> {
+  await _signOut(auth);
+}
+
+/**
+ * Subscribes to authentication state changes.
+ * Call the returned unsubscribe function in useEffect cleanup.
+ */
+export function onAuthStateChange(
+  handler: (user: User | null) => void,
+): AuthUnsubscribe {
+  return onAuthStateChanged(auth, handler);
+}
+
+// ---------------------------------------------------------------------------
+// Storage helpers — sprite & asset management
+// All sprites must be WebP per the performance spec (no individual PNGs).
+// ---------------------------------------------------------------------------
+
+/**
+ * Uploads a WebP sprite/asset blob and returns its stable public download URL.
+ * Path conventions:
+ *   sprites/{spriteId}.webp        — shared enemy / avatar spritesheets
+ *   avatars/{userId}/{avatarId}.webp — user-specific avatar overrides
+ */
+export async function uploadAsset(
+  path: string,
+  data: Blob | Uint8Array | ArrayBuffer,
+  contentType = "image/webp",
+): Promise<string> {
+  const assetRef = ref(storage, path);
+  await uploadBytes(assetRef, data, { contentType });
+  return _getDownloadURL(assetRef);
+}
+
+/**
+ * Returns the download URL for an already-uploaded asset.
+ * The URL is stable — cache it in state rather than re-fetching on every render.
+ */
+export async function getAssetUrl(path: string): Promise<string> {
+  return _getDownloadURL(ref(storage, path));
+}
+
+/**
+ * Removes an asset from Firebase Storage.
+ * Shared spritesheets referenced by multiple users must never be deleted here.
+ */
+export async function deleteAsset(path: string): Promise<void> {
+  await deleteObject(ref(storage, path));
 }

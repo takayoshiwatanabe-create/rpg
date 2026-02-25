@@ -235,7 +235,8 @@ export function subscribeToSubscription(
 // `userId` is stored alongside quest data to enable security rule enforcement.
 // ---------------------------------------------------------------------------
 
-type CreateQuestInput = Omit<Quest, "id"> & { userId: string };
+// `deletedAt` is always set to null by createQuest — callers must not supply it.
+type CreateQuestInput = Omit<Quest, "id" | "deletedAt">;
 
 export async function getQuest(questId: string): Promise<Quest | null> {
   const snap = await getDoc(refs.quest(questId));
@@ -243,11 +244,14 @@ export async function getQuest(questId: string): Promise<Quest | null> {
 }
 
 export async function createQuest(data: CreateQuestInput): Promise<string> {
-  const ref = await addDoc(
-    collection(db, COL.quests).withConverter(converters.quest),
-    { id: "", ...data },
-  );
-  return ref.id;
+  // `deletedAt: null` is written explicitly so that `where("deletedAt","==",null)`
+  // queries can reliably exclude soft-deleted documents. Using the untyped ref
+  // here is intentional — the converter is only needed on reads.
+  const docRef = await addDoc(collection(db, COL.quests), {
+    ...data,
+    deletedAt: null,
+  });
+  return docRef.id;
 }
 
 export async function updateQuest(
@@ -265,11 +269,20 @@ export async function completeQuest(questId: string): Promise<void> {
   await updateDoc(refs.quest(questId), update);
 }
 
+/**
+ * @deprecated Use `softDeleteQuest` instead. Hard-deletes violate the design
+ * spec and bypass the audit trail. This function is retained for test cleanup
+ * only and must never be called from production code paths.
+ */
 export async function deleteQuest(questId: string): Promise<void> {
   await deleteDoc(refs.quest(questId));
 }
 
-/** Real-time listener for all quests belonging to a hero, newest first. */
+/**
+ * Real-time listener for all quests belonging to a hero, newest first.
+ * Soft-deleted quests (deletedAt ≠ null) are excluded.
+ * Requires a composite Firestore index: quests(heroId ASC, deletedAt ASC, createdAt DESC).
+ */
 export function subscribeToQuests(
   heroId: string,
   onData: (quests: Quest[]) => void,
@@ -279,6 +292,7 @@ export function subscribeToQuests(
   const q = query(
     collection(db, COL.quests).withConverter(converters.quest),
     where("heroId", "==", heroId),
+    where("deletedAt", "==", null),
     orderBy("createdAt", "desc"),
     ...extraConstraints,
   );
@@ -295,7 +309,7 @@ export function subscribeToQuests(
 // `userId` is stored alongside session data for security rule enforcement.
 // ---------------------------------------------------------------------------
 
-type CreateBattleSessionInput = Omit<BattleSession, "id"> & { userId: string };
+type CreateBattleSessionInput = Omit<BattleSession, "id">;
 
 export async function getBattleSession(
   sessionId: string,
@@ -342,10 +356,11 @@ export async function completeBattleSession(
 /**
  * Real-time listener restricted to pending/in-progress quests, ordered by
  * deadline ascending — the primary list shown on the Camp screen.
+ * Soft-deleted quests are excluded.
  *
  * Builds its own query (not derived from subscribeToQuests) to ensure the
  * sort order is deadlineDate ASC, not the createdAt DESC used for history.
- * Requires a composite index on (heroId ASC, status ASC, deadlineDate ASC).
+ * Requires a composite index on (heroId ASC, status ASC, deletedAt ASC, deadlineDate ASC).
  */
 export function subscribeToActiveQuests(
   heroId: string,
@@ -357,6 +372,7 @@ export function subscribeToActiveQuests(
     collection(db, COL.quests).withConverter(converters.quest),
     where("heroId", "==", heroId),
     where("status", "in", activeStatuses),
+    where("deletedAt", "==", null),
     orderBy("deadlineDate", "asc"),
   );
   return onSnapshot(
@@ -471,8 +487,9 @@ export function subscribeToHeroes(
  * Real-time listener for all quests owned by a specific user (child).
  * Designed for the parent dashboard; queries by `userId` field rather than
  * `heroId` so a single subscription covers all heroes.
+ * Soft-deleted quests are excluded.
  *
- * Requires a composite Firestore index: quests(userId ASC, createdAt DESC).
+ * Requires a composite Firestore index: quests(userId ASC, deletedAt ASC, createdAt DESC).
  * Create it in the Firebase Console or via `firebase deploy --only firestore:indexes`.
  */
 export function subscribeToQuestsByUser(
@@ -484,6 +501,7 @@ export function subscribeToQuestsByUser(
   const q = query(
     collection(db, COL.quests).withConverter(converters.quest),
     where("userId", "==", userId),
+    where("deletedAt", "==", null),
     orderBy("createdAt", "desc"),
     ...extraConstraints,
   );
@@ -504,10 +522,9 @@ export function subscribeToQuestsByUser(
  * soft-deleted documents. Prefer this over `deleteQuest` in production flows.
  */
 export async function softDeleteQuest(questId: string): Promise<void> {
-  // Use an untyped ref so we can add the out-of-schema `deletedAt` field.
-  await updateDoc(doc(db, COL.quests, questId), {
+  await updateDoc(refs.quest(questId), {
     deletedAt: new Date().toISOString(),
-  } as DocumentData);
+  });
 }
 
 // ---------------------------------------------------------------------------

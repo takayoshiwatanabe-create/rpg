@@ -54,6 +54,7 @@ service cloud.firestore {
     // Validates fields on a newly created quest.
     // status must be "pending" — prevents clients from creating pre-completed
     // quests to farm EXP/gold.
+    // deletedAt must be null — ensures soft-delete filter queries work correctly.
     function isValidNewQuest() {
       let d = request.resource.data;
       return d.title is string
@@ -67,19 +68,25 @@ service cloud.firestore {
         && isValidSubject(d.subject)
         && isValidDifficulty(d.difficulty)
         && d.status == "pending"
-        && d.createdAt is string;
+        && d.createdAt is string
+        && d.deletedAt == null;
     }
 
-    // Only status, completedAt, and estimatedMinutes are mutable post-create.
-    // Terminal states (completed/failed) are irreversible — prevents un-doing
-    // a completed quest and re-farming its rewards.
+    // Only status, completedAt, estimatedMinutes, and deletedAt are mutable
+    // post-create. Terminal states (completed/failed) are irreversible.
+    // deletedAt may only transition null → ISO string (soft-delete is one-way).
     function isValidQuestUpdate() {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       let immutable = ["heroId", "userId", "createdAt", "expReward", "goldReward", "subject", "difficulty", "title"];
       let currentStatus = resource.data.status;
+      let softDeleteValid = !changed.hasAny(["deletedAt"])
+        || (resource.data.deletedAt == null
+            && request.resource.data.deletedAt is string
+            && request.resource.data.deletedAt.size() > 0);
       return !changed.hasAny(immutable)
         && isValidQuestStatus(request.resource.data.status)
-        && !(currentStatus in ["completed", "failed"]);
+        && !(currentStatus in ["completed", "failed"])
+        && softDeleteValid;
     }
 
     // -----------------------------------------------------------------------
@@ -230,10 +237,15 @@ service cloud.firestore {
         // ends via completeBattleSession — prevents clients from self-granting EXP.
         && request.resource.data.expEarned == 0
         && request.resource.data.goldEarned == 0
+        // outcome and completedAt must be absent at creation — battle not finished yet.
+        && !("outcome" in request.resource.data)
+        && !("completedAt" in request.resource.data)
         && sessionHeroIsOwned();
 
       allow update: if isSignedIn()
         && isSelf(resource.data.userId)
+        // Once completedAt is set the session is immutable — prevents reward re-grants.
+        && resource.data.completedAt == null
         // Ownership and start metadata are immutable.
         && !request.resource.data.diff(resource.data).affectedKeys()
             .hasAny(["userId", "heroId", "questId", "startedAt", "enemy"])
