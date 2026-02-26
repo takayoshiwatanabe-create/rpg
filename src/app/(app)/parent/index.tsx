@@ -480,5 +480,3 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
 });
-
-
