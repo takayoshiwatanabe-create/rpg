@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  I18nManager,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -300,3 +301,4 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 });
+

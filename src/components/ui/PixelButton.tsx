@@ -8,9 +8,11 @@ import {
   type GestureResponderEvent,
   type PressableProps,
   type ViewStyle,
+  I18nManager,
 } from "react-native";
 import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
+import { getIsRTL } from "@/i18n";
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
@@ -89,6 +91,7 @@ export function PixelButton({
   const reducedMotion = useReducedMotion();
   const config = VARIANT_CONFIG[variant];
   const sizeConfig = SIZE_CONFIG[size];
+  const isRTL = getIsRTL();
 
   function handlePressIn() {
     if (reducedMotion) return;
@@ -137,10 +140,11 @@ export function PixelButton({
               backgroundColor: config.background,
               paddingHorizontal: sizeConfig.paddingH,
               paddingVertical: sizeConfig.paddingV,
+              // Adjust border colors for RTL to maintain the 3D effect
               borderTopColor: config.borderHighlight,
-              borderLeftColor: config.borderHighlight,
               borderBottomColor: config.borderShadow,
-              borderRightColor: config.borderShadow,
+              borderLeftColor: isRTL ? config.borderShadow : config.borderHighlight,
+              borderRightColor: isRTL ? config.borderHighlight : config.borderShadow,
             },
           ]}
         >
@@ -161,9 +165,9 @@ export function PixelButton({
 const styles = StyleSheet.create({
   button: {
     borderTopWidth: 2,
-    borderLeftWidth: 2,
     // Thicker bottom/right for the classic pixel "raised" look
     borderBottomWidth: 4,
+    borderLeftWidth: 2,
     borderRightWidth: 4,
     borderRadius: PIXEL_BORDER.borderRadius,
     alignItems: "center",
@@ -175,3 +179,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+

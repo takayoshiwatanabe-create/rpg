@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, View } from "react-native";
+import { Animated, StyleSheet, View, I18nManager } from "react-native";
 import { COLORS, PIXEL_BORDER, SPACING } from "@/constants/theme";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { PixelText } from "./PixelText";
+import { getIsRTL } from "@/i18n";
 
 export type BarColor = "hp" | "mp" | "exp" | "gold";
 
@@ -45,6 +46,7 @@ export function PixelProgressBar({
   const animatedPercent = useRef(new Animated.Value(percentage)).current;
   const reducedMotion = useReducedMotion();
   const config = BAR_CONFIG[color];
+  const isRTL = getIsRTL();
 
   useEffect(() => {
     if (reducedMotion) {
@@ -71,7 +73,7 @@ export function PixelProgressBar({
   return (
     <View>
       {showHeader && (
-        <View style={styles.header}>
+        <View style={[styles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
           {label !== undefined && (
             <PixelText variant="label" color="cream">
               {label}
@@ -98,6 +100,7 @@ export function PixelProgressBar({
           style={[
             styles.fill,
             { backgroundColor: config.fill, width: fillWidth },
+            isRTL && { transform: [{ translateX: Animated.multiply(fillWidth.interpolate({ inputRange: ["0%", "100%"], outputRange: [0, -100] }), -1) }] } // Adjust for RTL fill
           ]}
         />
       </View>
@@ -107,7 +110,6 @@ export function PixelProgressBar({
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: SPACING.xs,
   },
@@ -122,4 +124,5 @@ const styles = StyleSheet.create({
     height: "100%",
   },
 });
+
 

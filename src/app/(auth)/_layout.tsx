@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, I18nManager } from "react-native";
 import { Stack, router } from "expo-router";
 import { useAuth } from "@/src/hooks/useAuth";
 import { getIsRTL } from "@/i18n";
@@ -23,6 +23,17 @@ export default function AuthLayout() {
       router.replace("/(app)");
     }
   }, [user, isLoading]);
+
+  // Apply RTL layout if necessary. This is a fallback/double-check,
+  // as the root layout already tries to set it.
+  useEffect(() => {
+    if (I18nManager.isRTL !== isRTL) {
+      I18nManager.forceRTL(isRTL);
+      // On native, forceRTL requires a reload to take full effect.
+      // For simplicity in this demo, we'll let the user experience it on next app launch.
+      // In a real app, you might prompt the user to restart or handle it more gracefully.
+    }
+  }, [isRTL]);
 
   // Block render until the session check resolves or redirect completes.
   if (isLoading || user) return null;
@@ -49,3 +60,4 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bgDark,
   },
 });
+

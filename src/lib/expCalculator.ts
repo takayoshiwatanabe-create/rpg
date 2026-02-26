@@ -60,3 +60,4 @@ export function applyExpPenalty(baseExp: number, isOverdue: boolean): number {
   return Math.max(0, Math.floor(baseExp * multiplier));
 }
 
+

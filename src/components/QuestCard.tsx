@@ -1,7 +1,7 @@
-import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, TouchableOpacity, View, I18nManager } from "react-native";
 import { isQuestOverdue, daysUntilDeadline } from "@/src/lib/gameLogic";
 import { PixelCard, PixelText, PixelButton } from "@/src/components/ui";
-import { t, getLang } from "@/i18n";
+import { t, getLang, getIsRTL } from "@/i18n";
 import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
 import type { Quest, Subject, Difficulty } from "@/types";
 
@@ -16,6 +16,7 @@ export function QuestCard({ quest, onStartBattle, onDelete }: QuestCardProps) {
   const days = daysUntilDeadline(quest.deadlineDate);
   const subjectColor = COLORS[quest.subject as keyof typeof COLORS] ?? COLORS.other;
   const difficultyColor = COLORS[quest.difficulty as keyof typeof COLORS] ?? COLORS.normal;
+  const isRTL = getIsRTL();
 
   const deadlineLabel = overdue
     ? t("quest.overdue")
@@ -44,7 +45,7 @@ export function QuestCard({ quest, onStartBattle, onDelete }: QuestCardProps) {
       style={styles.card}
       accessibilityLabel={quest.title}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <View style={[styles.badge, { borderColor: subjectColor }]}>
           <PixelText variant="caption" style={{ color: subjectColor }}>
             {t(`quest.subject.${quest.subject}`)}
@@ -77,7 +78,7 @@ export function QuestCard({ quest, onStartBattle, onDelete }: QuestCardProps) {
         {quest.title}
       </PixelText>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <PixelText variant="caption" color="exp">
           {t("quest.reward_exp", { exp: quest.expReward })}
         </PixelText>
@@ -102,7 +103,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   header: {
-    flexDirection: "row",
     alignItems: "center",
     gap: SPACING.xs,
     marginBottom: SPACING.xs,
@@ -124,7 +124,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   footer: {
-    flexDirection: "row",
     alignItems: "center",
     gap: SPACING.sm,
   },
@@ -132,3 +131,4 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
   },
 });
+

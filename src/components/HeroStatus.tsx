@@ -1,10 +1,10 @@
-import { View, StyleSheet, type ViewProps } from "react-native";
+import { View, StyleSheet, type ViewProps, I18nManager } from "react-native";
 import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
 import { PixelText } from "@/src/components/ui/PixelText";
 import { PixelProgressBar } from "@/src/components/ui/PixelProgressBar";
 import { PixelCard } from "@/src/components/ui/PixelCard";
 import { expProgressInCurrentLevel, isAtMaxLevel } from "@/src/lib/expCalculator";
-import { t } from "@/i18n";
+import { t, getIsRTL } from "@/i18n";
 import type { HeroProfile } from "@/types";
 
 export type HeroStatusProps = ViewProps & {
@@ -19,6 +19,7 @@ export type HeroStatusProps = ViewProps & {
 export function HeroStatus({ hero, style, ...rest }: HeroStatusProps) {
   const expProgress = expProgressInCurrentLevel(hero.totalExp);
   const atMax = isAtMaxLevel(hero.level);
+  const isRTL = getIsRTL();
 
   return (
     <PixelCard
@@ -29,7 +30,7 @@ export function HeroStatus({ hero, style, ...rest }: HeroStatusProps) {
       {...rest}
     >
       {/* Hero name + level row */}
-      <View style={styles.nameRow}>
+      <View style={[styles.nameRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <PixelText variant="heading" color="gold" style={styles.flex}>
           {hero.displayName}
         </PixelText>
@@ -74,7 +75,7 @@ export function HeroStatus({ hero, style, ...rest }: HeroStatusProps) {
           label={t("hero.exp")}
           showValues={false}
         />
-        <PixelText variant="caption" color="exp" style={styles.expCaption}>
+        <PixelText variant="caption" color="exp" style={[styles.expCaption, { textAlign: isRTL ? "left" : "right" }]}>
           {atMax
             ? t("hero.max_level")
             : t("hero.exp_to_next", { exp: String(expProgress.required - expProgress.current) })}
@@ -82,7 +83,7 @@ export function HeroStatus({ hero, style, ...rest }: HeroStatusProps) {
       </View>
 
       {/* Attack / Defense / Gold row */}
-      <View style={styles.statsFooter}>
+      <View style={[styles.statsFooter, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <StatChip label={t("hero.attack")} value={String(hero.attack)} color={COLORS.hp} />
         <StatChip label={t("hero.defense")} value={String(hero.defense)} color={COLORS.mp} />
         <StatChip label={t("hero.gold")} value={String(hero.gold)} color={COLORS.gold} />
@@ -102,16 +103,17 @@ type StatChipProps = {
 };
 
 function StatChip({ label, value, color }: StatChipProps) {
+  const isRTL = getIsRTL();
   return (
     <View
       style={styles.chip}
       accessibilityLabel={`${label}: ${value}`}
       accessible
     >
-      <PixelText variant="caption" color="cream">
+      <PixelText variant="caption" color="cream" style={{ textAlign: "center" }}>
         {label}
       </PixelText>
-      <PixelText variant="stat" style={{ color }}>
+      <PixelText variant="stat" style={{ color, textAlign: "center" }}>
         {value}
       </PixelText>
     </View>
@@ -123,7 +125,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   nameRow: {
-    flexDirection: "row",
     alignItems: "center",
     marginBottom: SPACING.sm,
     gap: SPACING.sm,
@@ -144,10 +145,8 @@ const styles = StyleSheet.create({
   expCaption: {
     marginTop: 2,
     fontSize: FONT_SIZES.xs,
-    textAlign: "right",
   },
   statsFooter: {
-    flexDirection: "row",
     marginTop: SPACING.sm,
     gap: SPACING.sm,
   },
@@ -161,3 +160,4 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
   },
 });
+

@@ -1,7 +1,8 @@
 import React from "react";
-import { StyleSheet, View, type ViewProps } from "react-native";
+import { StyleSheet, View, type ViewProps, I18nManager } from "react-native";
 import { COLORS, PIXEL_BORDER, SHADOW, SPACING } from "@/constants/theme";
 import { PixelText } from "./PixelText";
+import { getIsRTL } from "@/i18n";
 
 export type CardVariant =
   | "default"   // standard card with pixel border
@@ -31,6 +32,7 @@ export function PixelCard({
   style,
   ...rest
 }: PixelCardProps) {
+  const isRTL = getIsRTL();
   return (
     <View
       style={[
@@ -42,8 +44,8 @@ export function PixelCard({
       {...rest}
     >
       {title !== undefined && (
-        <View style={styles.titleBar} accessibilityRole="header">
-          <PixelText variant="heading" color="gold">
+        <View style={[styles.titleBar, { borderBottomColor: PIXEL_BORDER.borderColor }]}>
+          <PixelText variant="heading" color="gold" style={{ textAlign: isRTL ? "right" : "left" }}>
             {title}
           </PixelText>
         </View>
@@ -74,9 +76,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     borderBottomWidth: 2,
-    borderBottomColor: PIXEL_BORDER.borderColor,
   },
   content: {
     padding: SPACING.md,
   },
 });
+

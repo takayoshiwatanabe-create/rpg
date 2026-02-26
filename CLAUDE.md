@@ -1,6 +1,6 @@
 # Project Design Specification
 
-This file is the single source of truth for this project. All code must conform to this specification.
+このファイルは、このプロジェクトの唯一の真実源です。すべてのコードはこの仕様に準拠する必要があります。
 
 ## Constitution (Project Rules)
 # プロジェクト憲法 - 勇者の宿題帳（Hero Homework Quest）
@@ -347,3 +347,4 @@ N/A
 - Default language: ja (Japanese)
 - RTL support required for Arabic (ar)
 - Use isRTL flag from i18n module for layout adjustments
+
