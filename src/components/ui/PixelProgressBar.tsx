@@ -1,24 +1,20 @@
-import React from "react";
-import { View, StyleSheet, type ViewProps } from "react-native";
-import { COLORS, PIXEL_BORDER, SPACING, FONT_SIZES } from "@/constants/theme";
+import React, { useRef, useEffect } from "react";
+import { View, StyleSheet, Animated, Easing } from "react-native";
+import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import { PixelText } from "./PixelText";
-import { getIsRTL } from "@/i18n";
-import type { TextColor } from "@/types"; // Import TextColor from types.ts
+import type { TextColor } from "@/types";
 
-export type BarColor = Exclude<TextColor, "cream" | "gray" | "grayDark">;
-
-export type PixelProgressBarProps = ViewProps & {
+export type PixelProgressBarProps = {
   value: number;
   max: number;
-  color: BarColor;
+  color: TextColor;
   label?: string;
   showValues?: boolean;
 };
 
 /**
  * A pixel-art style progress bar component.
- * Displays a progress bar with optional label and numeric values.
- * Supports different colors for the bar fill.
+ * Animates its fill when the `value` prop changes.
  */
 export function PixelProgressBar({
   value,
@@ -26,44 +22,55 @@ export function PixelProgressBar({
   color,
   label,
   showValues = true,
-  style,
-  ...rest
 }: PixelProgressBarProps) {
-  const progress = max > 0 ? value / max : 0;
-  const progressWidth = `${Math.max(0, Math.min(100, progress * 100))}%`;
-  const isRTL = getIsRTL();
+  const animatedWidth = useRef(new Animated.Value(0)).current;
+  const prevValue = useRef(value);
 
-  const barColor = COLORS[color as keyof typeof COLORS]; // Type assertion here
+  useEffect(() => {
+    const progress = max > 0 ? value / max : 0;
+    const prevProgress = max > 0 ? prevValue.current / max : 0;
+
+    // Only animate if the value has actually changed
+    if (value !== prevValue.current) {
+      animatedWidth.setValue(prevProgress); // Start from the previous progress
+      Animated.timing(animatedWidth, {
+        toValue: progress,
+        duration: 500, // Animation duration
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false, // Must be false for width animation
+      }).start();
+    } else {
+      // If value hasn't changed, set it instantly without animation
+      animatedWidth.setValue(progress);
+    }
+
+    prevValue.current = value; // Update previous value for next render
+  }, [value, max, animatedWidth]);
+
+  const barWidth = animatedWidth.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  });
 
   return (
-    <View style={[styles.container, style]} {...rest}>
-      <View style={[styles.labelRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        {label && (
-          <PixelText variant="caption" color="cream" style={styles.label}>
-            {label}
-          </PixelText>
-        )}
+    <View style={styles.container}>
+      {label && (
+        <PixelText variant="label" color="cream" style={styles.label}>
+          {label}
+        </PixelText>
+      )}
+      <View style={styles.progressBar}>
+        <Animated.View
+          style={[
+            styles.progressBarFill,
+            { width: barWidth, backgroundColor: COLORS[color] },
+          ]}
+        />
         {showValues && (
-          <PixelText variant="caption" color="cream" style={styles.values}>
+          <PixelText variant="caption" color="cream" style={styles.valueText}>
             {value}/{max}
           </PixelText>
         )}
-      </View>
-      <View style={styles.barBackground}>
-        <View
-          style={[
-            styles.barFill,
-            {
-              width: progressWidth,
-              backgroundColor: barColor,
-              // Adjust border radius for RTL if fill starts from right
-              borderTopLeftRadius: isRTL ? 0 : PIXEL_BORDER.borderRadius,
-              borderBottomLeftRadius: isRTL ? 0 : PIXEL_BORDER.borderRadius,
-              borderTopRightRadius: isRTL ? PIXEL_BORDER.borderRadius : 0,
-              borderBottomRightRadius: isRTL ? PIXEL_BORDER.borderRadius : 0,
-            },
-          ]}
-        />
       </View>
     </View>
   );
@@ -73,28 +80,28 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
   },
-  labelRow: {
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.xs / 2,
-  },
   label: {
-    fontSize: FONT_SIZES.xs,
+    marginBottom: SPACING.xs,
   },
-  values: {
-    fontSize: FONT_SIZES.xs,
-  },
-  barBackground: {
-    width: "100%",
-    height: 12,
+  progressBar: {
+    height: 16,
     backgroundColor: COLORS.bgMid,
     borderWidth: PIXEL_BORDER.borderWidth,
     borderColor: PIXEL_BORDER.borderColor,
     borderRadius: PIXEL_BORDER.borderRadius,
     overflow: "hidden",
+    justifyContent: "center",
   },
-  barFill: {
+  progressBarFill: {
     height: "100%",
+    position: "absolute",
+    left: 0,
+  },
+  valueText: {
+    position: "absolute",
+    width: "100%",
+    textAlign: "center",
+    color: COLORS.cream,
+    fontSize: FONT_SIZES.xs,
   },
 });
-

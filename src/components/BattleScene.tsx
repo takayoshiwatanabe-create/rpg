@@ -9,7 +9,7 @@ import {
 import { PixelButton, PixelCard, PixelText } from "@/src/components/ui";
 import { t } from "@/i18n";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
-import type { Quest, QuestRewards, TextColor } from "@/types";
+import type { Quest, QuestReward, TextColor } from "@/types";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 
 // Define battle states for the UI
@@ -31,7 +31,7 @@ export type BattleSceneProps = {
   onCompleteQuest: () => void;
   onToggleQuestCompleted: () => void;
   onExitBattle: () => void;
-  rewards: QuestRewards;
+  rewards: QuestReward;
   isRTL: boolean;
 };
 
@@ -145,7 +145,7 @@ export function BattleScene({
           <PixelText variant="label" color="cream">
             {t("quest.difficulty")}:
           </PixelText>
-          <PixelText variant="body" color={quest.difficulty as TextColor}> {/* Corrected type for color prop */}
+          <PixelText variant="body" color={quest.difficulty as TextColor}>
             {t(`quest.difficulty.${quest.difficulty}`)}
           </PixelText>
         </View>
@@ -395,4 +395,3 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
 });
-

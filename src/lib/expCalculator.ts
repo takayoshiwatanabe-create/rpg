@@ -1,94 +1,51 @@
-import { MAX_LEVEL } from "@/constants/game";
+import { HERO_EXP_CURVE, MAX_LEVEL } from "@/constants/game";
 
 /**
- * Calculates the experience points required to advance from the current level to the next.
- * The EXP requirement increases with level, following a specific curve.
- *
- * @param level The current level of the hero (1-indexed).
- * @returns The amount of EXP needed to reach the next level.
+ * Calculates the hero's current level based on their total experience points.
+ * @param totalExp The hero's total accumulated experience points.
+ * @returns The hero's current level (1-indexed).
  */
-export function getExpToNextLevel(level: number): number {
-  if (level >= MAX_LEVEL) {
-    return 0; // No more EXP needed if at max level
-  }
-  // Example: Linear increase, then quadratic or exponential for higher levels
-  // This is a simple example, adjust as per game design
-  if (level < 10) {
-    return 100 + (level - 1) * 50; // Level 1: 100, Level 2: 150, Level 3: 200...
-  } else if (level < 50) {
-    return 500 + (level - 10) * 25; // Level 10: 500, Level 11: 525...
-  } else {
-    return 1500 + (level - 50) * 50; // Level 50: 1500, Level 51: 1550...
-  }
-}
-
-/**
- * Calculates the total experience points accumulated to reach the beginning of a given level.
- *
- * @param level The target level.
- * @returns The total EXP required to be at the start of `level`.
- */
-export function getTotalExpForLevel(level: number): number {
-  if (level <= 1) return 0;
-
-  let totalExp = 0;
-  for (let i = 1; i < level; i++) {
-    totalExp += getExpToNextLevel(i);
-  }
-  return totalExp;
-}
-
-/**
- * Determines the current level of a hero based on their total accumulated experience points.
- *
- * @param totalExp The hero's total experience points.
- * @returns The current level of the hero.
- */
-export function getLevelFromTotalExp(totalExp: number): number {
-  let level = 1;
-  while (level < MAX_LEVEL) {
-    const expNeededForNextLevel = getExpToNextLevel(level);
-    if (totalExp < getTotalExpForLevel(level + 1)) {
-      break;
+export function calculateLevelFromExp(totalExp: number): number {
+  for (let i = 0; i < HERO_EXP_CURVE.length; i++) {
+    if (totalExp < HERO_EXP_CURVE[i]) {
+      return i + 1; // Levels are 1-indexed
     }
-    level++;
   }
-  return level;
+  return MAX_LEVEL; // If EXP is greater than or equal to max level threshold
 }
 
 /**
- * Calculates the hero's progress within their current level.
- *
- * @param totalExp The hero's total experience points.
- * @returns An object containing `current` EXP within the level and `required` EXP for the next level.
+ * Calculates the hero's experience progress within their current level.
+ * @param totalExp The hero's total accumulated experience points.
+ * @returns An object containing `current` EXP in the level and `required` EXP for the next level.
  */
 export function expProgressInCurrentLevel(
   totalExp: number,
 ): { current: number; required: number } {
-  const currentLevel = getLevelFromTotalExp(totalExp);
+  const currentLevel = calculateLevelFromExp(totalExp);
 
   if (currentLevel >= MAX_LEVEL) {
-    return { current: 0, required: 1 }; // At max level, progress is irrelevant or can be 0/1
+    return { current: 0, required: 0 }; // At max level, no more EXP needed
   }
 
-  const expAtStartOfCurrentLevel = getTotalExpForLevel(currentLevel);
-  const expNeededForNextLevel = getExpToNextLevel(currentLevel);
+  const expToReachCurrentLevel =
+    currentLevel > 1 ? HERO_EXP_CURVE[currentLevel - 2] : 0;
+  const expToReachNextLevel = HERO_EXP_CURVE[currentLevel - 1];
 
-  const currentExpInLevel = totalExp - expAtStartOfCurrentLevel;
+  const currentLevelExp = totalExp - expToReachCurrentLevel;
+  const requiredForNextLevel = expToReachNextLevel - expToReachCurrentLevel;
 
   return {
-    current: currentExpInLevel,
-    required: expNeededForNextLevel,
+    current: currentLevelExp,
+    required: requiredForNextLevel,
   };
 }
 
 /**
- * Checks if the hero is at the maximum level.
- *
+ * Checks if the hero is at the maximum possible level.
  * @param level The hero's current level.
- * @returns `true` if the hero is at or above the maximum level, `false` otherwise.
+ * @returns True if the hero is at max level, false otherwise.
  */
 export function isAtMaxLevel(level: number): boolean {
   return level >= MAX_LEVEL;
 }
-

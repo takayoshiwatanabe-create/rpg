@@ -12,7 +12,7 @@ import {
   subscribeToQuest,
   updateQuestStatus,
   updateHeroStats,
-  createBattleSession, // Import createBattleSession
+  createBattleSession,
 } from "@/src/lib/firestore";
 import {
   isQuestOverdue,
@@ -163,15 +163,14 @@ export default function BattleScreen() {
     try {
       await updateQuestStatus(quest.id, "completed");
       await updateHeroStats(user.uid, {
-        exp: finalExp,
+        totalExp: finalExp, // Corrected property name
         gold: finalGold,
       });
       await createBattleSession(user.uid, quest.id, {
-        userId: user.uid,
-        questId: quest.id,
+        // Corrected properties to match BattleSession type
         startTime: new Date(battleStartTime.current).toISOString(),
         endTime: new Date(endTime).toISOString(),
-        duration: duration,
+        durationSeconds: duration, // Changed from 'duration' to 'durationSeconds'
         status: "completed",
         rewards: { exp: finalExp, gold: finalGold },
       });

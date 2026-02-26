@@ -179,15 +179,14 @@ firestore/
 │
 ├── quests/{questId}     # 宿題（クエスト）
 │
-├── battleSessions/{
-│   ├── {sessionId}      # バトルセッション情報
-│       ├── userId       # ユーザーID
-│       ├── questId      # クエストID
-│       ├── startTime    # バトル開始時刻
-│       ├── endTime      # バトル終了時刻
-│       ├── duration     # 実際のバトル時間（秒）
-│       ├── status       # "inProgress", "completed", "failed"
-│       └── rewards      # 獲得したEXP, Gold (完了時のみ)
+├── battleSessions/{battleSessionId} # バトルセッション履歴
+│   ├── userId: string
+│   ├── questId: string
+│   ├── startTime: string (ISO 8601)
+│   ├── endTime: string (ISO 8601)
+│   ├── durationSeconds: number
+│   ├── status: 'completed' | 'failed' | 'abandoned'
+│   └── rewards: { exp: number, gold: number }
 ```
 
 ## Development Instructions

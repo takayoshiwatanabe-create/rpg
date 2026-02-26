@@ -18,7 +18,7 @@
         "NSUserTrackingUsageDescription": "このアプリでは、広告表示のためにユーザーの行動データを追跡する場合があります。これにより、より関連性の高い広告を提供できます。",
         "NSLocationWhenInUseUsageDescription": "このアプリは、現在地情報を使用しません。",
         "NSPhotoLibraryUsageDescription": "このアプリは、写真ライブラリへのアクセスを必要としません。",
-        "NSCameraUsageDescription": "このアプリは、カメラへのアクセスを必要としません。"
+        "NSCameraUsageDescription": "このアプリは、カメラへのアクセスを必要としません."
       }
     },
     "android": {
@@ -62,3 +62,4 @@
     }
   }
 }
+
