@@ -110,7 +110,7 @@ function ParentQuestCard({
   onApprove,
   onReject,
   isRTL,
-}: ParentQuestCardProps) {
+ }: ParentQuestCardProps) {
   const subjectColor = COLORS[quest.subject as keyof typeof COLORS] ?? COLORS.other;
   const difficultyColor = COLORS[quest.difficulty as keyof typeof COLORS] ?? COLORS.normal;
 
