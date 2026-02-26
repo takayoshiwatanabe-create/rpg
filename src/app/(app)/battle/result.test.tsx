@@ -136,4 +136,3 @@ describe("BattleResultScreen", () => {
     expect(require("react-native").Animated.Value().setValue).toHaveBeenCalledWith(1);
   });
 });
-
