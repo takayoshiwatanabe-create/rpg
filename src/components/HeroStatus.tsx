@@ -1,9 +1,9 @@
 import { View, StyleSheet, type ViewProps } from "react-native";
 import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
-import { PixelText } from "@/src/components/ui/PixelText";
-import { PixelProgressBar } from "@/src/components/ui/PixelProgressBar";
-import { PixelCard } from "@/src/components/ui/PixelCard";
-import { expProgressInCurrentLevel, isAtMaxLevel } from "@/src/lib/expCalculator";
+import { PixelText } from '@/components/ui/PixelText";
+import { PixelProgressBar } from '@/components/ui/PixelProgressBar";
+import { PixelCard } from '@/components/ui/PixelCard";
+import { expProgressInCurrentLevel, isAtMaxLevel } from '@/lib/expCalculator";
 import { t, getIsRTL } from "@/i18n";
 import type { HeroProfile } from "@/types";
 

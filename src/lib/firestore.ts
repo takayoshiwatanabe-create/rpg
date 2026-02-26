@@ -11,7 +11,7 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
+import { db } from '@/lib/firebase";
 import type {
   UserProfile,
   HeroProfile,

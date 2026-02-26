@@ -6,11 +6,11 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { PixelButton, PixelCard, PixelText } from "@/src/components/ui";
+import { PixelButton, PixelCard, PixelText } from '@/components/ui";
 import { t } from "@/i18n";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import type { Quest, QuestReward, TextColor } from "@/types";
-import { useReducedMotion } from "@/src/hooks/useReducedMotion";
+import { useReducedMotion } from '@/hooks/useReducedMotion";
 
 // Define battle states for the UI
 type BattleState =
