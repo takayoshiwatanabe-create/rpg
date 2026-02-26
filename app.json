@@ -19,7 +19,8 @@
         "NSLocationWhenInUseUsageDescription": "このアプリは、現在地情報を使用しません。",
         "NSPhotoLibraryUsageDescription": "このアプリは、写真ライブラリへのアクセスを必要としません。",
         "NSCameraUsageDescription": "このアプリは、カメラへのアクセスを必要としません.",
-        "SKAdNetworkItems": []
+        "SKAdNetworkItems": [],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
