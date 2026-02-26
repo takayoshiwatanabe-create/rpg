@@ -14,7 +14,7 @@ import {
   updateQuestStatus,
 } from "@/lib/firestore";
 import { PixelText, PixelButton, PixelCard } from "@/components/ui";
-import { t, getIsRTL, getLang } from "@/i18n";
+import { t, getLang, getIsRTL } from "@/i18n";
 import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
 import type { HeroProfile, Quest, QuestStatus } from "@/types";
 
@@ -480,4 +480,5 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
 });
+
 
