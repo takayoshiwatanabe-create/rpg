@@ -151,3 +151,4 @@ describe("CampScreen", () => {
     expect(router.push).toHaveBeenCalledWith("/(app)/quests/new");
   });
 });
+
