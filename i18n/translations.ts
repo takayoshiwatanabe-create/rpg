@@ -42,6 +42,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.attack": "こうげき",
     "hero.defense": "ぼうぎょ",
     "hero.level_up": "レベルアップ！",
+    "hero.max_level": "さいこうレベル！",
     "hero.status": "ステータス",
     "hero.greeting": "勇者 {{name}} よ、今日も宿題を倒しに行こう！",
 
