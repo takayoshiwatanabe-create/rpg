@@ -19,6 +19,7 @@
     "expo-notifications": "^55.0.10",
     "expo-router": "~4.0.0",
     "expo-status-bar": "~2.0.0",
+    "expo-tracking-transparency": "^55.0.8",
     "firebase": "^12.9.0",
     "i18n-js": "^4.5.2",
     "next": "15.0.0-rc.0",
@@ -47,4 +48,3 @@
     "vitest": "^1.6.0"
   }
 }
-
