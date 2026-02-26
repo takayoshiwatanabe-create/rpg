@@ -9,3 +9,4 @@ export type { BarColor, PixelProgressBarProps } from "./PixelProgressBar";
 
 export { PixelText } from "./PixelText";
 export type { PixelTextProps, TextColor, TextVariant } from "./PixelText";
+

@@ -14,8 +14,8 @@ export type QuestCardProps = {
 export function QuestCard({ quest, onStartBattle, onDelete }: QuestCardProps) {
   const overdue = isQuestOverdue(quest.deadlineDate);
   const days = daysUntilDeadline(quest.deadlineDate);
-  const subjectColor = COLORS[quest.subject as Subject] ?? COLORS.other;
-  const difficultyColor = COLORS[quest.difficulty as Difficulty] ?? COLORS.normal;
+  const subjectColor = COLORS[quest.subject as keyof typeof COLORS] ?? COLORS.other;
+  const difficultyColor = COLORS[quest.difficulty as keyof typeof COLORS] ?? COLORS.normal;
 
   const deadlineLabel = overdue
     ? t("quest.overdue")

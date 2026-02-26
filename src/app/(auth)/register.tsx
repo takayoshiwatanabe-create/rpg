@@ -42,7 +42,7 @@ export default function RegisterScreen() {
 
     if (isChildRole && !heroName.trim()) return t("error.required_field");
 
-    if (isChildRole && !coppaConsent) return t("auth.coppa_notice");
+    if (isChildRole && !coppaConsent) return t("auth.coppa_consent_required"); // Changed error message
 
     return null;
   }
@@ -168,6 +168,7 @@ export default function RegisterScreen() {
               autoCorrect={false}
               keyboardType="email-address"
               returnKeyType="next"
+              placeholder={t("auth.email_placeholder")} // Added placeholder
               placeholderTextColor={COLORS.grayDark}
               accessibilityLabel={t("auth.email")}
             />
@@ -187,6 +188,7 @@ export default function RegisterScreen() {
               onChangeText={setPassword}
               secureTextEntry
               returnKeyType="next"
+              placeholder={t("auth.password_placeholder")} // Added placeholder
               placeholderTextColor={COLORS.grayDark}
               accessibilityLabel={t("auth.password")}
             />
@@ -207,6 +209,7 @@ export default function RegisterScreen() {
               secureTextEntry
               returnKeyType="done"
               onSubmitEditing={handleRegister}
+              placeholder={t("auth.confirm_password_placeholder")} // Added placeholder
               placeholderTextColor={COLORS.grayDark}
               accessibilityLabel={t("auth.confirm_password")}
             />

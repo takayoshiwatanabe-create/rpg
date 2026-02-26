@@ -23,6 +23,9 @@ export function totalExpForLevel(level: number): number {
  * Result is clamped to [1, MAX_HERO_LEVEL].
  */
 export function levelFromTotalExp(totalExp: number): number {
+  // Solve for level `L` in `totalExp = EXP_PER_LEVEL_FACTOR * (L-1) * L / 2`
+  // This is a quadratic equation: `L^2 - L - (2 * totalExp / EXP_PER_LEVEL_FACTOR) = 0`
+  // Using the quadratic formula: `L = (1 + sqrt(1 + 8 * totalExp / EXP_PER_LEVEL_FACTOR)) / 2`
   const discriminant = 1 + (8 * totalExp) / EXP_PER_LEVEL_FACTOR;
   const level = Math.floor((1 + Math.sqrt(discriminant)) / 2);
   return Math.min(Math.max(1, level), MAX_HERO_LEVEL);
@@ -56,3 +59,4 @@ export function applyExpPenalty(baseExp: number, isOverdue: boolean): number {
   const multiplier = isOverdue ? OVERDUE_PENALTY.expMultiplier : 1;
   return Math.max(0, Math.floor(baseExp * multiplier));
 }
+

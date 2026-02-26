@@ -32,7 +32,8 @@ export function useAuth(): UseAuthReturn {
         try {
           const profile = await getUserProfile(user.uid);
           setState({ user, profile, isLoading: false });
-        } catch {
+        } catch (error) {
+          console.error("Failed to fetch user profile:", error);
           // Auth is valid but profile fetch failed — still mark loaded.
           setState({ user, profile: null, isLoading: false });
         }
@@ -50,3 +51,4 @@ export function useAuth(): UseAuthReturn {
 
   return { ...state, signOut };
 }
+

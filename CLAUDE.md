@@ -180,6 +180,149 @@ firestore/
 ├── quests/{questId}     # 宿題（クエスト）
 │
 ├── battleSessions/{
+│   ├── {sessionId}      # バトルセッション情報
+│   └── actions          # ユーザー行動ログ
+│
+├── monsters/{monsterId} # モンスター図鑑
+│
+└── items/{itemId}       # アイテム図鑑
+```
+
+### 2.2 `users/{userId}/profile` (ユーザー基本情報)
+- **`userId`**: string (Document ID) - Firebase Auth UID
+- **`role`**: 'child' | 'parent'
+- **`locale`**: string (e.g., 'ja', 'en') - ユーザーの選択言語
+- **`createdAt`**: string (ISO 8601)
+- **`lastLoginAt`**: string (ISO 8601)
+- **`parentUserId`**: string (optional, for child accounts) - 保護者のUID
+
+### 2.3 `users/{userId}/hero` (勇者ステータス)
+- **`heroId`**: string (Document ID, same as userId)
+- **`displayName`**: string (勇者名)
+- **`level`**: number
+- **`totalExp`**: number
+- **`hp`**: number (現在HP)
+- **`maxHp`**: number (最大HP)
+- **`mp`**: number (現在MP)
+- **`maxMp`**: number (最大MP)
+- **`attack`**: number
+- **`defense`**: number
+- **`gold`**: number
+- **`lastActivityAt`**: string (ISO 8601)
+
+### 2.4 `quests/{questId}` (宿題クエスト)
+- **`questId`**: string (Document ID)
+- **`userId`**: string (クエストを作成したユーザーのUID)
+- **`heroId`**: string (このクエストをこなす勇者のID)
+- **`title`**: string (宿題のタイトル、例: "算数ドリルP.10")
+- **`subject`**: 'math' | 'japanese' | 'english' | 'science' | 'social' | 'other'
+- **`difficulty`**: 'easy' | 'normal' | 'hard' | 'boss'
+- **`status`**: 'pending' | 'inProgress' | 'completed' | 'abandoned'
+- **`deadlineDate`**: string (ISO 8601形式の日付のみ, 例: "2024-07-31")
+- **`estimatedMinutes`**: number (想定所要時間)
+- **`expReward`**: number
+- **`goldReward`**: number
+- **`createdAt`**: string (ISO 8601)
+- **`completedAt`**: string (ISO 8601, optional)
+- **`deletedAt`**: string (ISO 8601, optional) - 論理削除用
+
+---
+
+## 3. UI/UX デザイン
+
+### 3.1 全体テーマ
+- **フォント**: カスタムピクセルフォント（日本語対応）
+- **カラーパレット**: 8bitゲーム風（`constants/theme.ts` に定義）
+- **コンポーネント**: 全てカスタムコンポーネント（Material UI等の既成コンポーネントは使用禁止）
+
+### 3.2 主要画面フロー
+
+#### 3.2.1 ログイン・登録画面 (`/(auth)/login.tsx`, `/(auth)/register.tsx`)
+- **デザイン**: 中央寄せのカードUI。背景は暗いトーン。
+- **要素**:
+    - アプリロゴ/タイトル
+    - ログイン/登録フォーム（メールアドレス、パスワード）
+    - アカウント種別選択（子供/保護者）
+    - エラーメッセージ表示エリア
+    - 登録時の勇者名入力（子供アカウントのみ）
+    - COPPA同意チェックボックス（子供アカウントのみ）
+    - パスワード忘れリンク
+    - 登録/ログイン切り替えリンク
+- **アニメーション**: フェードイン/アウト（画面遷移時）
+
+#### 3.2.2 キャンプ画面 (ダッシュボード) (`/(app)/camp.tsx`)
+- **デザイン**: スクロール可能な縦型レイアウト。上部に勇者ステータス、下部にアクティブクエスト一覧。
+- **要素**:
+    - **勇者ステータスパネル**:
+        - 勇者名、レベル、HPバー、MPバー、EXPバー、攻撃力、防御力、所持ゴールド
+        - `HeroStatus.tsx` コンポーネントを使用
+    - **アクティブクエスト一覧**:
+        - `QuestCard.tsx` コンポーネントで各クエストを表示
+        - クエストがない場合は「現在アクティブなクエストはありません」メッセージ
+    - **「新しい宿題を追加」ボタン**:
+        - `/(app)/quests/new.tsx` (またはモーダル) へ遷移
+- **アニメーション**: なし（静的表示）
+
+#### 3.2.3 クエスト一覧・登録画面 (`/(app)/quests/index.tsx`, `/(app)/quests/new.tsx` (or modal))
+- **デザイン**: タブ切り替えで「全て」「アクティブ」「完了済み」を表示。下部に「新しい宿題を追加」ボタン。
+- **要素**:
+    - **フィルタリングタブ**:
+        - `all`, `active`, `completed` の3種類
+        - 現在のフィルタが強調表示される
+    - **クエストリスト**:
+        - フィルタされたクエストを `QuestCard.tsx` で表示
+        - 各カードはクエスト詳細画面へのリンクを持つ
+        - 完了済みクエストは削除ボタン非表示
+    - **「新しい宿題を追加」ボタン**:
+        - 新規クエスト登録フォームをモーダルで表示
+    - **新規クエスト登録フォーム (モーダル)**:
+        - タイトル (TextInput)
+        - 科目 (選択チップ)
+        - 難易度 (選択チップ)
+        - 期限 (日付ピッカー、前後日移動ボタン)
+        - 想定所要時間 (難易度に応じて自動設定、表示のみ)
+        - 報酬プレビュー (EXP, ゴールド)
+        - 登録/キャンセルボタン
+- **アニメーション**: モーダルはスライドアップ、カードは静的。
+
+#### 3.2.4 クエスト詳細・開始画面 (`/(app)/quests/[id].tsx`)
+- **デザイン**: 中央にクエスト情報カード。下部に「バトル開始」ボタンと「宿題を諦める」ボタン。
+- **要素**:
+    - **クエスト情報カード**:
+        - `PixelCard` コンポーネントを使用
+        - 期限切れの場合は `highlighted` バリアントを使用し、赤色で「期限切れ」表示
+        - 科目、難易度、完了ステータスをバッジで表示
+        - タイトル、期限、想定所要時間、報酬（EXP, ゴールド）
+    - **「バトル開始」ボタン**:
+        - `/(app)/battle.tsx` へ遷移
+        - 完了済みクエストでは非表示
+    - **「宿題を諦める」ボタン**:
+        - 確認ダイアログ表示後、クエストを論理削除 (`deletedAt` を設定)
+        - 完了済みクエストでは非表示
+- **アニメーション**: カードがロード時にわずかにスケールアップしてフェードイン（`prefers-reduced-motion` 考慮）。
+
+#### 3.2.5 バトル画面 (`/(app)/battle.tsx`)
+- **デザイン**: 全画面ゲームUI。モンスターと勇者のスプライト、HP/MPバー、コマンド選択。
+- **要素**:
+    - 背景（ドット絵）
+    - 勇者スプライト
+    - モンスター（宿題）スプライト
+    - 勇者HP/MPバー
+    - モンスターHPバー
+    - コマンド選択パネル（攻撃、スキル、アイテム、逃げる）
+    - ターン経過メッセージ
+- **アニメーション**: スプライトアニメーション、HP/MPバーの増減、攻撃エフェクト。Framer Motionを使用。
+
+#### 3.2.6 リザルト画面 (`/(app)/result.tsx`)
+- **デザイン**: 中央にリザルトパネル。獲得EXP、ゴールド、レベルアップ表示。
+- **要素**:
+    - 「クエストクリア！」/「クエスト失敗...」メッセージ
+    - 獲得EXP、獲得ゴールド
+    - レベルアップ時の演出とメッセージ
+    - 「キャンプに戻る」ボタン
+- **アニメーション**: 報酬数値のカウントアップ、レベルアップ時のパーティクルエフェクト。
+
+---
 
 ## Development Instructions
 N/A

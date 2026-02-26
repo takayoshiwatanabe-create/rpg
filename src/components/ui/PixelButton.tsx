@@ -7,6 +7,7 @@ import {
   View,
   type GestureResponderEvent,
   type PressableProps,
+  type ViewStyle,
 } from "react-native";
 import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
@@ -22,6 +23,7 @@ export type PixelButtonProps = Omit<
   variant?: ButtonVariant;
   size?: ButtonSize;
   onPress?: (event: GestureResponderEvent) => void;
+  style?: ViewStyle; // Changed to ViewStyle
 };
 
 type VariantConfig = {
@@ -80,6 +82,7 @@ export function PixelButton({
   disabled = false,
   onPress,
   accessibilityLabel,
+  style, // Destructure style prop
   ...rest
 }: PixelButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -115,7 +118,7 @@ export function PixelButton({
 
   return (
     <Animated.View
-      style={{ transform: [{ scale }], opacity: disabled ? 0.45 : 1 }}
+      style={[{ transform: [{ scale }], opacity: disabled ? 0.45 : 1 }, style]} // Apply style here
     >
       <Pressable
         onPress={handlePress}

@@ -291,6 +291,7 @@ function QuestForm({ userId, heroId, onSuccess, onCancel }: QuestFormProps) {
         expReward: rewards.exp,
         goldReward: rewards.gold,
         createdAt: new Date().toISOString(),
+        deletedAt: null, // Explicitly set deletedAt to null for new quests
       });
       onSuccess();
     } catch {

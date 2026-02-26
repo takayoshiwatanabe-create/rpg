@@ -138,3 +138,4 @@ describe("applyExpPenalty", () => {
     expect(applyExpPenalty(0, false)).toBe(0);
   });
 });
+

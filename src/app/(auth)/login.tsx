@@ -107,6 +107,7 @@ export default function LoginScreen() {
               autoCorrect={false}
               keyboardType="email-address"
               returnKeyType="next"
+              placeholder={t("auth.email_placeholder")} // Added placeholder
               placeholderTextColor={COLORS.grayDark}
               accessibilityLabel={t("auth.email")}
             />
@@ -126,6 +127,7 @@ export default function LoginScreen() {
               secureTextEntry
               returnKeyType="done"
               onSubmitEditing={handleLogin}
+              placeholder={t("auth.password_placeholder")} // Added placeholder
               placeholderTextColor={COLORS.grayDark}
               accessibilityLabel={t("auth.password")}
             />
@@ -155,7 +157,7 @@ export default function LoginScreen() {
           {/* ── Forgot password ── */}
           <Pressable
             style={styles.linkRow}
-            onPress={() => router.push("/(auth)/forgot-password" as never)}
+            onPress={() => router.push("/(auth)/forgot-password")}
             accessibilityRole="link"
           >
             <PixelText variant="caption" color="gray" style={styles.linkText}>
