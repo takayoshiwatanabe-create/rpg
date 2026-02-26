@@ -416,6 +416,12 @@ export default function ParentDashboardScreen() {
             <PixelText variant="caption" color="gray" style={styles.subInfo}>
               {t("parent.subscription_details")}
             </PixelText>
+            {/*
+              [payment] デジタルコンテンツ販売がありますが StoreKit/IAP が未実装です
+              This button would typically trigger an In-App Purchase flow (e.g., via Expo's `expo-in-app-purchases` or a custom native module)
+              or navigate to a web view that handles subscription management via a secure payment provider (e.g., Stripe Customer Portal).
+              Direct links to external payment methods are generally not allowed by app stores for digital content.
+            */}
             <PixelButton
               label={t("parent.manage_subscription")}
               variant="secondary"
@@ -474,5 +480,3 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
 });
-
-

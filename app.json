@@ -8,8 +8,8 @@
     "scheme": "rpg",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "description": "「シュクダイ・クエスト」は、子供たちの毎日の宿題をRPGの冒険に変える画期的なアプリです。宿題をクリアすると経験値やゴールドを獲得し、勇者をレベルアップさせ、新たなスキルを習得できます。保護者も進捗を管理でき、子供の学習意欲を自然に引き出します。さあ、宿題を倒して世界を救う勇者になろう！",
-    "privacyPolicyUrl": "https://your-privacy-policy-url.com",
+    "description": "「シュクダイ・クエスト」は、子供たちの毎日の宿題をRPGの冒険に変える画期的なアプリです。宿題をクリアすると経験値やゴールドを獲得し、勇者をレベルアップさせ、新たなスキルを習得できます。保護者も進捗を管理でき、子供の学習意欲を自然に引き出します。さあ、宿題を倒して世界を救う勇者になろう！日々の学習が、ワクワクする冒険に変わる！",
+    "privacyPolicyUrl": "https://www.yourdomain.com/privacy-policy",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zerocode.rpg",
@@ -18,7 +18,8 @@
         "NSUserTrackingUsageDescription": "このアプリでは、広告表示のためにユーザーの行動データを追跡する場合があります。これにより、より関連性の高い広告を提供できます。",
         "NSLocationWhenInUseUsageDescription": "このアプリは、現在地情報を使用しません。",
         "NSPhotoLibraryUsageDescription": "このアプリは、写真ライブラリへのアクセスを必要としません。",
-        "NSCameraUsageDescription": "このアプリは、カメラへのアクセスを必要としません."
+        "NSCameraUsageDescription": "このアプリは、カメラへのアクセスを必要としません.",
+        "SKAdNetworkItems": []
       }
     },
     "android": {
@@ -42,7 +43,8 @@
         }
       ],
       "expo-localization",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-tracking-transparency"
     ],
     "locales": {
       "ja": "./locales/ja.json",
