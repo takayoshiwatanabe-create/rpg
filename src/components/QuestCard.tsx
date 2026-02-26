@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, TouchableOpacity, View, I18nManager } from "react-native";
+import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
 import { isQuestOverdue, daysUntilDeadline } from "@/src/lib/gameLogic";
 import { PixelCard, PixelText, PixelButton } from "@/src/components/ui";
 import { t, getLang, getIsRTL } from "@/i18n";
@@ -131,4 +131,3 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
   },
 });
-

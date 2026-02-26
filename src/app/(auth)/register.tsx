@@ -7,7 +7,6 @@ import {
   StyleSheet,
   TextInput,
   View,
-  I18nManager,
 } from "react-native";
 import { router } from "expo-router";
 import { t, getLang, getIsRTL } from "@/i18n";
@@ -440,4 +439,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-

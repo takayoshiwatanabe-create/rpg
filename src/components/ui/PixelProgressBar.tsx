@@ -1,106 +1,67 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, View, I18nManager } from "react-native";
-import { COLORS, PIXEL_BORDER, SPACING } from "@/constants/theme";
-import { useReducedMotion } from "@/src/hooks/useReducedMotion";
+import React from "react";
+import { View, StyleSheet, type ViewProps } from "react-native";
+import { COLORS, PIXEL_BORDER, SPACING, FONT_SIZES } from "@/constants/theme";
 import { PixelText } from "./PixelText";
 import { getIsRTL } from "@/i18n";
+import type { TextColor } from "@/types"; // Import TextColor from types.ts
 
-export type BarColor = "hp" | "mp" | "exp" | "gold";
+export type BarColor = Exclude<TextColor, "cream" | "gray" | "grayDark">;
 
-export type PixelProgressBarProps = {
+export type PixelProgressBarProps = ViewProps & {
   value: number;
   max: number;
-  color?: BarColor;
-  /** Optional label rendered above the bar on the left side. */
+  color: BarColor;
   label?: string;
-  /** When true, renders "value / max" above the bar on the right side. */
   showValues?: boolean;
 };
 
-type BarConfig = { fill: string; track: string };
-
-const BAR_CONFIG: Record<BarColor, BarConfig> = {
-  hp: { fill: COLORS.hp, track: COLORS.hpBg },
-  mp: { fill: COLORS.mp, track: COLORS.mpBg },
-  exp: { fill: COLORS.exp, track: COLORS.expBg },
-  gold: { fill: COLORS.gold, track: COLORS.goldDark },
-};
-
 /**
- * Animated 8-bit style progress bar used for HP, MP, EXP, and Gold.
- *
- * The fill animates with `Animated.timing` (600 ms). When the system
- * "Reduce Motion" setting is enabled the width updates instantly.
- *
- * Width is driven via percentage interpolation so the bar adapts to any
- * container width without requiring `onLayout`.
+ * A pixel-art style progress bar component.
+ * Displays a progress bar with optional label and numeric values.
+ * Supports different colors for the bar fill.
  */
 export function PixelProgressBar({
   value,
   max,
-  color = "hp",
+  color,
   label,
-  showValues = false,
+  showValues = true,
+  style,
+  ...rest
 }: PixelProgressBarProps) {
-  const percentage = max > 0 ? Math.min(Math.max(value / max, 0), 1) : 0;
-  const animatedPercent = useRef(new Animated.Value(percentage)).current;
-  const reducedMotion = useReducedMotion();
-  const config = BAR_CONFIG[color];
+  const progress = max > 0 ? value / max : 0;
+  const progressWidth = `${Math.max(0, Math.min(100, progress * 100))}%`;
   const isRTL = getIsRTL();
 
-  useEffect(() => {
-    if (reducedMotion) {
-      animatedPercent.setValue(percentage);
-      return;
-    }
-    Animated.timing(animatedPercent, {
-      toValue: percentage,
-      duration: 600,
-      // Must be false: width is a layout property, not supported by the
-      // native animation driver.
-      useNativeDriver: false,
-    }).start();
-  }, [percentage, reducedMotion, animatedPercent]);
-
-  const fillWidth = animatedPercent.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0%", "100%"],
-    extrapolate: "clamp",
-  });
-
-  const showHeader = label !== undefined || showValues;
+  const barColor = COLORS[color as keyof typeof COLORS]; // Type assertion here
 
   return (
-    <View>
-      {showHeader && (
-        <View style={[styles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          {label !== undefined && (
-            <PixelText variant="label" color="cream">
-              {label}
-            </PixelText>
-          )}
-          {showValues && (
-            <PixelText variant="label" color="gray">
-              {value}/{max}
-            </PixelText>
-          )}
-        </View>
-      )}
-      <View
-        style={[styles.track, { backgroundColor: config.track }]}
-        accessible
-        accessibilityRole="progressbar"
-        accessibilityValue={{
-          min: 0,
-          max: 100,
-          now: Math.round(percentage * 100),
-        }}
-      >
-        <Animated.View
+    <View style={[styles.container, style]} {...rest}>
+      <View style={[styles.labelRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        {label && (
+          <PixelText variant="caption" color="cream" style={styles.label}>
+            {label}
+          </PixelText>
+        )}
+        {showValues && (
+          <PixelText variant="caption" color="cream" style={styles.values}>
+            {value}/{max}
+          </PixelText>
+        )}
+      </View>
+      <View style={styles.barBackground}>
+        <View
           style={[
-            styles.fill,
-            { backgroundColor: config.fill, width: fillWidth },
-            isRTL && { transform: [{ translateX: Animated.multiply(fillWidth.interpolate({ inputRange: ["0%", "100%"], outputRange: [0, -100] }), -1) }] } // Adjust for RTL fill
+            styles.barFill,
+            {
+              width: progressWidth,
+              backgroundColor: barColor,
+              // Adjust border radius for RTL if fill starts from right
+              borderTopLeftRadius: isRTL ? 0 : PIXEL_BORDER.borderRadius,
+              borderBottomLeftRadius: isRTL ? 0 : PIXEL_BORDER.borderRadius,
+              borderTopRightRadius: isRTL ? PIXEL_BORDER.borderRadius : 0,
+              borderBottomRightRadius: isRTL ? PIXEL_BORDER.borderRadius : 0,
+            },
           ]}
         />
       </View>
@@ -109,20 +70,31 @@ export function PixelProgressBar({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    justifyContent: "space-between",
-    marginBottom: SPACING.xs,
+  container: {
+    width: "100%",
   },
-  track: {
+  labelRow: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.xs / 2,
+  },
+  label: {
+    fontSize: FONT_SIZES.xs,
+  },
+  values: {
+    fontSize: FONT_SIZES.xs,
+  },
+  barBackground: {
+    width: "100%",
     height: 12,
+    backgroundColor: COLORS.bgMid,
     borderWidth: PIXEL_BORDER.borderWidth,
     borderColor: PIXEL_BORDER.borderColor,
     borderRadius: PIXEL_BORDER.borderRadius,
     overflow: "hidden",
   },
-  fill: {
+  barFill: {
     height: "100%",
   },
 });
-
 

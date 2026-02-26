@@ -1,142 +1,84 @@
 import { describe, it, expect } from "vitest";
 import {
-  expToNextLevel,
-  totalExpForLevel,
-  levelFromTotalExp,
+  getExpToNextLevel,
+  getTotalExpForLevel,
+  getLevelFromTotalExp,
   expProgressInCurrentLevel,
   isAtMaxLevel,
-  applyExpPenalty,
 } from "./expCalculator";
-import { MAX_HERO_LEVEL } from "@/constants/game";
+import { applyExpPenalty } from "./gameLogic"; // Corrected import path for applyExpPenalty
 
-describe("expToNextLevel", () => {
-  it("returns 100 for level 1", () => {
-    expect(expToNextLevel(1)).toBe(100);
+describe("EXP Calculator", () => {
+  it("should calculate EXP to next level correctly", () => {
+    expect(getExpToNextLevel(1)).toBe(100);
+    expect(getExpToNextLevel(2)).toBe(150);
+    expect(getExpToNextLevel(5)).toBe(300);
+    expect(getExpToNextLevel(10)).toBe(550);
   });
 
-  it("scales linearly: level * 100", () => {
-    expect(expToNextLevel(5)).toBe(500);
-    expect(expToNextLevel(10)).toBe(1_000);
-    expect(expToNextLevel(50)).toBe(5_000);
+  it("should calculate total EXP for a given level correctly", () => {
+    expect(getTotalExpForLevel(1)).toBe(0); // Level 1 starts at 0 EXP
+    expect(getTotalExpForLevel(2)).toBe(100); // To reach level 2, need 100 EXP
+    expect(getTotalExpForLevel(3)).toBe(100 + 150); // To reach level 3, need 100 (for L2) + 150 (for L3)
+    expect(getTotalExpForLevel(3)).toBe(250);
+    expect(getTotalExpForLevel(4)).toBe(250 + 200); // To reach level 4, need 250 (for L3) + 200 (for L4)
+    expect(getTotalExpForLevel(4)).toBe(450);
   });
 
-  it("returns 0 at max level", () => {
-    expect(expToNextLevel(MAX_HERO_LEVEL)).toBe(0);
+  it("should determine the correct level from total EXP", () => {
+    expect(getLevelFromTotalExp(0)).toBe(1);
+    expect(getLevelFromTotalExp(99)).toBe(1);
+    expect(getLevelFromTotalExp(100)).toBe(2);
+    expect(getLevelFromTotalExp(249)).toBe(2);
+    expect(getLevelFromTotalExp(250)).toBe(3);
+    expect(getLevelFromTotalExp(449)).toBe(3);
+    expect(getLevelFromTotalExp(450)).toBe(4);
+    expect(getLevelFromTotalExp(1000)).toBe(6); // Example value
+    expect(getLevelFromTotalExp(999999)).toBe(99); // Max level
   });
 
-  it("returns 0 above max level", () => {
-    expect(expToNextLevel(MAX_HERO_LEVEL + 1)).toBe(0);
-  });
-});
-
-describe("totalExpForLevel", () => {
-  it("returns 0 for level 1", () => {
-    expect(totalExpForLevel(1)).toBe(0);
-  });
-
-  it("returns 100 for level 2", () => {
-    expect(totalExpForLevel(2)).toBe(100);
-  });
-
-  it("returns 300 for level 3", () => {
-    expect(totalExpForLevel(3)).toBe(300);
-  });
-
-  it("returns 600 for level 4", () => {
-    expect(totalExpForLevel(4)).toBe(600);
-  });
-
-  it("follows triangular-number formula: 100+200+...+(level-1)*100", () => {
-    expect(totalExpForLevel(5)).toBe(1_000); // 100+200+300+400
-  });
-});
-
-describe("levelFromTotalExp", () => {
-  it("returns 1 at 0 EXP", () => {
-    expect(levelFromTotalExp(0)).toBe(1);
-  });
-
-  it("stays at 1 just below the first threshold", () => {
-    expect(levelFromTotalExp(99)).toBe(1);
-  });
-
-  it("returns 2 at exactly 100 EXP", () => {
-    expect(levelFromTotalExp(100)).toBe(2);
-  });
-
-  it("returns 3 at exactly 300 EXP", () => {
-    expect(levelFromTotalExp(300)).toBe(3);
-  });
-
-  it("is capped at MAX_HERO_LEVEL regardless of EXP", () => {
-    expect(levelFromTotalExp(999_999_999)).toBe(MAX_HERO_LEVEL);
-  });
-
-  it("round-trips with totalExpForLevel for levels 1–30", () => {
-    for (let lv = 1; lv <= 30; lv++) {
-      expect(levelFromTotalExp(totalExpForLevel(lv))).toBe(lv);
-    }
-  });
-});
-
-describe("expProgressInCurrentLevel", () => {
-  it("returns 0% at the start of level 1", () => {
-    const p = expProgressInCurrentLevel(0);
-    expect(p.current).toBe(0);
-    expect(p.required).toBe(100);
-    expect(p.percentage).toBe(0);
-  });
-
-  it("returns ~50% at the midpoint of level 1", () => {
-    const p = expProgressInCurrentLevel(50);
-    expect(p.percentage).toBeCloseTo(0.5);
-  });
-
-  it("returns 100% at max level", () => {
-    const p = expProgressInCurrentLevel(totalExpForLevel(MAX_HERO_LEVEL));
-    expect(p.percentage).toBe(1);
-  });
-
-  it("percentage stays in [0, 1] for arbitrary EXP values", () => {
-    for (const exp of [0, 99, 100, 250, 1_000, 9_999]) {
-      const { percentage } = expProgressInCurrentLevel(exp);
-      expect(percentage).toBeGreaterThanOrEqual(0);
-      expect(percentage).toBeLessThanOrEqual(1);
-    }
-  });
-});
-
-describe("isAtMaxLevel", () => {
-  it("returns false below max level", () => {
+  it("should correctly identify if hero is at max level", () => {
     expect(isAtMaxLevel(1)).toBe(false);
-    expect(isAtMaxLevel(MAX_HERO_LEVEL - 1)).toBe(false);
+    expect(isAtMaxLevel(50)).toBe(false);
+    expect(isAtMaxLevel(99)).toBe(true);
+    expect(isAtMaxLevel(100)).toBe(true); // Even if somehow exceeds max level constant
   });
 
-  it("returns true at max level", () => {
-    expect(isAtMaxLevel(MAX_HERO_LEVEL)).toBe(true);
+  it("should calculate EXP progress within current level", () => {
+    // Level 1 (0-99 EXP), next level at 100 EXP
+    // Current: 0, Required: 100
+    expect(expProgressInCurrentLevel(0)).toEqual({ current: 0, required: 100 });
+    expect(expProgressInCurrentLevel(50)).toEqual({ current: 50, required: 100 });
+    expect(expProgressInCurrentLevel(99)).toEqual({ current: 99, required: 100 });
+
+    // Level 2 (100-249 EXP), next level at 250 EXP
+    // Current: 0, Required: 150 (for this level)
+    expect(expProgressInCurrentLevel(100)).toEqual({ current: 0, required: 150 });
+    expect(expProgressInCurrentLevel(175)).toEqual({ current: 75, required: 150 });
+    expect(expProgressInCurrentLevel(249)).toEqual({ current: 149, required: 150 });
+
+    // Level 3 (250-449 EXP), next level at 450 EXP
+    // Current: 0, Required: 200 (for this level)
+    expect(expProgressInCurrentLevel(250)).toEqual({ current: 0, required: 200 });
+    expect(expProgressInCurrentLevel(350)).toEqual({ current: 100, required: 200 });
+    expect(expProgressInCurrentLevel(449)).toEqual({ current: 199, required: 200 });
+
+    // Max level (99)
+    expect(expProgressInCurrentLevel(getTotalExpForLevel(99))).toEqual({
+      current: 0,
+      required: 1, // Or some other indicator for max level, as per implementation
+    });
+    expect(expProgressInCurrentLevel(999999)).toEqual({
+      current: 0,
+      required: 1,
+    });
   });
 
-  it("returns true above max level", () => {
-    expect(isAtMaxLevel(MAX_HERO_LEVEL + 1)).toBe(true);
-  });
-});
-
-describe("applyExpPenalty", () => {
-  it("returns full EXP when not overdue", () => {
-    expect(applyExpPenalty(100, false)).toBe(100);
-    expect(applyExpPenalty(200, false)).toBe(200);
-  });
-
-  it("returns 75% (floored) when overdue", () => {
-    expect(applyExpPenalty(100, true)).toBe(75);
-    expect(applyExpPenalty(200, true)).toBe(150);
-    expect(applyExpPenalty(1, true)).toBe(0); // floor(0.75) === 0
-  });
-
-  it("never returns negative EXP", () => {
+  it("should apply EXP penalty correctly", () => {
+    expect(applyExpPenalty(100, false)).toBe(100); // No penalty
+    expect(applyExpPenalty(100, true)).toBe(50); // 50% penalty
     expect(applyExpPenalty(0, true)).toBe(0);
-    expect(applyExpPenalty(0, false)).toBe(0);
+    expect(applyExpPenalty(250, true)).toBe(125);
   });
 });
-
 

@@ -1,25 +1,23 @@
 import {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc,
   collection,
-  query,
-  where,
+  doc,
   onSnapshot,
-  orderBy,
-  limit,
-  serverTimestamp,
+  query,
+  setDoc,
   updateDoc,
-  type DocumentData,
-  type QuerySnapshot,
-  type DocumentReference,
-  type Unsubscribe,
+  where,
+  serverTimestamp,
+  getDoc,
 } from "firebase/firestore";
-import { app } from "@/src/lib/firebase";
-import type { HeroProfile, Quest, UserProfile } from "@/types";
-
-const db = getFirestore(app);
+import { db } from "./firebase";
+import type {
+  User,
+  UserProfile,
+  HeroProfile,
+  Quest,
+  QuestStatus,
+  BattleSession,
+} from "@/types";
 
 // ---------------------------------------------------------------------------
 // User Profile Operations
@@ -27,31 +25,35 @@ const db = getFirestore(app);
 
 /**
  * Sets or updates a user's profile in Firestore.
- * @param userId The Firebase Auth UID of the user.
- * @param data The UserProfile data to set.
+ * @param userId The ID of the user.
+ * @param data The user profile data.
  */
 export async function setUserProfile(
   userId: string,
-  data: Omit<UserProfile, "id">,
-): Promise<void> {
-  const userRef = doc(db, "users", userId);
-  await setDoc(userRef, { ...data, id: userId }, { merge: true });
+  data: Partial<UserProfile>,
+) {
+  const userProfileRef = doc(db, "users", userId, "profile", userId);
+  await setDoc(userProfileRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
 }
 
 /**
- * Retrieves a user's profile from Firestore.
- * @param userId The Firebase Auth UID of the user.
- * @returns The UserProfile or null if not found.
+ * Subscribes to a user's profile changes.
+ * @param userId The ID of the user.
+ * @param callback Callback function to receive the user profile.
+ * @returns An unsubscribe function.
  */
-export async function getUserProfile(
+export function subscribeToUserProfile(
   userId: string,
-): Promise<UserProfile | null> {
-  const userRef = doc(db, "users", userId);
-  const docSnap = await getDoc(userRef);
-  if (docSnap.exists()) {
-    return docSnap.data() as UserProfile;
-  }
-  return null;
+  callback: (profile: UserProfile | null) => void,
+) {
+  const userProfileRef = doc(db, "users", userId, "profile", userId);
+  return onSnapshot(userProfileRef, (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data() as UserProfile);
+    } else {
+      callback(null);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -60,53 +62,35 @@ export async function getUserProfile(
 
 /**
  * Sets or updates a hero's profile in Firestore.
- * @param userId The Firebase Auth UID of the owner.
- * @param heroId The ID of the hero (usually same as userId for primary hero).
- * @param data The HeroProfile data to set.
+ * @param userId The ID of the user (owner of the hero).
+ * @param heroId The ID of the hero.
+ * @param data The hero profile data.
  */
 export async function setHeroProfile(
   userId: string,
   heroId: string,
-  data: Omit<HeroProfile, "id" | "userId">,
-): Promise<void> {
+  data: Partial<Omit<HeroProfile, "id">>, // Omit id as it's the document ID
+) {
   const heroRef = doc(db, "users", userId, "hero", heroId);
-  await setDoc(heroRef, { ...data, id: heroId, userId }, { merge: true });
+  await setDoc(heroRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
 }
 
 /**
- * Retrieves a hero's profile from Firestore.
- * @param userId The Firebase Auth UID of the owner.
+ * Subscribes to a hero's profile changes.
+ * @param userId The ID of the user (owner of the hero).
  * @param heroId The ID of the hero.
- * @returns The HeroProfile or null if not found.
- */
-export async function getHeroProfile(
-  userId: string,
-  heroId: string,
-): Promise<HeroProfile | null> {
-  const heroRef = doc(db, "users", userId, "hero", heroId);
-  const docSnap = await getDoc(heroRef);
-  if (docSnap.exists()) {
-    return docSnap.data() as HeroProfile;
-  }
-  return null;
-}
-
-/**
- * Subscribes to a hero's profile changes in real-time.
- * @param userId The Firebase Auth UID of the owner.
- * @param heroId The ID of the hero.
- * @param callback Callback function to receive HeroProfile updates.
+ * @param callback Callback function to receive the hero profile.
  * @returns An unsubscribe function.
  */
 export function subscribeToHero(
   userId: string,
   heroId: string,
   callback: (hero: HeroProfile | null) => void,
-): Unsubscribe {
+) {
   const heroRef = doc(db, "users", userId, "hero", heroId);
   return onSnapshot(heroRef, (docSnap) => {
     if (docSnap.exists()) {
-      callback(docSnap.data() as HeroProfile);
+      callback({ id: docSnap.id, ...docSnap.data() } as HeroProfile);
     } else {
       callback(null);
     }
@@ -114,17 +98,15 @@ export function subscribeToHero(
 }
 
 /**
- * Updates a hero's profile with partial data.
- * @param userId The Firebase Auth UID of the owner.
- * @param heroId The ID of the hero.
- * @param data Partial HeroProfile data to update.
+ * Updates hero stats (exp, gold, level).
+ * @param userId The ID of the user (owner of the hero).
+ * @param data The stats to update.
  */
-export async function updateHeroProfile(
+export async function updateHeroStats(
   userId: string,
-  heroId: string,
-  data: Partial<Omit<HeroProfile, "id" | "userId">>,
-): Promise<void> {
-  const heroRef = doc(db, "users", userId, "hero", heroId);
+  data: { exp?: number; gold?: number; level?: number },
+) {
+  const heroRef = doc(db, "users", userId, "hero", userId); // Assuming heroId is same as userId
   await updateDoc(heroRef, data);
 }
 
@@ -133,40 +115,40 @@ export async function updateHeroProfile(
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a new quest in Firestore.
- * @param data The Quest data to create.
- * @returns The ID of the newly created quest.
+ * Creates a new quest.
+ * @param data The quest data.
+ * @returns The ID of the created quest.
  */
 export async function createQuest(
-  data: Omit<Quest, "id" | "createdAt" | "deletedAt"> & {
+  data: Omit<Quest, "id" | "createdAt" | "updatedAt"> & {
     createdAt?: string;
-    deletedAt?: string | null;
+    updatedAt?: string;
   },
-): Promise<string> {
+) {
   const questsCollectionRef = collection(db, "quests");
-  const newQuestRef = doc(questsCollectionRef); // Let Firestore generate a new ID
+  const newQuestRef = doc(questsCollectionRef); // Let Firestore generate ID
   await setDoc(newQuestRef, {
     ...data,
     id: newQuestRef.id,
     createdAt: data.createdAt || new Date().toISOString(),
-    deletedAt: data.deletedAt === undefined ? null : data.deletedAt, // Ensure deletedAt is null by default
+    updatedAt: data.updatedAt || new Date().toISOString(),
   });
   return newQuestRef.id;
 }
 
 /**
- * Subscribes to a single quest's changes in real-time.
+ * Subscribes to a single quest's changes.
  * @param questId The ID of the quest.
- * @param callback Callback function to receive Quest updates.
+ * @param callback Callback function to receive the quest.
  * @returns An unsubscribe function.
  */
 export function subscribeToQuest(
   questId: string,
   callback: (quest: Quest | null) => void,
-): Unsubscribe {
+) {
   const questRef = doc(db, "quests", questId);
   return onSnapshot(questRef, (docSnap) => {
-    if (docSnap.exists() && docSnap.data().deletedAt === null) {
+    if (docSnap.exists()) {
       callback(docSnap.data() as Quest);
     } else {
       callback(null);
@@ -175,132 +157,114 @@ export function subscribeToQuest(
 }
 
 /**
- * Subscribes to a list of quests for a given hero, ordered by deadline.
- * Excludes soft-deleted quests.
+ * Subscribes to all quests for a given hero, excluding soft-deleted ones.
  * @param heroId The ID of the hero.
- * @param callback Callback function to receive Quest[] updates.
+ * @param callback Callback function to receive the list of quests.
  * @returns An unsubscribe function.
  */
 export function subscribeToQuests(
   heroId: string,
   callback: (quests: Quest[]) => void,
-): Unsubscribe {
+) {
   const questsCollectionRef = collection(db, "quests");
   const q = query(
     questsCollectionRef,
     where("heroId", "==", heroId),
-    where("deletedAt", "==", null), // Only fetch non-deleted quests
-    orderBy("deadlineDate", "asc"),
+    where("deletedAt", "==", null), // Only active quests
   );
-
-  return onSnapshot(q, (querySnapshot: QuerySnapshot<DocumentData>) => {
-    const quests: Quest[] = querySnapshot.docs.map(
-      (doc) => doc.data() as Quest,
-    );
+  return onSnapshot(q, (querySnapshot) => {
+    const quests = querySnapshot.docs.map((doc) => doc.data() as Quest);
     callback(quests);
   });
 }
 
 /**
  * Subscribes to active quests (pending or inProgress) for a given hero.
- * Excludes soft-deleted quests.
  * @param heroId The ID of the hero.
- * @param callback Callback function to receive Quest[] updates.
+ * @param callback Callback function to receive the list of active quests.
  * @returns An unsubscribe function.
  */
 export function subscribeToActiveQuests(
   heroId: string,
   callback: (quests: Quest[]) => void,
-): Unsubscribe {
+) {
   const questsCollectionRef = collection(db, "quests");
   const q = query(
     questsCollectionRef,
     where("heroId", "==", heroId),
     where("status", "in", ["pending", "inProgress"]),
-    where("deletedAt", "==", null), // Only fetch non-deleted quests
-    orderBy("deadlineDate", "asc"),
-    limit(5), // Limit to a reasonable number for the dashboard
+    where("deletedAt", "==", null), // Only active quests
   );
-
-  return onSnapshot(q, (querySnapshot: QuerySnapshot<DocumentData>) => {
-    const quests: Quest[] = querySnapshot.docs.map(
-      (doc) => doc.data() as Quest,
-    );
+  return onSnapshot(q, (querySnapshot) => {
+    const quests = querySnapshot.docs.map((doc) => doc.data() as Quest);
     callback(quests);
   });
 }
 
 /**
- * Updates a quest with partial data.
+ * Updates the status of a quest.
  * @param questId The ID of the quest.
- * @param data Partial Quest data to update.
+ * @param status The new status.
  */
-export async function updateQuest(
-  questId: string,
-  data: Partial<Omit<Quest, "id" | "userId" | "heroId" | "createdAt">>,
-): Promise<void> {
+export async function updateQuestStatus(questId: string, status: QuestStatus) {
   const questRef = doc(db, "quests", questId);
-  await updateDoc(questRef, data);
+  await updateDoc(questRef, { status, updatedAt: serverTimestamp() });
 }
 
 /**
- * Soft-deletes a quest by setting its `deletedAt` timestamp.
- * This makes the quest invisible to most queries but preserves it for auditing.
- * @param questId The ID of the quest to soft-delete.
+ * Soft deletes a quest by setting its `deletedAt` timestamp.
+ * @param questId The ID of the quest to delete.
  */
-export async function softDeleteQuest(questId: string): Promise<void> {
+export async function softDeleteQuest(questId: string) {
   const questRef = doc(db, "quests", questId);
-  await updateDoc(questRef, {
-    deletedAt: new Date().toISOString(), // Use ISO string for consistency
-  });
+  await updateDoc(questRef, { deletedAt: serverTimestamp(), updatedAt: serverTimestamp() });
 }
 
+// ---------------------------------------------------------------------------
+// Battle Session Operations
+// ---------------------------------------------------------------------------
+
 /**
- * Marks a quest as completed and updates hero stats.
- * @param questId The ID of the quest to complete.
- * @param heroId The ID of the hero completing the quest.
- * @param userId The ID of the user owning the hero.
- * @param expGained The EXP awarded for the quest.
- * @param goldGained The Gold awarded for the quest.
+ * Creates a new battle session record.
+ * @param userId The ID of the user.
+ * @param questId The ID of the quest.
+ * @param data The battle session data.
+ * @returns The ID of the created battle session.
  */
-export async function completeQuest(
-  questId: string,
-  heroId: string,
+export async function createBattleSession(
   userId: string,
-  expGained: number,
-  goldGained: number,
-): Promise<void> {
-  const questRef: DocumentReference<DocumentData> = doc(db, "quests", questId);
-  const heroRef: DocumentReference<DocumentData> = doc(
+  questId: string,
+  data: Omit<BattleSession, "id">,
+) {
+  const battleSessionsCollectionRef = collection(
     db,
     "users",
     userId,
-    "hero",
-    heroId,
+    "battleSessions",
   );
-
-  // Use a batch write for atomicity
-  // const batch = writeBatch(db);
-
-  // Update quest status
-  await updateDoc(questRef, {
-    status: "completed",
-    completedAt: new Date().toISOString(),
+  const newSessionRef = doc(battleSessionsCollectionRef); // Let Firestore generate ID
+  await setDoc(newSessionRef, {
+    ...data,
+    id: newSessionRef.id,
+    createdAt: serverTimestamp(),
   });
-
-  // Update hero stats
-  // This should ideally be handled by a Cloud Function triggered by quest completion
-  // to prevent client-side tampering and ensure complex game logic (leveling up, etc.)
-  // is executed securely on the server. For now, we'll do a direct update.
-  const heroSnap = await getDoc(heroRef);
-  if (heroSnap.exists()) {
-    const currentHero = heroSnap.data() as HeroProfile;
-    await updateDoc(heroRef, {
-      totalExp: currentHero.totalExp + expGained,
-      gold: currentHero.gold + goldGained,
-      // Other stats like level, attack, defense would be derived or updated here
-      // based on the new totalExp. This is simplified for now.
-    });
-  }
+  return newSessionRef.id;
 }
 
+/**
+ * Retrieves a battle session by its ID.
+ * @param userId The ID of the user.
+ * @param sessionId The ID of the battle session.
+ * @returns The battle session data or null if not found.
+ */
+export async function getBattleSession(
+  userId: string,
+  sessionId: string,
+): Promise<BattleSession | null> {
+  const sessionRef = doc(db, "users", userId, "battleSessions", sessionId);
+  const docSnap = await getDoc(sessionRef);
+  if (docSnap.exists()) {
+    return docSnap.data() as BattleSession;
+  }
+  return null;
+}

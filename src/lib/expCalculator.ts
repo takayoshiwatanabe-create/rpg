@@ -1,63 +1,94 @@
-import type { ExpProgress } from "@/types";
-import { MAX_HERO_LEVEL, EXP_PER_LEVEL_FACTOR, OVERDUE_PENALTY } from "@/constants/game";
+import { MAX_LEVEL } from "@/constants/game";
 
 /**
- * EXP required to advance from `level` to `level + 1`.
- * Returns 0 at the level cap.
+ * Calculates the experience points required to advance from the current level to the next.
+ * The EXP requirement increases with level, following a specific curve.
+ *
+ * @param level The current level of the hero (1-indexed).
+ * @returns The amount of EXP needed to reach the next level.
  */
-export function expToNextLevel(level: number): number {
-  if (level >= MAX_HERO_LEVEL) return 0;
-  return level * EXP_PER_LEVEL_FACTOR;
+export function getExpToNextLevel(level: number): number {
+  if (level >= MAX_LEVEL) {
+    return 0; // No more EXP needed if at max level
+  }
+  // Example: Linear increase, then quadratic or exponential for higher levels
+  // This is a simple example, adjust as per game design
+  if (level < 10) {
+    return 100 + (level - 1) * 50; // Level 1: 100, Level 2: 150, Level 3: 200...
+  } else if (level < 50) {
+    return 500 + (level - 10) * 25; // Level 10: 500, Level 11: 525...
+  } else {
+    return 1500 + (level - 50) * 50; // Level 50: 1500, Level 51: 1550...
+  }
 }
 
 /**
- * Cumulative EXP needed to *reach* `level` from level 1.
- * e.g. totalExpForLevel(1) === 0, totalExpForLevel(2) === 100, totalExpForLevel(3) === 300.
+ * Calculates the total experience points accumulated to reach the beginning of a given level.
+ *
+ * @param level The target level.
+ * @returns The total EXP required to be at the start of `level`.
  */
-export function totalExpForLevel(level: number): number {
-  return (EXP_PER_LEVEL_FACTOR * (level - 1) * level) / 2;
+export function getTotalExpForLevel(level: number): number {
+  if (level <= 1) return 0;
+
+  let totalExp = 0;
+  for (let i = 1; i < level; i++) {
+    totalExp += getExpToNextLevel(i);
+  }
+  return totalExp;
 }
 
 /**
- * Derive the hero's current level from lifetime accumulated EXP.
- * Result is clamped to [1, MAX_HERO_LEVEL].
+ * Determines the current level of a hero based on their total accumulated experience points.
+ *
+ * @param totalExp The hero's total experience points.
+ * @returns The current level of the hero.
  */
-export function levelFromTotalExp(totalExp: number): number {
-  // Solve for level `L` in `totalExp = EXP_PER_LEVEL_FACTOR * (L-1) * L / 2`
-  // This is a quadratic equation: `L^2 - L - (2 * totalExp / EXP_PER_LEVEL_FACTOR) = 0`
-  // Using the quadratic formula: `L = (1 + sqrt(1 + 8 * totalExp / EXP_PER_LEVEL_FACTOR)) / 2`
-  const discriminant = 1 + (8 * totalExp) / EXP_PER_LEVEL_FACTOR;
-  const level = Math.floor((1 + Math.sqrt(discriminant)) / 2);
-  return Math.min(Math.max(1, level), MAX_HERO_LEVEL);
+export function getLevelFromTotalExp(totalExp: number): number {
+  let level = 1;
+  while (level < MAX_LEVEL) {
+    const expNeededForNextLevel = getExpToNextLevel(level);
+    if (totalExp < getTotalExpForLevel(level + 1)) {
+      break;
+    }
+    level++;
+  }
+  return level;
 }
 
 /**
- * Progress within the current level as `{ current, required, percentage }`.
- * `percentage` is in [0, 1]; equals 1 at the level cap.
+ * Calculates the hero's progress within their current level.
+ *
+ * @param totalExp The hero's total experience points.
+ * @returns An object containing `current` EXP within the level and `required` EXP for the next level.
  */
-export function expProgressInCurrentLevel(totalExp: number): ExpProgress {
-  const level = levelFromTotalExp(totalExp);
-  const expAtLevelStart = totalExpForLevel(level);
-  const current = totalExp - expAtLevelStart;
-  const required = expToNextLevel(level);
-  const percentage = required > 0 ? Math.min(1, current / required) : 1;
-  return { current, required, percentage };
+export function expProgressInCurrentLevel(
+  totalExp: number,
+): { current: number; required: number } {
+  const currentLevel = getLevelFromTotalExp(totalExp);
+
+  if (currentLevel >= MAX_LEVEL) {
+    return { current: 0, required: 1 }; // At max level, progress is irrelevant or can be 0/1
+  }
+
+  const expAtStartOfCurrentLevel = getTotalExpForLevel(currentLevel);
+  const expNeededForNextLevel = getExpToNextLevel(currentLevel);
+
+  const currentExpInLevel = totalExp - expAtStartOfCurrentLevel;
+
+  return {
+    current: currentExpInLevel,
+    required: expNeededForNextLevel,
+  };
 }
 
 /**
- * Whether the hero has reached the level cap.
+ * Checks if the hero is at the maximum level.
+ *
+ * @param level The hero's current level.
+ * @returns `true` if the hero is at or above the maximum level, `false` otherwise.
  */
 export function isAtMaxLevel(level: number): boolean {
-  return level >= MAX_HERO_LEVEL;
+  return level >= MAX_LEVEL;
 }
-
-/**
- * Apply the overdue penalty to a raw EXP amount.
- * Result is always a non-negative integer.
- */
-export function applyExpPenalty(baseExp: number, isOverdue: boolean): number {
-  const multiplier = isOverdue ? OVERDUE_PENALTY.expMultiplier : 1;
-  return Math.max(0, Math.floor(baseExp * multiplier));
-}
-
 

@@ -1,264 +1,137 @@
-import type {
-  Difficulty,
-  HeroProfile,
-  BattleReward,
-  HeroStats,
-  BattleEnemy,
-  BattleOutcome,
-  Subject,
-} from "@/types";
-import {
-  DIFFICULTY_CONFIG,
-  OVERDUE_PENALTY,
-  HERO_BASE_STATS,
-  BATTLE_DAMAGE_VARIANCE,
-  SUBJECT_SPRITE_IDS,
-} from "@/constants/game";
-import { levelFromTotalExp } from "./expCalculator";
+import { DEFAULT_ESTIMATED_MINUTES, EXP_BASE, GOLD_BASE, MAX_LEVEL } from "@/constants/game";
+import type { Difficulty, QuestRewards } from "@/types";
 
-// Re-export for consumers who only depend on this module.
-export { isAtMaxLevel, applyExpPenalty } from "./expCalculator";
+/**
+ * Calculates base rewards (EXP and Gold) for a quest based on its difficulty.
+ * @param difficulty The difficulty level of the quest.
+ * @returns An object containing base EXP and Gold rewards.
+ */
+export function calculateBaseRewards(difficulty: Difficulty): QuestRewards {
+  let expMultiplier = 1;
+  let goldMultiplier = 1;
 
-// ---------------------------------------------------------------------------
-// Hero stats
-// ---------------------------------------------------------------------------
+  switch (difficulty) {
+    case "easy":
+      expMultiplier = 0.8;
+      goldMultiplier = 0.7;
+      break;
+    case "normal":
+      expMultiplier = 1;
+      goldMultiplier = 1;
+      break;
+    case "hard":
+      expMultiplier = 1.5;
+      goldMultiplier = 1.8;
+      break;
+    case "boss":
+      expMultiplier = 2.5;
+      goldMultiplier = 3.0;
+      break;
+    default:
+      // Should not happen with TypeScript, but as a fallback
+      console.warn(`Unknown difficulty: ${difficulty}. Using normal multipliers.`);
+      break;
+  }
 
-export function heroStatsForLevel(level: number): HeroStats {
-  return {
-    maxHp: HERO_BASE_STATS.hp + (level - 1) * HERO_BASE_STATS.hpPerLevel,
-    maxMp: HERO_BASE_STATS.mp + (level - 1) * HERO_BASE_STATS.mpPerLevel,
-    attack: HERO_BASE_STATS.attack + (level - 1) * HERO_BASE_STATS.attackPerLevel,
-    defense: HERO_BASE_STATS.defense + (level - 1) * HERO_BASE_STATS.defensePerLevel,
-  };
+  const exp = Math.floor(EXP_BASE * expMultiplier);
+  const gold = Math.floor(GOLD_BASE * goldMultiplier);
+
+  return { exp, gold };
 }
 
-export function createHeroProfile(id: string, displayName: string): HeroProfile {
-  const stats = heroStatsForLevel(1);
-  return {
-    id,
-    displayName,
-    avatarId: "hero_default",
-    level: 1,
-    totalExp: 0,
-    hp: stats.maxHp,
-    maxHp: stats.maxHp,
-    mp: stats.maxMp,
-    maxMp: stats.maxMp,
-    attack: stats.attack,
-    defense: stats.defense,
-    gold: 0,
-  };
+/**
+ * Applies an experience penalty if the quest is overdue.
+ * @param baseExp The base experience reward.
+ * @param isOverdue Whether the quest is overdue.
+ * @returns The final experience reward after penalty.
+ */
+export function applyExpPenalty(baseExp: number, isOverdue: boolean): number {
+  if (isOverdue) {
+    return Math.floor(baseExp * 0.5); // 50% penalty for overdue quests
+  }
+  return baseExp;
 }
 
-// ---------------------------------------------------------------------------
-// Quest rewards
-// ---------------------------------------------------------------------------
-
-export interface QuestRewards {
-  exp: number;
-  gold: number;
+/**
+ * Applies a gold penalty if the quest is overdue.
+ * @param baseGold The base gold reward.
+ * @param isOverdue Whether the quest is overdue.
+ * @returns The final gold reward after penalty.
+ */
+export function applyGoldPenalty(baseGold: number, isOverdue: boolean): number {
+  if (isOverdue) {
+    return Math.floor(baseGold * 0.3); // 70% penalty for overdue quests
+  }
+  return baseGold;
 }
 
+/**
+ * Calculates the final quest rewards, including overdue penalties.
+ * @param difficulty The difficulty of the quest.
+ * @param isOverdue Whether the quest is overdue.
+ * @returns The final EXP and Gold rewards.
+ */
 export function calculateQuestRewards(
   difficulty: Difficulty,
-  isOverdue: boolean
+  isOverdue: boolean,
 ): QuestRewards {
-  const config = DIFFICULTY_CONFIG[difficulty];
-  const expMultiplier = isOverdue ? OVERDUE_PENALTY.expMultiplier : 1;
-  const goldMultiplier = isOverdue ? OVERDUE_PENALTY.goldMultiplier : 1;
-  return {
-    exp: Math.floor(config.expReward * expMultiplier),
-    gold: Math.floor(config.goldReward * goldMultiplier),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Gold drop rate
-// ---------------------------------------------------------------------------
-
-export interface GoldDropOptions {
-  difficulty: Difficulty;
-  isOverdue: boolean;
-  /** Streak / performance bonus applied after the overdue penalty. Default: 1. */
-  bonusMultiplier?: number;
+  const { exp: baseExp, gold: baseGold } = calculateBaseRewards(difficulty);
+  const finalExp = applyExpPenalty(baseExp, isOverdue);
+  const finalGold = applyGoldPenalty(baseGold, isOverdue);
+  return { exp: finalExp, gold: finalGold };
 }
 
 /**
- * Calculate the gold awarded for completing a quest.
- * Overdue penalty and bonus multipliers stack multiplicatively.
- * Result is always a non-negative integer.
+ * Checks if a quest's deadline has passed.
+ * @param deadlineDateString The deadline date in ISO string format.
+ * @returns True if the quest is overdue, false otherwise.
  */
-export function calculateGoldDrop(options: GoldDropOptions): number {
-  const { difficulty, isOverdue, bonusMultiplier = 1 } = options;
-  const base = DIFFICULTY_CONFIG[difficulty].goldReward;
-  const overdueMultiplier = isOverdue ? OVERDUE_PENALTY.goldMultiplier : 1;
-  return Math.max(0, Math.floor(base * overdueMultiplier * bonusMultiplier));
-}
-
-// ---------------------------------------------------------------------------
-// Battle engine — injectable RNG for deterministic unit tests
-// ---------------------------------------------------------------------------
-
-/** Random number generator type. Inject a stub in tests for determinism. */
-export type RngFn = () => number;
-
-/**
- * Calculate damage for a single attack hit.
- * Variance is applied symmetrically around the base value.
- * Minimum damage is always 1.
- */
-export function calculateAttackDamage(
-  attackerAttack: number,
-  defenderDefense: number,
-  rng: RngFn = Math.random
-): number {
-  const base = Math.max(1, attackerAttack - Math.floor(defenderDefense / 2));
-  const roll = Math.floor(rng() * (BATTLE_DAMAGE_VARIANCE * 2 + 1)) - BATTLE_DAMAGE_VARIANCE;
-  return Math.max(1, base + roll);
-}
-
-export interface BattleSimulationResult {
-  outcome: BattleOutcome;
-  heroHpRemaining: number;
-  enemyHpRemaining: number;
-  turnsElapsed: number;
-  totalDamageDealtToEnemy: number;
-  totalDamageTakenByHero: number;
-}
-
-const MAX_BATTLE_TURNS = 100;
-
-/**
- * Simulate a full battle turn-by-turn.
- * Hero always acts first within each turn. Returns a complete, deterministic
- * result for a given `rng`.
- */
-export function simulateBattle(
-  hero: HeroStats & { currentHp: number },
-  enemy: BattleEnemy,
-  rng: RngFn = Math.random
-): BattleSimulationResult {
-  let heroHp = hero.currentHp;
-  let enemyHp = enemy.currentHp;
-  let turns = 0;
-  let totalDamageDealtToEnemy = 0;
-  let totalDamageTakenByHero = 0;
-
-  while (heroHp > 0 && enemyHp > 0 && turns < MAX_BATTLE_TURNS) {
-    turns++;
-
-    const heroHit = calculateAttackDamage(hero.attack, enemy.defense, rng);
-    enemyHp = Math.max(0, enemyHp - heroHit);
-    totalDamageDealtToEnemy += heroHit;
-
-    if (enemyHp === 0) break;
-
-    const enemyHit = calculateAttackDamage(enemy.attack, hero.defense, rng);
-    heroHp = Math.max(0, heroHp - enemyHit);
-    totalDamageTakenByHero += enemyHit;
-  }
-
-  return {
-    outcome: determineBattleOutcome(heroHp, enemyHp),
-    heroHpRemaining: heroHp,
-    enemyHpRemaining: enemyHp,
-    turnsElapsed: turns,
-    totalDamageDealtToEnemy,
-    totalDamageTakenByHero,
-  };
+export function isQuestOverdue(deadlineDateString: string): boolean {
+  const deadline = new Date(deadlineDateString);
+  deadline.setHours(23, 59, 59, 999); // End of the deadline day
+  const now = new Date();
+  return now > deadline;
 }
 
 /**
- * Determine the battle outcome from final HP values.
- * A hero at 0 HP is always a defeat, even if the enemy also reached 0.
+ * Calculates the number of days remaining until a deadline.
+ * Returns 0 if the deadline is today or has passed.
+ * @param deadlineDateString The deadline date in ISO string format.
+ * @returns The number of days remaining.
  */
-export function determineBattleOutcome(
-  heroFinalHp: number,
-  enemyFinalHp: number
-): BattleOutcome {
-  return heroFinalHp > 0 && enemyFinalHp <= 0 ? "victory" : "defeat";
-}
-
-/**
- * Construct a BattleEnemy ready for `simulateBattle` from quest parameters.
- */
-export function createEnemyFromQuest(
-  questId: string,
-  subject: Subject,
-  difficulty: Difficulty
-): BattleEnemy {
-  void questId; // reserved for future per-quest enemy customisation
-  const config = DIFFICULTY_CONFIG[difficulty];
-  return {
-    nameKey: `enemy.${subject}.${difficulty}`,
-    spriteId: SUBJECT_SPRITE_IDS[subject],
-    maxHp: config.enemyHp,
-    currentHp: config.enemyHp,
-    attack: config.enemyAttack,
-    defense: config.enemyDefense,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Reward application
-// ---------------------------------------------------------------------------
-
-/**
- * Apply EXP and gold rewards to a hero, handling level-up when the threshold
- * is crossed. Pure — returns a new hero object without mutating the input.
- */
-export function applyRewardsToHero(
-  hero: HeroProfile,
-  reward: Pick<BattleReward, "exp" | "gold">
-): { updatedHero: HeroProfile; leveledUp: boolean; newLevel: number } {
-  const newTotalExp = hero.totalExp + reward.exp;
-  const oldLevel = levelFromTotalExp(hero.totalExp);
-  const newLevel = levelFromTotalExp(newTotalExp);
-  const leveledUp = newLevel > oldLevel;
-
-  let updatedHero: HeroProfile = {
-    ...hero,
-    totalExp: newTotalExp,
-    gold: hero.gold + reward.gold,
-  };
-
-  if (leveledUp) {
-    const newStats = heroStatsForLevel(newLevel);
-    updatedHero = {
-      ...updatedHero,
-      level: newLevel,
-      maxHp: newStats.maxHp,
-      maxMp: newStats.maxMp,
-      attack: newStats.attack,
-      defense: newStats.defense,
-      hp: newStats.maxHp,
-      mp: newStats.maxMp,
-    };
-  }
-
-  return { updatedHero, leveledUp, newLevel };
-}
-
-// ---------------------------------------------------------------------------
-// Date utilities (pure — no side effects, no I/O)
-// ---------------------------------------------------------------------------
-
-export function isQuestOverdue(deadlineDate: string): boolean {
-  const deadline = new Date(deadlineDate);
+export function daysUntilDeadline(deadlineDateString: string): number {
+  const deadline = new Date(deadlineDateString);
+  deadline.setHours(0, 0, 0, 0); // Start of the deadline day
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  deadline.setHours(0, 0, 0, 0);
-  return deadline < today;
+  today.setHours(0, 0, 0, 0); // Start of today
+
+  const diffTime = deadline.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return Math.max(0, diffDays);
 }
 
-export function daysUntilDeadline(deadlineDate: string): number {
-  const deadline = new Date(deadlineDate);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  deadline.setHours(0, 0, 0, 0);
-  return Math.floor((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+/**
+ * Creates a new hero profile with default stats.
+ * @param userId The ID of the user who owns this hero.
+ * @param displayName The hero's chosen display name.
+ * @returns A new HeroProfile object.
+ */
+export function createHeroProfile(userId: string, displayName: string) {
+  return {
+    id: userId, // Hero ID is the same as User ID
+    displayName,
+    level: 1,
+    totalExp: 0,
+    hp: 100,
+    maxHp: 100,
+    mp: 50,
+    maxMp: 50,
+    attack: 10,
+    defense: 5,
+    gold: 0,
+    sprite: "hero_default", // Default sprite name
+    avatarId: "default_avatar", // Add a default avatarId
+    createdAt: new Date().toISOString(),
+  };
 }
-
-// Convenience re-exports from expCalculator so callers can depend on a single
-// import path for all game maths.
-export { expToNextLevel, totalExpForLevel, levelFromTotalExp, expProgressInCurrentLevel } from "./expCalculator";

@@ -7,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  I18nManager,
 } from "react-native";
 import { router, Stack } from "expo-router";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -663,4 +662,3 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bgDark,
   },
 });
-

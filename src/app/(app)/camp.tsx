@@ -4,7 +4,6 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-  I18nManager,
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -143,4 +142,3 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
-

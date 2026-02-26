@@ -1,4 +1,4 @@
-import { View, StyleSheet, type ViewProps, I18nManager } from "react-native";
+import { View, StyleSheet, type ViewProps } from "react-native";
 import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
 import { PixelText } from "@/src/components/ui/PixelText";
 import { PixelProgressBar } from "@/src/components/ui/PixelProgressBar";
@@ -160,4 +160,3 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
   },
 });
-

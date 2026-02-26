@@ -8,7 +8,6 @@ import {
   type GestureResponderEvent,
   type PressableProps,
   type ViewStyle,
-  I18nManager,
 } from "react-native";
 import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
@@ -179,4 +178,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-

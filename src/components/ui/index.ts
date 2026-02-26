@@ -1,13 +1,7 @@
-export { PixelButton } from "./PixelButton";
-export type { ButtonSize, ButtonVariant, PixelButtonProps } from "./PixelButton";
-
-export { PixelCard } from "./PixelCard";
-export type { CardVariant, PixelCardProps } from "./PixelCard";
-
-export { PixelProgressBar } from "./PixelProgressBar";
-export type { BarColor, PixelProgressBarProps } from "./PixelProgressBar";
-
-export { PixelText } from "./PixelText";
-export type { PixelTextProps, TextColor, TextVariant } from "./PixelText";
-
+export * from "./PixelButton";
+export * from "./PixelCard";
+export * from "./PixelText";
+export * from "./PixelProgressBar"; // Export PixelProgressBar
+// No longer exporting BarColor as it's an internal type to PixelProgressBar.
+// If it needs to be public, it should be defined in types.ts.
 
