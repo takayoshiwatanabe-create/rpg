@@ -1,4 +1,4 @@
-import { StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
 import { isQuestOverdue, daysUntilDeadline } from "@/src/lib/gameLogic";
 import { PixelCard, PixelText, PixelButton } from "@/src/components/ui";
 import { t, getLang } from "@/i18n";
@@ -8,9 +8,10 @@ import type { Quest, Subject, Difficulty } from "@/types";
 export type QuestCardProps = {
   quest: Quest;
   onStartBattle: (questId: string) => void;
+  onDelete?: (questId: string) => void;
 };
 
-export function QuestCard({ quest, onStartBattle }: QuestCardProps) {
+export function QuestCard({ quest, onStartBattle, onDelete }: QuestCardProps) {
   const overdue = isQuestOverdue(quest.deadlineDate);
   const days = daysUntilDeadline(quest.deadlineDate);
   const subjectColor = COLORS[quest.subject as Subject] ?? COLORS.other;
@@ -21,6 +22,21 @@ export function QuestCard({ quest, onStartBattle }: QuestCardProps) {
     : new Intl.DateTimeFormat(getLang(), { month: "numeric", day: "numeric" }).format(
         new Date(quest.deadlineDate),
       ) + (days > 0 ? ` (${days})` : "");
+
+  const handleDelete = () => {
+    Alert.alert(
+      t("quest.abandon"),
+      t("quest.abandon_confirm"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: () => onDelete?.(quest.id),
+        },
+      ],
+    );
+  };
 
   return (
     <PixelCard
@@ -43,6 +59,18 @@ export function QuestCard({ quest, onStartBattle }: QuestCardProps) {
         <PixelText variant="caption" color={overdue ? "danger" : "gray"}>
           {deadlineLabel}
         </PixelText>
+        {onDelete !== undefined && (
+          <TouchableOpacity
+            onPress={handleDelete}
+            style={styles.deleteBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t("common.delete")}
+          >
+            <PixelText variant="caption" color="danger">
+              {"×"}
+            </PixelText>
+          </TouchableOpacity>
+        )}
       </View>
 
       <PixelText variant="body" color="cream" style={styles.title}>
@@ -87,6 +115,10 @@ const styles = StyleSheet.create({
   },
   deadlineSpacer: {
     flex: 1,
+  },
+  deleteBtn: {
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
   },
   title: {
     marginBottom: SPACING.sm,

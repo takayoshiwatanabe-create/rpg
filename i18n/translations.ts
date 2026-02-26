@@ -84,6 +84,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "quest.enemy.science": "実験ゴーレム",
     "quest.enemy.social": "地図スライム",
     "quest.enemy.other": "謎の課題",
+    "quest.filter.all": "すべて",
+    "quest.filter.active": "かつどう中",
+    "quest.register": "クエスト登録！",
+    "quest.title_hint": "例：漢字の練習",
+    "quest.error.title_required": "クエスト名をいれてね",
+    "quest.deadline.prev_day": "ていしゅつ日を1日まえにする",
+    "quest.deadline.next_day": "ていしゅつ日を1日あとにする",
 
     // Battle
     "battle.start": "バトルかいし！",
@@ -246,6 +253,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.attack": "Attack",
     "hero.defense": "Defense",
     "hero.level_up": "Level Up!",
+    "hero.max_level": "Max Level!",
     "hero.status": "Status",
     "hero.greeting": "Hero {{name}}, let's defeat today's homework!",
 
@@ -287,6 +295,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "quest.enemy.science": "Lab Golem",
     "quest.enemy.social": "Map Slime",
     "quest.enemy.other": "Mystery Homework",
+    "quest.filter.all": "All",
+    "quest.filter.active": "Active",
+    "quest.register": "Register Quest!",
+    "quest.title_hint": "e.g. Spelling practice",
+    "quest.error.title_required": "Please enter a quest name",
+    "quest.deadline.prev_day": "Move deadline back 1 day",
+    "quest.deadline.next_day": "Move deadline forward 1 day",
 
     // Battle
     "battle.start": "Start Battle!",
@@ -449,6 +464,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.attack": "攻击力",
     "hero.defense": "防御力",
     "hero.level_up": "升级了！",
+    "hero.max_level": "最高等级！",
     "hero.status": "状态",
     "hero.greeting": "勇者 {{name}}，今天也去打败作业吧！",
 
@@ -490,6 +506,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "quest.enemy.science": "实验魔像",
     "quest.enemy.social": "地图史莱姆",
     "quest.enemy.other": "神秘作业",
+    "quest.filter.all": "全部",
+    "quest.filter.active": "进行中",
+    "quest.register": "注册任务！",
+    "quest.title_hint": "例：汉字练习",
+    "quest.error.title_required": "请输入任务名称",
+    "quest.deadline.prev_day": "截止日期前移一天",
+    "quest.deadline.next_day": "截止日期后移一天",
 
     // Battle
     "battle.start": "开始战斗！",
@@ -652,6 +675,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.attack": "공격력",
     "hero.defense": "방어력",
     "hero.level_up": "레벨 업!",
+    "hero.max_level": "최대 레벨!",
     "hero.status": "스테이터스",
     "hero.greeting": "용사 {{name}}, 오늘도 숙제를 물리치러 가자!",
 
@@ -693,6 +717,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "quest.enemy.science": "실험 골렘",
     "quest.enemy.social": "지도 슬라임",
     "quest.enemy.other": "수수께끼 숙제",
+    "quest.filter.all": "전체",
+    "quest.filter.active": "진행 중",
+    "quest.register": "퀘스트 등록！",
+    "quest.title_hint": "예: 한자 연습",
+    "quest.error.title_required": "퀘스트 이름을 입력해 주세요",
+    "quest.deadline.prev_day": "마감일 1일 앞으로",
+    "quest.deadline.next_day": "마감일 1일 뒤로",
 
     // Battle
     "battle.start": "배틀 시작!",
@@ -855,6 +886,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.attack": "Ataque",
     "hero.defense": "Defensa",
     "hero.level_up": "¡Subiste de nivel!",
+    "hero.max_level": "¡Nivel máximo!",
     "hero.status": "Estado",
     "hero.greeting": "¡Héroe {{name}}, vamos a derrotar los deberes de hoy!",
 
@@ -896,6 +928,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "quest.enemy.science": "Gólem de Laboratorio",
     "quest.enemy.social": "Slime del Mapa",
     "quest.enemy.other": "Tarea Misteriosa",
+    "quest.filter.all": "Todos",
+    "quest.filter.active": "Activos",
+    "quest.register": "¡Registrar Misión!",
+    "quest.title_hint": "ej. Práctica de escritura",
+    "quest.error.title_required": "Por favor ingresa el nombre de la misión",
+    "quest.deadline.prev_day": "Retrasar fecha límite 1 día",
+    "quest.deadline.next_day": "Adelantar fecha límite 1 día",
 
     // Battle
     "battle.start": "¡Comenzar Batalla!",
@@ -1058,6 +1097,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.attack": "Attaque",
     "hero.defense": "Défense",
     "hero.level_up": "Niveau supérieur !",
+    "hero.max_level": "Niveau max !",
     "hero.status": "Statut",
     "hero.greeting": "Héros {{name}}, allons vaincre les devoirs d'aujourd'hui !",
 
@@ -1099,6 +1139,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "quest.enemy.science": "Golem de Labo",
     "quest.enemy.social": "Slime de Carte",
     "quest.enemy.other": "Devoir Mystère",
+    "quest.filter.all": "Tous",
+    "quest.filter.active": "Actifs",
+    "quest.register": "Créer la Quête !",
+    "quest.title_hint": "ex. Pratique de l'écriture",
+    "quest.error.title_required": "Veuillez saisir un nom de quête",
+    "quest.deadline.prev_day": "Reculer la date d'1 jour",
+    "quest.deadline.next_day": "Avancer la date d'1 jour",
 
     // Battle
     "battle.start": "Commencer la Bataille !",
@@ -1261,6 +1308,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.attack": "Angriff",
     "hero.defense": "Verteidigung",
     "hero.level_up": "Level Up!",
+    "hero.max_level": "Maximales Level!",
     "hero.status": "Status",
     "hero.greeting": "Held {{name}}, lass uns die heutigen Hausaufgaben besiegen!",
 
@@ -1302,6 +1350,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "quest.enemy.science": "Labor-Golem",
     "quest.enemy.social": "Karten-Schleim",
     "quest.enemy.other": "Rätsel-Hausaufgabe",
+    "quest.filter.all": "Alle",
+    "quest.filter.active": "Aktiv",
+    "quest.register": "Quest erstellen!",
+    "quest.title_hint": "z.B. Rechtschreibung üben",
+    "quest.error.title_required": "Bitte gib einen Quest-Namen ein",
+    "quest.deadline.prev_day": "Frist 1 Tag zurück",
+    "quest.deadline.next_day": "Frist 1 Tag vor",
 
     // Battle
     "battle.start": "Kampf starten!",
@@ -1464,6 +1519,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.attack": "Ataque",
     "hero.defense": "Defesa",
     "hero.level_up": "Subiu de nível!",
+    "hero.max_level": "Nível máximo!",
     "hero.status": "Status",
     "hero.greeting": "Herói {{name}}, vamos derrotar a lição de hoje!",
 
@@ -1505,6 +1561,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "quest.enemy.science": "Golem de Lab",
     "quest.enemy.social": "Slime do Mapa",
     "quest.enemy.other": "Tarefa Misteriosa",
+    "quest.filter.all": "Todos",
+    "quest.filter.active": "Ativos",
+    "quest.register": "Registrar Missão!",
+    "quest.title_hint": "ex. Praticar ortografia",
+    "quest.error.title_required": "Por favor, insira um nome para a missão",
+    "quest.deadline.prev_day": "Recuar prazo 1 dia",
+    "quest.deadline.next_day": "Avançar prazo 1 dia",
 
     // Battle
     "battle.start": "Iniciar Batalha!",
@@ -1667,6 +1730,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.attack": "الهجوم",
     "hero.defense": "الدفاع",
     "hero.level_up": "ارتفع المستوى!",
+    "hero.max_level": "المستوى الأقصى!",
     "hero.status": "الحالة",
     "hero.greeting": "أيها البطل {{name}}، لنهزم واجبات اليوم!",
 
@@ -1708,6 +1772,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "quest.enemy.science": "جولم المختبر",
     "quest.enemy.social": "وحل الخريطة",
     "quest.enemy.other": "واجب غامض",
+    "quest.filter.all": "الكل",
+    "quest.filter.active": "نشط",
+    "quest.register": "تسجيل المهمة!",
+    "quest.title_hint": "مثال: مراجعة الحساب",
+    "quest.error.title_required": "من فضلك أدخل اسم المهمة",
+    "quest.deadline.prev_day": "تأجيل الموعد يوماً واحداً",
+    "quest.deadline.next_day": "تقديم الموعد يوماً واحداً",
 
     // Battle
     "battle.start": "ابدأ المعركة!",
@@ -1870,6 +1941,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.attack": "हमला",
     "hero.defense": "रक्षा",
     "hero.level_up": "स्तर बढ़ा!",
+    "hero.max_level": "अधिकतम स्तर!",
     "hero.status": "स्थिति",
     "hero.greeting": "वीर {{name}}, आज का होमवर्क हराने चलते हैं!",
 
@@ -1911,6 +1983,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "quest.enemy.science": "प्रयोगशाला-गोलेम",
     "quest.enemy.social": "नक्शा-स्लाइम",
     "quest.enemy.other": "रहस्यमय गृहकार्य",
+    "quest.filter.all": "सभी",
+    "quest.filter.active": "सक्रिय",
+    "quest.register": "क्वेस्ट दर्ज करें!",
+    "quest.title_hint": "जैसे: गणित का अभ्यास",
+    "quest.error.title_required": "कृपया क्वेस्ट का नाम दर्ज करें",
+    "quest.deadline.prev_day": "अंतिम तिथि 1 दिन पीछे करें",
+    "quest.deadline.next_day": "अंतिम तिथि 1 दिन आगे करें",
 
     // Battle
     "battle.start": "युद्ध शुरू!",

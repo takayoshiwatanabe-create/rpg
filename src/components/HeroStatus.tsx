@@ -76,7 +76,7 @@ export function HeroStatus({ hero, style, ...rest }: HeroStatusProps) {
         />
         <PixelText variant="caption" color="exp" style={styles.expCaption}>
           {atMax
-            ? t("hero.level_up")
+            ? t("hero.max_level")
             : t("hero.exp_to_next", { exp: String(expProgress.required - expProgress.current) })}
         </PixelText>
       </View>
