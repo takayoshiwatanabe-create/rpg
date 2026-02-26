@@ -201,17 +201,9 @@ describe("BattleScreen", () => {
     screen.getByText("battle.start_quest").props.onPress();
     await waitFor(() => screen.getByText("battle.complete_quest"));
 
-    const backHandler = (
-      require("react-native").BackHandler.addEventListener as vi.Mock
-    ).mock.calls[0][1];
-    backHandler(); // Trigger alert
-
-    const alertOptions = (require("react-native").Alert.alert as vi.Mock).mock
-      .calls[0][2];
-    const exitOption = alertOptions.find(
-      (option: any) => option.text === "common.exit",
-    );
-    exitOption.onPress();
+    const backHandler = (require("react-native").Alert.alert as vi.Mock).mock
+      .calls[0][2][1].onPress; // Get the onPress for 'Exit' button
+    backHandler();
 
     expect(router.back).toHaveBeenCalled();
   });
@@ -226,4 +218,3 @@ describe("BattleScreen", () => {
     expect(require("react-native").Animated.Value().setValue).toHaveBeenCalledWith(1);
   });
 });
-
