@@ -157,5 +157,3 @@ describe("ParentSettingsScreen", () => {
     });
   });
 });
-
-

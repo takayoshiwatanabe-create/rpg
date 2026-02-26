@@ -279,5 +279,3 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
 });
-
-
