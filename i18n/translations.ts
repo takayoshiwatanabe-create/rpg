@@ -134,6 +134,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.welcome_back": "おかえり、{{name}}！",
     "auth.no_account": "アカウントをおもちでないかたはこちら",
     "auth.have_account": "すでにアカウントをおもちのかたはこちら",
+    "auth.account_type": "アカウントのしゅるい",
+    "auth.confirm_password": "パスワードをかくにん",
+    "auth.password_mismatch": "パスワードがちがいます",
+    "auth.coppa_notice": "こどもアカウントのとうろくには、ほごしゃのどういがひつようです",
+    "auth.coppa_consent": "ほごしゃとして、こどものデータしゅうしゅうにどういします",
 
     // Camp
     "camp.title": "勇者のキャンプ",
@@ -332,6 +337,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.welcome_back": "Welcome back, {{name}}!",
     "auth.no_account": "Don't have an account? Sign up",
     "auth.have_account": "Already have an account? Log in",
+    "auth.account_type": "Account Type",
+    "auth.confirm_password": "Confirm Password",
+    "auth.password_mismatch": "Passwords do not match",
+    "auth.coppa_notice": "Registering a child account requires parental consent under privacy law",
+    "auth.coppa_consent": "As a parent/guardian, I consent to data collection for this child account",
 
     // Camp
     "camp.title": "Hero's Camp",
@@ -530,6 +540,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.welcome_back": "欢迎回来，{{name}}！",
     "auth.no_account": "没有账号？立即注册",
     "auth.have_account": "已有账号？立即登录",
+    "auth.account_type": "账号类型",
+    "auth.confirm_password": "确认密码",
+    "auth.password_mismatch": "密码不一致",
+    "auth.coppa_notice": "注册儿童账号需要家长根据隐私法律提供同意",
+    "auth.coppa_consent": "作为家长/监护人，我同意为该儿童账号收集数据",
 
     // Camp
     "camp.title": "英雄营地",
@@ -728,6 +743,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.welcome_back": "돌아오셨군요, {{name}}!",
     "auth.no_account": "계정이 없으신가요? 회원가입",
     "auth.have_account": "이미 계정이 있으신가요? 로그인",
+    "auth.account_type": "계정 유형",
+    "auth.confirm_password": "비밀번호 확인",
+    "auth.password_mismatch": "비밀번호가 일치하지 않습니다",
+    "auth.coppa_notice": "어린이 계정 등록에는 개인정보 보호법에 따라 보호자 동의가 필요합니다",
+    "auth.coppa_consent": "보호자로서 이 어린이 계정의 데이터 수집에 동의합니다",
 
     // Camp
     "camp.title": "용사의 캠프",
@@ -926,6 +946,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.welcome_back": "¡Bienvenido de nuevo, {{name}}!",
     "auth.no_account": "¿No tienes cuenta? Regístrate",
     "auth.have_account": "¿Ya tienes cuenta? Inicia sesión",
+    "auth.account_type": "Tipo de cuenta",
+    "auth.confirm_password": "Confirmar contraseña",
+    "auth.password_mismatch": "Las contraseñas no coinciden",
+    "auth.coppa_notice": "Registrar una cuenta infantil requiere consentimiento parental según la ley de privacidad",
+    "auth.coppa_consent": "Como padre/tutor, consiento la recopilación de datos para esta cuenta infantil",
 
     // Camp
     "camp.title": "Campamento del Héroe",
@@ -1124,6 +1149,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.welcome_back": "Bon retour, {{name}} !",
     "auth.no_account": "Pas encore de compte ? S'inscrire",
     "auth.have_account": "Déjà un compte ? Se connecter",
+    "auth.account_type": "Type de compte",
+    "auth.confirm_password": "Confirmer le mot de passe",
+    "auth.password_mismatch": "Les mots de passe ne correspondent pas",
+    "auth.coppa_notice": "L'inscription d'un compte enfant nécessite le consentement parental conformément à la loi sur la vie privée",
+    "auth.coppa_consent": "En tant que parent/tuteur, je consens à la collecte de données pour ce compte enfant",
 
     // Camp
     "camp.title": "Camp du Héros",
@@ -1322,6 +1352,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.welcome_back": "Willkommen zurück, {{name}}!",
     "auth.no_account": "Noch kein Konto? Registrieren",
     "auth.have_account": "Schon ein Konto? Anmelden",
+    "auth.account_type": "Kontotyp",
+    "auth.confirm_password": "Passwort bestätigen",
+    "auth.password_mismatch": "Passwörter stimmen nicht überein",
+    "auth.coppa_notice": "Die Registrierung eines Kinderkontos erfordert gemäß Datenschutzrecht die Zustimmung der Eltern",
+    "auth.coppa_consent": "Als Elternteil/Vormund stimme ich der Datenerhebung für dieses Kinderkonto zu",
 
     // Camp
     "camp.title": "Heldenlager",
@@ -1520,6 +1555,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.welcome_back": "Bem-vindo de volta, {{name}}!",
     "auth.no_account": "Não tem conta? Cadastre-se",
     "auth.have_account": "Já tem conta? Entre",
+    "auth.account_type": "Tipo de conta",
+    "auth.confirm_password": "Confirmar senha",
+    "auth.password_mismatch": "As senhas não coincidem",
+    "auth.coppa_notice": "O registro de conta infantil requer consentimento dos pais conforme a lei de privacidade",
+    "auth.coppa_consent": "Como pai/responsável, consinto com a coleta de dados para esta conta infantil",
 
     // Camp
     "camp.title": "Acampamento do Herói",
@@ -1718,6 +1758,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.welcome_back": "مرحباً بعودتك، {{name}}!",
     "auth.no_account": "ليس لديك حساب؟ سجّل الآن",
     "auth.have_account": "لديك حساب بالفعل؟ سجّل الدخول",
+    "auth.account_type": "نوع الحساب",
+    "auth.confirm_password": "تأكيد كلمة المرور",
+    "auth.password_mismatch": "كلمتا المرور غير متطابقتين",
+    "auth.coppa_notice": "يستلزم تسجيل حساب طفل موافقة ولي الأمر وفق قوانين الخصوصية",
+    "auth.coppa_consent": "بوصفي ولي أمر، أوافق على جمع بيانات حساب هذا الطفل",
 
     // Camp
     "camp.title": "معسكر البطل",
@@ -1916,6 +1961,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.welcome_back": "वापसी पर स्वागत है, {{name}}!",
     "auth.no_account": "खाता नहीं है? साइन अप करें",
     "auth.have_account": "पहले से खाता है? लॉग इन करें",
+    "auth.account_type": "खाते का प्रकार",
+    "auth.confirm_password": "पासवर्ड की पुष्टि करें",
+    "auth.password_mismatch": "पासवर्ड मेल नहीं खाते",
+    "auth.coppa_notice": "बच्चे का खाता पंजीकृत करने के लिए गोपनीयता कानून के तहत माता-पिता की सहमति आवश्यक है",
+    "auth.coppa_consent": "माता-पिता/अभिभावक के रूप में, मैं इस बच्चे के खाते के लिए डेटा संग्रह की सहमति देता/देती हूँ",
 
     // Camp
     "camp.title": "वीर का शिविर",
