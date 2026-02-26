@@ -9,15 +9,15 @@ import {
   View,
 } from "react-native";
 import { router, Stack } from "expo-router";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import {
   subscribeToQuests,
   createQuest,
   softDeleteQuest,
-} from "@/src/lib/firestore";
-import { calculateQuestRewards } from "@/src/lib/gameLogic";
-import { QuestCard } from "@/src/components/QuestCard";
-import { PixelButton, PixelCard, PixelText } from "@/src/components/ui";
+} from "@/lib/firestore";
+import { calculateQuestRewards } from "@/lib/gameLogic";
+import { QuestCard } from "@/components/QuestCard";
+import { PixelButton, PixelCard, PixelText } from "@/components/ui";
 import { t, getIsRTL, getLang } from "@/i18n";
 import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
 import { DEFAULT_ESTIMATED_MINUTES } from "@/constants/game";
@@ -662,4 +662,3 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bgDark,
   },
 });
-

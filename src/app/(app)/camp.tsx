@@ -6,14 +6,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import {
   subscribeToHero,
   subscribeToActiveQuests,
-} from "@/src/lib/firestore";
-import { HeroStatus } from "@/src/components/HeroStatus";
-import { QuestCard } from "@/src/components/QuestCard";
-import { PixelText, PixelButton, PixelCard } from "@/src/components/ui";
+} from "@/lib/firestore";
+import { HeroStatus } from "@/components/HeroStatus";
+import { QuestCard } from "@/components/QuestCard";
+import { PixelText, PixelButton, PixelCard } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
 import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme";
 import type { HeroProfile, Quest } from "@/types";
@@ -31,7 +31,7 @@ export default function CampScreen() {
 
   useEffect(() => {
     if (!user) return;
-    const unsubHero = subscribeToHero(user.uid, heroId, (h) => {
+    const unsubHero = subscribeToHero(user.uid, heroId, (h: HeroProfile | null) => {
       setHero(h);
       setHeroLoading(false);
     });
@@ -142,4 +142,3 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
-

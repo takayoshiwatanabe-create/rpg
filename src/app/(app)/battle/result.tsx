@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { useAuth } from "@/src/hooks/useAuth";
-import { subscribeToHero } from "@/src/lib/firestore";
-import { PixelText, PixelButton } from "@/src/components/ui";
+import { useAuth } from "@/hooks/useAuth";
+import { subscribeToHero } from "@/lib/firestore";
+import { PixelText, PixelButton } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
 import { COLORS, SPACING } from "@/constants/theme";
 import type { HeroProfile } from "@/types";
-import { RewardDisplay } from "@/src/components/RewardDisplay";
-import { useReducedMotion } from "@/src/hooks/useReducedMotion";
+import { RewardDisplay } from "@/components/RewardDisplay";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 export default function BattleResultScreen() {
   const { questId, exp, gold, overdue } = useLocalSearchParams();
@@ -32,7 +32,7 @@ export default function BattleResultScreen() {
       return;
     }
 
-    const unsub = subscribeToHero(user.uid, user.uid, (h) => {
+    const unsub = subscribeToHero(user.uid, user.uid, (h: HeroProfile | null) => {
       setHero(h);
       setIsLoading(false);
       // Animate in when hero data is loaded
@@ -129,4 +129,3 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
 });
-

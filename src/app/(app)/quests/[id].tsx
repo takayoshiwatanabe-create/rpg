@@ -7,14 +7,14 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { useAuth } from "@/src/hooks/useAuth";
-import { subscribeToQuest, softDeleteQuest } from "@/src/lib/firestore";
-import { isQuestOverdue, calculateQuestRewards } from "@/src/lib/gameLogic";
-import { PixelButton, PixelCard, PixelText } from "@/src/components/ui";
+import { useAuth } from "@/hooks/useAuth";
+import { subscribeToQuest, softDeleteQuest } from "@/lib/firestore";
+import { isQuestOverdue, calculateQuestRewards } from "@/lib/gameLogic";
+import { PixelButton, PixelCard, PixelText } from "@/components/ui";
 import { t, getLang, getIsRTL } from "@/i18n";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import type { Quest } from "@/types";
-import { useReducedMotion } from "@/src/hooks/useReducedMotion";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 export default function QuestDetailScreen() {
   const { id: questIdParam } = useLocalSearchParams();
@@ -37,7 +37,7 @@ export default function QuestDetailScreen() {
       return;
     }
 
-    const unsub = subscribeToQuest(questId, (q) => {
+    const unsub = subscribeToQuest(questId, (q: Quest | null) => {
       setQuest(q);
       setIsLoading(false);
       // Animate in when quest data is loaded
@@ -300,4 +300,3 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 });
-

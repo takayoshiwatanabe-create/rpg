@@ -2,14 +2,13 @@
   "name": "シュクダイ・クエスト 〜勇者の宿題なぎ倒しRPG〜",
   "version": "1.0.0",
   "private": true,
-  "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "test": "vitest run",
-    "type-check": "tsc --noEmit",
-    "lint": "eslint ."
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.0.1",
@@ -21,14 +20,27 @@
     "expo-router": "~4.0.0",
     "expo-status-bar": "~2.0.0",
     "firebase": "^12.9.0",
+    "i18n-js": "^4.5.2",
+    "next": "15.0.0-rc.0",
+    "next-auth": "5.0.0-beta.19",
+    "next-intl": "^3.15.0",
     "react": "18.3.1",
+    "react-dom": "18.3.1",
     "react-native": "0.76.0",
     "react-native-safe-area-context": "~5.0.0",
-    "react-native-screens": "~4.0.0"
+    "react-native-screens": "~4.0.0",
+    "react-query": "^3.39.3",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@types/react": "~18.3.0",
-    "typescript": "^5.9.3"
+    "@types/react-dom": "18.3.0",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "15.0.0-rc.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "4.0.0-alpha.13",
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.0"
   }
 }
-

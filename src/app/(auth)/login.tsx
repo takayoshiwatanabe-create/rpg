@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { t, getIsRTL } from "@/i18n";
-import { signInWithEmail } from "@/src/lib/firebase";
-import { PixelButton, PixelCard, PixelText } from "@/src/components/ui";
+import { signInWithEmail } from "../../lib/firebase"; // Corrected import path
+import { PixelButton, PixelCard, PixelText } from "../../components/ui"; // Corrected import path
 import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
 import type { AccountRole } from "@/types";
 
@@ -306,4 +306,3 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
   },
 });
-

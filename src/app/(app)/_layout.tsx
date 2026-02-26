@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { View, StyleSheet, ActivityIndicator, I18nManager } from "react-native";
 import { Stack, router } from "expo-router";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { getIsRTL } from "@/i18n";
 import { COLORS, PIXEL_BORDER } from "@/constants/theme";
 
@@ -89,4 +89,3 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bgDark,
   },
 });
-

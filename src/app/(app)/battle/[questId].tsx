@@ -7,25 +7,25 @@ import {
   BackHandler,
 } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import {
   subscribeToQuest,
   updateQuestStatus,
   updateHeroStats,
   createBattleSession,
-} from "@/src/lib/firestore";
+} from "@/lib/firestore";
 import {
   isQuestOverdue,
   calculateQuestRewards,
   applyExpPenalty,
   applyGoldPenalty,
-} from "@/src/lib/gameLogic";
-import { PixelButton, PixelText } from "@/src/components/ui";
+} from "@/lib/gameLogic";
+import { PixelButton, PixelText } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
 import { COLORS, SPACING } from "@/constants/theme";
 import type { Quest } from "@/types";
-import { BattleScene } from "@/src/components/BattleScene";
-import { useReducedMotion } from "@/src/hooks/useReducedMotion";
+import { BattleScene } from "@/components/BattleScene";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 // Battle states for the UI and logic flow
 type BattleState =
@@ -87,7 +87,7 @@ export default function BattleScreen() {
       return;
     }
 
-    const unsub = subscribeToQuest(questId, (q) => {
+    const unsub = subscribeToQuest(questId, (q: Quest | null) => {
       if (q) {
         setQuest(q);
         setTimeRemaining(q.estimatedMinutes * 60); // Convert minutes to seconds
@@ -163,14 +163,13 @@ export default function BattleScreen() {
     try {
       await updateQuestStatus(quest.id, "completed");
       await updateHeroStats(user.uid, {
-        totalExp: finalExp, // Corrected property name
+        totalExp: finalExp,
         gold: finalGold,
       });
       await createBattleSession(user.uid, quest.id, {
-        // Corrected properties to match BattleSession type
         startTime: new Date(battleStartTime.current).toISOString(),
         endTime: new Date(endTime).toISOString(),
-        durationSeconds: duration, // Changed from 'duration' to 'durationSeconds'
+        durationSeconds: duration,
         status: "completed",
         rewards: { exp: finalExp, gold: finalGold },
       });
@@ -280,4 +279,3 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
 });
-

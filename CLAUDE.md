@@ -179,15 +179,7 @@ firestore/
 │
 ├── quests/{questId}     # 宿題（クエスト）
 │
-├── battleSessions/{battleSessionId} # バトルセッション履歴
-│   ├── userId: string
-│   ├── questId: string
-│   ├── startTime: string (ISO 8601)
-│   ├── endTime: string (ISO 8601)
-│   ├── durationSeconds: number
-│   ├── status: 'completed' | 'failed' | 'abandoned'
-│   └── rewards: { exp: number, gold: number }
-```
+├── battleSessions/{
 
 ## Development Instructions
 N/A
@@ -212,4 +204,3 @@ N/A
 - Default language: ja (Japanese)
 - RTL support required for Arabic (ar)
 - Use isRTL flag from i18n module for layout adjustments
-
