@@ -52,7 +52,7 @@ export default function CampScreen() {
 
   if (heroLoading) {
     return (
-      <View style={styles.center}>
+      <View style={styles.center} testID="activity-indicator">
         <ActivityIndicator color={COLORS.gold} size="large" />
       </View>
     );
@@ -142,3 +142,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
+
+

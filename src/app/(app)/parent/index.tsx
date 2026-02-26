@@ -308,7 +308,7 @@ export default function ParentDashboardScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={styles.center} testID="activity-indicator">
         <ActivityIndicator color={COLORS.gold} size="large" />
       </View>
     );
@@ -474,3 +474,5 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
 });
+
+

@@ -1,183 +1,194 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
-  calculateQuestRewards,
   isQuestOverdue,
-  daysUntilDeadline,
+  calculateQuestRewards,
   applyExpPenalty,
   applyGoldPenalty,
-  createHeroProfile,
-  levelUpHero,
+  calculateNextLevelExp,
+  calculateHeroLevel,
 } from "./gameLogic";
 import {
-  DEFAULT_EXP_REWARDS,
-  DEFAULT_GOLD_REWARDS,
-  EXP_PENALTY_FACTOR,
-  GOLD_PENALTY_FACTOR,
-  HERO_STAT_GROWTH,
+  BASE_EXP_REWARD,
+  BASE_GOLD_REWARD,
+  DIFFICULTY_MULTIPLIERS,
+  OVERDUE_PENALTY_MULTIPLIER,
+  EXP_PER_LEVEL,
   MAX_LEVEL,
 } from "@/constants/game";
 import type { HeroProfile } from "@/types";
 
 // Mock Date for consistent testing of date-dependent functions
 const MOCK_DATE = "2024-07-20T12:00:00.000Z"; // July 20, 2024
-const RealDate = Date;
-
-beforeAll(() => {
-  global.Date = class extends RealDate {
-    constructor(dateString?: string) {
-      super(dateString || MOCK_DATE);
-    }
-  } as typeof Date;
-});
-
-afterAll(() => {
-  global.Date = RealDate;
-});
 
 describe("gameLogic", () => {
-  // --- Quest Rewards ---
-  it("should calculate quest rewards correctly for non-overdue quests", () => {
-    expect(calculateQuestRewards("easy", false)).toEqual({
-      exp: DEFAULT_EXP_REWARDS.easy,
-      gold: DEFAULT_GOLD_REWARDS.easy,
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(MOCK_DATE));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe("isQuestOverdue", () => {
+    it("should return true if deadline is in the past", () => {
+      const deadlineDate = "2024-07-19"; // Day before MOCK_DATE
+      expect(isQuestOverdue(deadlineDate)).toBe(true);
     });
-    expect(calculateQuestRewards("normal", false)).toEqual({
-      exp: DEFAULT_EXP_REWARDS.normal,
-      gold: DEFAULT_GOLD_REWARDS.normal,
-    });
-    expect(calculateQuestRewards("hard", false)).toEqual({
-      exp: DEFAULT_EXP_REWARDS.hard,
-      gold: DEFAULT_GOLD_REWARDS.hard,
-    });
-    expect(calculateQuestRewards("boss", false)).toEqual({
-      exp: DEFAULT_EXP_REWARDS.boss,
-      gold: DEFAULT_GOLD_REWARDS.boss,
-    });
-  });
 
-  it("should calculate quest rewards with penalty for overdue quests", () => {
-    expect(calculateQuestRewards("easy", true)).toEqual({
-      exp: Math.floor(DEFAULT_EXP_REWARDS.easy * EXP_PENALTY_FACTOR),
-      gold: Math.floor(DEFAULT_GOLD_REWARDS.easy * GOLD_PENALTY_FACTOR),
+    it("should return false if deadline is today", () => {
+      const deadlineDate = "2024-07-20"; // Same day as MOCK_DATE
+      expect(isQuestOverdue(deadlineDate)).toBe(false);
     });
-    expect(calculateQuestRewards("boss", true)).toEqual({
-      exp: Math.floor(DEFAULT_EXP_REWARDS.boss * EXP_PENALTY_FACTOR),
-      gold: Math.floor(DEFAULT_GOLD_REWARDS.boss * GOLD_PENALTY_FACTOR),
+
+    it("should return false if deadline is in the future", () => {
+      const deadlineDate = "2024-07-21"; // Day after MOCK_DATE
+      expect(isQuestOverdue(deadlineDate)).toBe(false);
+    });
+
+    it("should handle different date formats if they are valid ISO strings or YYYY-MM-DD", () => {
+      const deadlineDateISO = "2024-07-19T23:59:59.999Z";
+      expect(isQuestOverdue(deadlineDateISO)).toBe(true);
+
+      const deadlineDateFutureISO = "2024-07-20T12:00:00.001Z";
+      expect(isQuestOverdue(deadlineDateFutureISO)).toBe(false);
     });
   });
 
-  // --- Overdue Checks ---
-  it("should correctly identify overdue quests", () => {
-    // Deadline in the past
-    expect(isQuestOverdue("2024-07-19T23:59:59.999Z")).toBe(true);
-    // Deadline today (not overdue until after today)
-    expect(isQuestOverdue("2024-07-20T00:00:00.000Z")).toBe(false);
-    expect(isQuestOverdue("2024-07-20T23:59:59.999Z")).toBe(false);
-    // Deadline in the future
-    expect(isQuestOverdue("2024-07-21T00:00:00.000Z")).toBe(false);
+  describe("calculateQuestRewards", () => {
+    it("should calculate correct rewards for easy difficulty, not overdue", () => {
+      const rewards = calculateQuestRewards("easy", false);
+      expect(rewards.exp).toBe(BASE_EXP_REWARD * DIFFICULTY_MULTIPLIERS.easy);
+      expect(rewards.gold).toBe(BASE_GOLD_REWARD * DIFFICULTY_MULTIPLIERS.easy);
+    });
+
+    it("should calculate correct rewards for normal difficulty, not overdue", () => {
+      const rewards = calculateQuestRewards("normal", false);
+      expect(rewards.exp).toBe(BASE_EXP_REWARD * DIFFICULTY_MULTIPLIERS.normal);
+      expect(rewards.gold).toBe(BASE_GOLD_REWARD * DIFFICULTY_MULTIPLIERS.normal);
+    });
+
+    it("should calculate correct rewards for hard difficulty, not overdue", () => {
+      const rewards = calculateQuestRewards("hard", false);
+      expect(rewards.exp).toBe(BASE_EXP_REWARD * DIFFICULTY_MULTIPLIERS.hard);
+      expect(rewards.gold).toBe(BASE_GOLD_REWARD * DIFFICULTY_MULTIPLIERS.hard);
+    });
+
+    it("should calculate correct rewards for easy difficulty, overdue", () => {
+      const rewards = calculateQuestRewards("easy", true);
+      expect(rewards.exp).toBe(
+        BASE_EXP_REWARD * DIFFICULTY_MULTIPLIERS.easy * OVERDUE_PENALTY_MULTIPLIER,
+      );
+      expect(rewards.gold).toBe(
+        BASE_GOLD_REWARD * DIFFICULTY_MULTIPLIERS.easy * OVERDUE_PENALTY_MULTIPLIER,
+      );
+    });
   });
 
-  it("should calculate days until deadline correctly", () => {
-    // Deadline in the past
-    expect(daysUntilDeadline("2024-07-19T12:00:00.000Z")).toBe(-1);
-    // Deadline today
-    expect(daysUntilDeadline("2024-07-20T12:00:00.000Z")).toBe(0);
-    // Deadline tomorrow
-    expect(daysUntilDeadline("2024-07-21T12:00:00.000Z")).toBe(1);
-    // Deadline 7 days from now
-    expect(daysUntilDeadline("2024-07-27T12:00:00.000Z")).toBe(7);
+  describe("applyExpPenalty", () => {
+    it("should apply penalty if overdue is true", () => {
+      const baseExp = 100;
+      expect(applyExpPenalty(baseExp, true)).toBe(
+        baseExp * OVERDUE_PENALTY_MULTIPLIER,
+      );
+    });
+
+    it("should not apply penalty if overdue is false", () => {
+      const baseExp = 100;
+      expect(applyExpPenalty(baseExp, false)).toBe(baseExp);
+    });
+
+    it("should return 0 if baseExp is 0", () => {
+      expect(applyExpPenalty(0, true)).toBe(0);
+      expect(applyExpPenalty(0, false)).toBe(0);
+    });
   });
 
-  // --- Penalty Application ---
-  it("should apply EXP penalty if overdue", () => {
-    expect(applyExpPenalty(100, true)).toBe(
-      Math.floor(100 * EXP_PENALTY_FACTOR),
-    );
-    expect(applyExpPenalty(100, false)).toBe(100);
+  describe("applyGoldPenalty", () => {
+    it("should apply penalty if overdue is true", () => {
+      const baseGold = 50;
+      expect(applyGoldPenalty(baseGold, true)).toBe(
+        baseGold * OVERDUE_PENALTY_MULTIPLIER,
+      );
+    });
+
+    it("should not apply penalty if overdue is false", () => {
+      const baseGold = 50;
+      expect(applyGoldPenalty(baseGold, false)).toBe(baseGold);
+    });
+
+    it("should return 0 if baseGold is 0", () => {
+      expect(applyGoldPenalty(0, true)).toBe(0);
+      expect(applyGoldPenalty(0, false)).toBe(0);
+    });
   });
 
-  it("should apply Gold penalty if overdue", () => {
-    expect(applyGoldPenalty(50, true)).toBe(
-      Math.floor(50 * GOLD_PENALTY_FACTOR),
-    );
-    expect(applyGoldPenalty(50, false)).toBe(50);
+  describe("calculateNextLevelExp", () => {
+    it("should return correct EXP for next level", () => {
+      // Assuming EXP_PER_LEVEL = [100, 200, 300, ...]
+      expect(calculateNextLevelExp(1)).toBe(EXP_PER_LEVEL[0]); // For level 1, need EXP_PER_LEVEL[0] to reach level 2
+      expect(calculateNextLevelExp(2)).toBe(EXP_PER_LEVEL[1]); // For level 2, need EXP_PER_LEVEL[1] to reach level 3
+    });
+
+    it("should return 0 if current level is MAX_LEVEL", () => {
+      expect(calculateNextLevelExp(MAX_LEVEL)).toBe(0);
+    });
+
+    it("should return 0 if current level is greater than MAX_LEVEL", () => {
+      expect(calculateNextLevelExp(MAX_LEVEL + 1)).toBe(0);
+    });
   });
 
-  // --- Hero Profile Creation ---
-  it("should create a new hero profile with default stats", () => {
-    const hero = createHeroProfile("testUserId", "TestHero");
-    expect(hero.id).toBe("testUserId");
-    expect(hero.displayName).toBe("TestHero");
-    expect(hero.level).toBe(1);
-    expect(hero.totalExp).toBe(0);
-    expect(hero.gold).toBe(0);
-    expect(hero.hp).toBe(100);
-    expect(hero.maxHp).toBe(100);
-    expect(hero.mp).toBe(50);
-    expect(hero.maxMp).toBe(50);
-    expect(hero.attack).toBe(10);
-    expect(hero.defense).toBe(5);
-    expect(hero.inventory).toEqual([]);
-    expect(hero.equippedItems).toEqual({});
-  });
+  describe("calculateHeroLevel", () => {
+    it("should return level 1 for 0 totalExp", () => {
+      const { level, currentExp } = calculateHeroLevel(0);
+      expect(level).toBe(1);
+      expect(currentExp).toBe(0);
+    });
 
-  // --- Hero Level Up ---
-  it("should level up hero and increase stats", () => {
-    const initialHero: HeroProfile = {
-      id: "hero1",
-      displayName: "LevelUpHero",
-      level: 1,
-      totalExp: 0,
-      gold: 0,
-      hp: 100,
-      maxHp: 100,
-      mp: 50,
-      maxMp: 50,
-      attack: 10,
-      defense: 5,
-      inventory: [],
-      equippedItems: {},
-      // Add other required properties if HeroProfile type changes
-    };
+    it("should return level 1 and correct currentExp for less than first level EXP", () => {
+      const totalExp = EXP_PER_LEVEL[0] / 2; // Halfway to level 2
+      const { level, currentExp } = calculateHeroLevel(totalExp);
+      expect(level).toBe(1);
+      expect(currentExp).toBe(totalExp);
+    });
 
-    const leveledUpHero = levelUpHero(initialHero);
+    it("should return level 2 and 0 currentExp for exactly first level EXP", () => {
+      const totalExp = EXP_PER_LEVEL[0]; // Exactly enough for level 2
+      const { level, currentExp } = calculateHeroLevel(totalExp);
+      expect(level).toBe(2);
+      expect(currentExp).toBe(0);
+    });
 
-    expect(leveledUpHero.level).toBe(2);
-    expect(leveledUpHero.maxHp).toBe(
-      initialHero.maxHp + HERO_STAT_GROWTH.hp,
-    );
-    expect(leveledUpHero.hp).toBe(leveledUpHero.maxHp); // HP should be fully restored
-    expect(leveledUpHero.maxMp).toBe(
-      initialHero.maxMp + HERO_STAT_GROWTH.mp,
-    );
-    expect(leveledUpHero.mp).toBe(leveledUpHero.maxMp); // MP should be fully restored
-    expect(leveledUpHero.attack).toBe(
-      initialHero.attack + HERO_STAT_GROWTH.attack,
-    );
-    expect(leveledUpHero.defense).toBe(
-      initialHero.defense + HERO_STAT_GROWTH.defense,
-    );
-  });
+    it("should return correct level and currentExp for multiple levels", () => {
+      // Total EXP for Level 3: EXP_PER_LEVEL[0] + EXP_PER_LEVEL[1]
+      const totalExp = EXP_PER_LEVEL[0] + EXP_PER_LEVEL[1] + 150; // 100 + 200 + 150 = 450
+      const { level, currentExp } = calculateHeroLevel(totalExp);
+      expect(level).toBe(3);
+      expect(currentExp).toBe(150);
+    });
 
-  it("should not level up hero beyond MAX_LEVEL", () => {
-    const maxLevelHero: HeroProfile = {
-      id: "heroMax",
-      displayName: "MaxLevelHero",
-      level: MAX_LEVEL,
-      totalExp: 99999, // Some high EXP
-      gold: 0,
-      hp: 500,
-      maxHp: 500,
-      mp: 250,
-      maxMp: 250,
-      attack: 100,
-      defense: 50,
-      inventory: [],
-      equippedItems: {},
-    };
+    it("should cap at MAX_LEVEL and show remaining exp", () => {
+      // Calculate total EXP needed to reach MAX_LEVEL
+      let expToMaxLevel = 0;
+      for (let i = 0; i < MAX_LEVEL - 1; i++) {
+        expToMaxLevel += EXP_PER_LEVEL[i];
+      }
 
-    const sameLevelHero = levelUpHero(maxLevelHero);
-    expect(sameLevelHero.level).toBe(MAX_LEVEL);
-    expect(sameLevelHero).toEqual(maxLevelHero); // Should return the same hero object
+      const totalExp = expToMaxLevel + 500; // 500 EXP beyond max level
+      const { level, currentExp } = calculateHeroLevel(totalExp);
+      expect(level).toBe(MAX_LEVEL);
+      expect(currentExp).toBe(500); // Should show excess EXP
+    });
+
+    it("should handle edge case where totalExp is exactly enough for MAX_LEVEL", () => {
+      let expToMaxLevel = 0;
+      for (let i = 0; i < MAX_LEVEL - 1; i++) {
+        expToMaxLevel += EXP_PER_LEVEL[i];
+      }
+      const { level, currentExp } = calculateHeroLevel(expToMaxLevel);
+      expect(level).toBe(MAX_LEVEL);
+      expect(currentExp).toBe(0);
+    });
   });
 });

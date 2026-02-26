@@ -120,7 +120,7 @@ export default function ParentSettingsScreen() {
 
   if (isLoading || !isParent) {
     return (
-      <View style={styles.center}>
+      <View style={styles.center} testID="activity-indicator">
         <ActivityIndicator color={COLORS.gold} size="large" />
       </View>
     );
@@ -219,3 +219,5 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 });
+
+

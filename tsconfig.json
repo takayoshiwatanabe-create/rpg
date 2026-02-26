@@ -4,7 +4,7 @@
     "strict": true,
     "module": "esnext",
     "moduleResolution": "bundler",
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "paths": {
       "@/*": [
         "./src/*"
@@ -23,9 +23,14 @@
     "expo-env.d.ts",
     "next-env.d.ts",
     "**/*.mjs",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/lib/expCalculator.test.ts",
+    "src/lib/gameLogic.test.ts"
   ],
   "exclude": [
     "node_modules"
   ]
 }
+
