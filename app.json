@@ -28,7 +28,10 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.zerocode.rpg",
-      "versionCode": 1
+      "versionCode": 1,
+      "permissions": [
+        "com.google.android.gms.permission.AD_ID"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -61,6 +64,16 @@
     "splash": {
       "image": "./assets/splash.png",
       "backgroundColor": "#FFFBEB"
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false,
+        "root": "src"
+      },
+      "eas": {
+        "projectId": "5dc7e7fb-506a-43d9-94d9-6d5f5aceedf6"
+      }
+    },
+    "owner": "yoshi-san"
   }
 }
