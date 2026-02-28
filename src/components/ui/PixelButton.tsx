@@ -10,7 +10,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
-import { useReducedMotion } from '@/hooks/useReducedMotion";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { getIsRTL } from "@/i18n";
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";

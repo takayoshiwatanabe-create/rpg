@@ -37,11 +37,7 @@ function LanguageOption({
       variant={isActive ? "primary" : "secondary"}
       size="md"
       onPress={() => onSelect(locale)}
-      style={[
-        languageOptionStyles.button,
-        isActive && languageOptionStyles.activeButton,
-      ]}
-      textStyle={isRTL ? languageOptionStyles.rtlText : undefined}
+      style={isActive ? { ...languageOptionStyles.button, ...languageOptionStyles.activeButton } : languageOptionStyles.button}
       accessibilityRole="radio"
       accessibilityState={{ checked: isActive }}
     />

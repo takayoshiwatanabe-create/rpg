@@ -52,6 +52,9 @@ export const COLORS = {
   normal: "#1E90FF", // DodgerBlue
   hard: "#FF4500", // OrangeRed
   boss: "#DC143C", // Crimson
+
+  // Basic
+  white: "#FFFFFF",
 } as const; // `as const` makes this a readonly tuple, improving type safety
 
 // ---------------------------------------------------------------------------
@@ -90,6 +93,18 @@ export const PIXEL_BORDER = {
   borderWidth: 2,
   borderRadius: 4,
   borderColor: COLORS.pixelBorder,
+} as const;
+
+// ---------------------------------------------------------------------------
+// Shadow
+// ---------------------------------------------------------------------------
+
+export const SHADOW = {
+  shadowColor: COLORS.goldDark,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 4,
+  elevation: 4,
 } as const;
 
 // ---------------------------------------------------------------------------

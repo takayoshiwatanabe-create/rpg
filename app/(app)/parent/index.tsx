@@ -154,7 +154,7 @@ function ParentQuestCard({
         </PixelText>
         <PixelText
           variant="body"
-          color={isPending ? "gold" : "success"}
+          color={isPending ? "gold" : "exp"}
         >
           {isPending
             ? t("parent.quest_status.pending")
@@ -166,7 +166,7 @@ function ParentQuestCard({
         <View style={[parentQuestCardStyles.actions, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
           <PixelButton
             label={t("parent.approve")}
-            variant="success"
+            variant="primary"
             size="sm"
             onPress={() => onApprove(quest.id)}
             style={parentQuestCardStyles.actionButton}

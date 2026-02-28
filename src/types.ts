@@ -12,6 +12,9 @@
  * - 'child': A primary user who completes quests.
  * - 'parent': A supervisory user who can manage child accounts and quests.
  */
+/** Supported locale codes matching the i18n translation files. */
+export type Locale = "ja" | "en" | "zh" | "ko" | "es" | "fr" | "de" | "pt" | "ar" | "hi";
+
 export type AccountRole = "child" | "parent";
 
 /**

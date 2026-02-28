@@ -1,4 +1,4 @@
-import type { Locale } from "../types"; // Corrected import path
+import type { Locale } from "../src/types";
 
 type TranslationKeys = {
   [key: string]: string | TranslationKeys;
@@ -38,6 +38,10 @@ export const translations: Record<Locale, TranslationKeys> = {
       coppa_notice:
         "13歳未満のお子様は、保護者の同意が必要です。保護者の方と一緒にお読みください。",
       coppa_consent: "私は保護者であり、上記に同意します。",
+      coppa_notice_title: "保護者の方へ",
+      coppa_notice_short: "このアプリは13歳未満のお子様向けです。\nお子様の利用にあたり、保護者の同意が必要です。",
+      coppa_agree: "同意して進む",
+      startAdventure: "冒険をはじめる！",
       login: "ログイン",
       login_error: "ログインに失敗しました。メールアドレスまたはパスワードが間違っています。",
       register_error: "登録に失敗しました。",
@@ -57,6 +61,10 @@ export const translations: Record<Locale, TranslationKeys> = {
     },
     hero: {
       greeting: "ようこそ、{name}勇者！",
+      defaultName: "ゆうしゃ",
+      levelUp: "宿題をクリアしてレベルアップ！",
+      earnGold: "ゴールドをたくさん稼ごう！",
+      battleMonsters: "モンスターとバトルだ！",
       level: "レベル",
       exp: "経験値",
       gold: "ゴールド",
@@ -66,7 +74,16 @@ export const translations: Record<Locale, TranslationKeys> = {
       speed: "素早さ",
       next_level_exp: "次のレベルまで",
     },
+    tutorial: {
+      greeting: "勇者よ...",
+      ask_name: "この世界を救えるのは\nおまえだけだ！\n\nなんと呼べばよいか？",
+      name_placeholder: "なまえを入力",
+      name_hint: "あとから変更できるよ",
+      start_quest: "冒険スタート！",
+      creating_hero: "勇者を召喚中...",
+    },
     camp: {
+      questDescription: "宿題をクリアして勇者を育てよう！",
       activeQuests: "進行中のクエスト",
       noActiveQuests: "現在、進行中のクエストはありません。新しいクエストを追加しましょう！",
       addQuest: "新しいクエストを追加",
@@ -217,6 +234,10 @@ export const translations: Record<Locale, TranslationKeys> = {
       coppa_notice:
         "For children under 13, parental consent is required. Please review with a parent.",
       coppa_consent: "I am a parent and I consent to the above.",
+      coppa_notice_title: "For Parents",
+      coppa_notice_short: "This app is for children under 13.\nParental consent is required.",
+      coppa_agree: "I Agree",
+      startAdventure: "Start Adventure!",
       login: "Login",
       login_error: "Login failed. Incorrect email or password.",
       register_error: "Registration failed.",
@@ -236,6 +257,10 @@ export const translations: Record<Locale, TranslationKeys> = {
     },
     hero: {
       greeting: "Welcome, Hero {name}!",
+      defaultName: "Hero",
+      levelUp: "Level up by completing homework!",
+      earnGold: "Earn lots of gold!",
+      battleMonsters: "Battle monsters!",
       level: "Level",
       exp: "EXP",
       gold: "Gold",
@@ -245,7 +270,16 @@ export const translations: Record<Locale, TranslationKeys> = {
       speed: "Speed",
       next_level_exp: "EXP to next level",
     },
+    tutorial: {
+      greeting: "Brave Hero...",
+      ask_name: "Only you can save this world!\n\nWhat shall we call you?",
+      name_placeholder: "Enter your name",
+      name_hint: "You can change it later",
+      start_quest: "Start Quest!",
+      creating_hero: "Summoning hero...",
+    },
     camp: {
+      questDescription: "Complete homework to train your hero!",
       activeQuests: "Active Quests",
       noActiveQuests: "No active quests. Add a new quest to begin your adventure!",
       addQuest: "Add New Quest",

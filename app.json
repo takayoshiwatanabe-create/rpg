@@ -2,24 +2,18 @@
   "expo": {
     "name": "シュクダイ・クエスト 〜勇者の宿題なぎ倒しRPG〜",
     "slug": "rpg",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/app_icon.png",
     "scheme": "rpg",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "description": "「シュクダイ・クエスト」は、子供たちの毎日の宿題をRPGの冒険に変える画期的なアプリです。宿題をクリアすると経験値やゴールドを獲得し、勇者をレベルアップさせ、新たなスキルを習得できます。保護者も進捗を管理でき、子供の学習意欲を自然に引き出します。さあ、宿題を倒して世界を救う勇者になろう！日々の学習が、ワクワクする冒険に変わる！退屈な勉強時間を、ワクワクする冒険の時間に変えましょう！このアプリは、子供たちが自ら進んで学習に取り組むためのモチベーションを提供し、保護者も安心して見守れる機能が充実しています。毎日の学習が、忘れられない冒険の物語へと変わります。",
-    "privacyPolicyUrl": "https://www.yourdomain.com/privacy-policy",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zerocode.rpg",
-      "buildNumber": "1",
+      "buildNumber": "17",
       "infoPlist": {
-        "NSUserTrackingUsageDescription": "このアプリでは、広告表示のためにユーザーの行動データを追跡する場合があります。これにより、より関連性の高い広告を提供できます。",
-        "NSLocationWhenInUseUsageDescription": "このアプリは、現在地情報を使用しません。",
-        "NSPhotoLibraryUsageDescription": "このアプリは、写真ライブラリへのアクセスを必要としません。",
-        "NSCameraUsageDescription": "このアプリは、カメラへのアクセスを必要としません.",
-        "SKAdNetworkItems": [],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -40,15 +34,10 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      [
-        "expo-router",
-        {
-          "root": "src"
-        }
-      ],
+      "expo-router",
       "expo-localization",
       "expo-notifications",
-      "expo-tracking-transparency"
+      "expo-asset"
     ],
     "locales": {
       "ja": "./locales/ja.json",
@@ -68,8 +57,7 @@
     },
     "extra": {
       "router": {
-        "origin": false,
-        "root": "src"
+        "origin": false
       },
       "eas": {
         "projectId": "5dc7e7fb-506a-43d9-94d9-6d5f5aceedf6"

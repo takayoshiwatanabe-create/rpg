@@ -6,11 +6,11 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { PixelButton, PixelCard, PixelText } from '@/components/ui";
+import { PixelButton, PixelCard, PixelText } from "@/components/ui";
 import { t } from "@/i18n";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import type { Quest, QuestReward, TextColor } from "@/types";
-import { useReducedMotion } from '@/hooks/useReducedMotion";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 // Define battle states for the UI
 type BattleState =
@@ -145,7 +145,7 @@ export function BattleScene({
           <PixelText variant="label" color="cream">
             {t("quest.difficulty")}:
           </PixelText>
-          <PixelText variant="body" color={quest.difficulty as TextColor}>
+          <PixelText variant="body" color="gold">
             {t(`quest.difficulty.${quest.difficulty}`)}
           </PixelText>
         </View>

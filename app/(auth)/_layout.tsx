@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { View, StyleSheet, I18nManager } from "react-native";
+import { View, StyleSheet, ActivityIndicator, I18nManager } from "react-native";
 import { Stack, router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
 import { getIsRTL } from "@/i18n";
@@ -8,11 +8,8 @@ import { COLORS } from "@/constants/theme";
 /**
  * Layout for the unauthenticated route group: login, signup.
  *
- * Behaviour:
- * - While auth state is loading, renders nothing (prevents flash of login UI).
- * - Once resolved, redirects authenticated users to /(app).
- * - Unauthenticated users see the Stack of auth screens with no header.
- * - Writing direction switches to RTL when Arabic is active.
+ * Shows a loading indicator while auth state resolves.
+ * Redirects authenticated users to /(app).
  */
 export default function AuthLayout() {
   const { user, isLoading } = useAuth();
@@ -24,19 +21,29 @@ export default function AuthLayout() {
     }
   }, [user, isLoading]);
 
-  // Apply RTL layout if necessary. This is a fallback/double-check,
-  // as the root layout already tries to set it.
   useEffect(() => {
     if (I18nManager.isRTL !== isRTL) {
       I18nManager.forceRTL(isRTL);
-      // On native, forceRTL requires a reload to take full effect.
-      // For simplicity in this demo, we'll let the user experience it on next app launch.
-      // In a real app, you might prompt the user to restart or handle it more gracefully.
     }
   }, [isRTL]);
 
-  // Block render until the session check resolves or redirect completes.
-  if (isLoading || user) return null;
+  // Show loading indicator while auth state resolves
+  if (isLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={COLORS.gold} size="large" />
+      </View>
+    );
+  }
+
+  // Wait for redirect to complete
+  if (user) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={COLORS.gold} size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, { direction: isRTL ? "rtl" : "ltr" }]}>
@@ -55,6 +62,12 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: COLORS.bgDark,
+  },
+  loading: {
+    flex: 1,
+    backgroundColor: COLORS.bgDark,
+    justifyContent: "center",
+    alignItems: "center",
   },
   screen: {
     backgroundColor: COLORS.bgDark,

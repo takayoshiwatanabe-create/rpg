@@ -1,13 +1,15 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
+/**
+ * Root layout — bare-minimum Stack navigator.
+ * Auth guards live in the (auth) and (app) group layouts.
+ */
 export default function RootLayout() {
   return (
     <>
-      <Stack>
-        <Stack.Screen name="index" options={{ title: "シュクダイ・クエスト 〜勇者の宿題なぎ倒しRPG〜" }} />
-      </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
+      <Stack screenOptions={{ headerShown: false }} />
     </>
   );
 }

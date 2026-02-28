@@ -1,6 +1,6 @@
 import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
-import { isQuestOverdue, daysUntilDeadline } from '@/lib/gameLogic";
-import { PixelCard, PixelText, PixelButton } from '@/components/ui";
+import { isQuestOverdue, daysUntilDeadline } from "@/lib/gameLogic";
+import { PixelCard, PixelText, PixelButton } from "@/components/ui";
 import { t, getLang, getIsRTL } from "@/i18n";
 import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
 import type { Quest, Subject, Difficulty } from "@/types";

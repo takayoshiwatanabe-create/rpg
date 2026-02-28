@@ -10,10 +10,10 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { t, getLang, getIsRTL } from "@/i18n";
-import { signUpWithEmail } from "../../lib/firebase"; // Corrected import path
-import { setUserProfile, setHeroProfile } from "../../lib/firestore"; // Corrected import path
-import { createHeroProfile } from "../../lib/gameLogic"; // Corrected import path
-import { PixelButton, PixelCard, PixelText } from "../../components/ui"; // Corrected import path
+import { signUpWithEmail } from "@/lib/firebase";
+import { setUserProfile, setHeroProfile } from "@/lib/firestore";
+import { createHeroProfile } from "@/lib/gameLogic";
+import { PixelButton, PixelCard, PixelText } from "@/components/ui";
 import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
 import type { AccountRole } from "@/types";
 

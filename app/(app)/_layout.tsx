@@ -4,7 +4,7 @@ import { Stack, router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
 import { getIsRTL } from "@/i18n";
 import { COLORS, PIXEL_BORDER } from "@/constants/theme";
-import * as TrackingTransparency from 'expo-tracking-transparency';
+
 
 /**
  * Layout for the authenticated route group: dashboard, quests, battle, etc.
@@ -37,19 +37,6 @@ export default function AppLayout() {
     }
   }, [isRTL]);
 
-  // Request App Tracking Transparency permission
-  useEffect(() => {
-    async function requestTrackingPermission() {
-      const { status } = await TrackingTransparency.requestTrackingPermissionsAsync();
-      if (status === 'granted') {
-        console.log('App Tracking Transparency permission granted');
-      } else {
-        console.log('App Tracking Transparency permission denied');
-      }
-    }
-    requestTrackingPermission();
-  }, []);
-
   if (isLoading) {
     return (
       <View style={styles.loading}>
@@ -58,8 +45,14 @@ export default function AppLayout() {
     );
   }
 
-  // Block render until redirect completes.
-  if (!user) return null;
+  // Show loading indicator while redirect completes (prevents black screen).
+  if (!user) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={COLORS.gold} size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, { direction: isRTL ? "rtl" : "ltr" }]}>

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, View, Image } from "react-native";
-import { PixelButton, PixelText } from '@/components/ui";
+import { PixelButton, PixelCard, PixelText } from "@/components/ui";
 import { t } from "@/i18n";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import type { HeroProfile, TextColor } from "@/types";
@@ -8,8 +8,8 @@ import {
   calculateLevelFromExp,
   expProgressInCurrentLevel,
   isAtMaxLevel,
-} from '@/lib/expCalculator";
-import { useReducedMotion } from '@/hooks/useReducedMotion";
+} from "@/lib/expCalculator";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 export type RewardDisplayProps = {
   hero: HeroProfile;

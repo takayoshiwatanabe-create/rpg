@@ -9,28 +9,20 @@
       "@/*": [
         "./src/*"
       ]
-    },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts",
-    "next-env.d.ts",
-    "**/*.mjs",
-    ".next/types/**/*.ts",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "src/lib/expCalculator.test.ts",
-    "src/lib/gameLogic.test.ts"
+    "expo-env.d.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "vitest.config.ts",
+    "vitest.setup.ts",
+    "utils/**"
   ]
 }
-

@@ -1,93 +1,114 @@
-import { I18nManager } from "react-native";
 import * as Localization from "expo-localization";
+import { I18nManager } from "react-native";
 
-// Define the supported locales and their corresponding message files.
-// The keys here should match the `locales` object in `app.json`.
-const translations = {
-  ja: require("../locales/ja.json"),
-  en: require("../locales/en.json"),
-  zh: require("../locales/zh.json"),
-  ko: require("../locales/ko.json"),
-  es: require("../locales/es.json"),
-  fr: require("../locales/fr.json"),
-  de: require("../locales/de.json"),
-  pt: require("../locales/pt.json"),
-  ar: require("../locales/ar.json"),
-  hi: require("../locales/hi.json"),
-};
+// ---------------------------------------------------------------------------
+// Load translations safely — require() with try-catch to prevent crash
+// ---------------------------------------------------------------------------
 
-type Locale = keyof typeof translations;
+type TranslationMap = Record<string, Record<string, any>>;
 
-// Determine the best language to use based on the device's locale settings.
-// Fallback to 'en' if the device language is not supported.
-const getDeviceLocale = (): Locale => {
-  const locales = Localization.getLocales();
-  for (const locale of locales) {
-    const langCode = locale.languageCode as Locale;
-    if (translations[langCode]) {
-      return langCode;
-    }
+let translations: TranslationMap = { ja: {}, en: {} };
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod = require("../i18n/translations");
+  if (mod && mod.translations) {
+    translations = mod.translations;
   }
-  return "en"; // Default fallback
-};
-
-let currentLocale: Locale = getDeviceLocale();
-let currentMessages = translations[currentLocale];
-
-/**
- * Sets the current locale for the application.
- * This will update the messages used by the `t` function.
- * @param locale The locale to set (e.g., 'en', 'ja').
- */
-export function setLang(locale: Locale) {
-  if (translations[locale]) {
-    currentLocale = locale;
-    currentMessages = translations[locale];
-
-    // Update RTL setting
-    const isRTL = getIsRTL();
-    if (I18nManager.isRTL !== isRTL) {
-      I18nManager.forceRTL(isRTL);
-      // On native, forceRTL requires a reload to take full effect.
-      // In a real app, you might prompt the user to restart or handle it more gracefully.
-    }
-  } else {
-    console.warn(`Locale '${locale}' not supported. Falling back to '${currentLocale}'.`);
-  }
+} catch (e) {
+  console.warn("[i18n] Failed to load translations:", e);
 }
 
-/**
- * Returns the currently active locale.
- */
+// ---------------------------------------------------------------------------
+// Locale detection
+// ---------------------------------------------------------------------------
+
+export type Locale = "ja" | "en" | "zh" | "ko" | "es" | "fr" | "de" | "pt" | "ar" | "hi";
+
+const supportedLocales = Object.keys(translations);
+const deviceLang = Localization.getLocales()[0]?.languageCode ?? "ja";
+let currentLocale: Locale = supportedLocales.includes(deviceLang)
+  ? (deviceLang as Locale)
+  : "ja";
+let currentMessages = translations[currentLocale] ?? translations.ja ?? {};
+
+// ---------------------------------------------------------------------------
+// Supported languages list
+// ---------------------------------------------------------------------------
+
+export const SUPPORTED_LANGUAGES: {
+  locale: Locale;
+  label: string;
+  isRTL: boolean;
+}[] = [
+  { locale: "ja", label: "日本語", isRTL: false },
+  { locale: "en", label: "English", isRTL: false },
+  { locale: "zh", label: "中文", isRTL: false },
+  { locale: "ko", label: "한국어", isRTL: false },
+  { locale: "es", label: "Español", isRTL: false },
+  { locale: "fr", label: "Français", isRTL: false },
+  { locale: "de", label: "Deutsch", isRTL: false },
+  { locale: "pt", label: "Português", isRTL: false },
+  { locale: "ar", label: "العربية", isRTL: true },
+  { locale: "hi", label: "हिन्दी", isRTL: false },
+];
+
+// ---------------------------------------------------------------------------
+// Dot-notation key lookup (no i18n-js dependency)
+// ---------------------------------------------------------------------------
+
+function lookup(obj: Record<string, any>, key: string): string | undefined {
+  const parts = key.split(".");
+  let current: any = obj;
+  for (const part of parts) {
+    if (current == null || typeof current !== "object") return undefined;
+    current = current[part];
+  }
+  return typeof current === "string" ? current : undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 export function getLang(): Locale {
   return currentLocale;
 }
 
-/**
- * Checks if the current locale is an RTL (Right-To-Left) language.
- */
+export function setLang(locale: Locale) {
+  currentLocale = locale;
+  currentMessages = translations[locale] ?? translations.ja ?? {};
+  const isRTL = getIsRTL();
+  if (I18nManager.isRTL !== isRTL) {
+    I18nManager.forceRTL(isRTL);
+  }
+}
+
 export function getIsRTL(): boolean {
-  return currentLocale === "ar"; // Arabic is the only RTL language supported in this project
+  return currentLocale === "ar";
 }
 
 /**
- * Translates a given key into the current locale's string.
- * Supports basic string interpolation for dynamic values.
- *
- * @param key The translation key (e.g., "common.hello").
- * @param params Optional parameters for string interpolation (e.g., { name: "World" }).
- * @returns The translated string, or the key itself if not found.
+ * Translate a dot-separated key (e.g. "auth.welcome") into the current locale.
+ * Falls back to Japanese, then returns the raw key if nothing found.
+ * Supports {param} interpolation.
  */
 export function t(key: string, params?: Record<string, string | number>): string {
-  let message = currentMessages[key as keyof typeof currentMessages] || key;
+  let result = lookup(currentMessages, key);
 
+  // Fallback to Japanese if current locale doesn't have the key
+  if (result === undefined && currentLocale !== "ja") {
+    result = lookup(translations.ja ?? {}, key);
+  }
+
+  // If still not found, return the raw key
+  if (result === undefined) return key;
+
+  // Simple interpolation: replace {param} with value
   if (params) {
-    for (const paramKey in params) {
-      if (Object.prototype.hasOwnProperty.call(params, paramKey)) {
-        message = message.replace(`{{${paramKey}}}`, String(params[paramKey]));
-      }
+    for (const [k, v] of Object.entries(params)) {
+      result = result.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
     }
   }
 
-  return message;
+  return result;
 }
