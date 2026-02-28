@@ -225,28 +225,31 @@ const parentQuestCardStyles = StyleSheet.create({
 // ---------------------------------------------------------------------------
 
 export default function ParentDashboardScreen() {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, isLoading: authLoading } = useAuth();
   const isRTL = getIsRTL();
 
   const [hero, setHero] = useState<HeroProfile | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKey>("pending");
 
   const isParent = userProfile?.role === "parent";
 
   useEffect(() => {
+    // Wait for auth to resolve before deciding subscriptions
+    if (authLoading) return;
+
     if (!user || !isParent) {
-      setLoading(false);
+      setDataLoading(false);
       return;
     }
 
-    // Assuming a parent manages a single child for simplicity in this demo.
-    // In a multi-child scenario, this would need to be extended.
-    const childId = user.uid; // For now, parent's UID is also child's UID
+    setDataLoading(true);
+
+    const childId = user.uid;
     const unsubHero = subscribeToHero(user.uid, childId, (h: HeroProfile | null) => {
       setHero(h);
-      setLoading(false);
+      setDataLoading(false);
     });
 
     const unsubQuests = subscribeToQuestsByParent(childId, setQuests);
@@ -255,7 +258,7 @@ export default function ParentDashboardScreen() {
       unsubHero();
       unsubQuests();
     };
-  }, [user, isParent]);
+  }, [user, isParent, authLoading]);
 
   const handleApproveQuest = useCallback(async (questId: string) => {
     Alert.alert(
@@ -306,7 +309,7 @@ export default function ParentDashboardScreen() {
 
   const visibleQuests = filterQuests(quests, filter);
 
-  if (loading) {
+  if (authLoading || dataLoading) {
     return (
       <View style={styles.center} testID="activity-indicator">
         <ActivityIndicator color={COLORS.gold} size="large" />
