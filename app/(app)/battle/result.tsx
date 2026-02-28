@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   },
   victoryTitle: {
     color: "#FFD700",
-    fontSize: 24,
+    fontSize: 32,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
     textAlign: "center",
@@ -218,18 +218,18 @@ const styles = StyleSheet.create({
   },
   rewardLabel: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 22,
     fontFamily: FONT_FAMILY,
   },
   rewardValue: {
     color: "#FFFFFF",
-    fontSize: 18,
+    fontSize: 22,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
   },
   rewardGold: {
     color: "#FFD700",
-    fontSize: 18,
+    fontSize: 22,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
   },

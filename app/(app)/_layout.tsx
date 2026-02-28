@@ -45,6 +45,7 @@ export default function AppLayout() {
         <Stack.Screen name="quests/new" options={{ headerShown: false }} />
         <Stack.Screen name="battle/[questId]" options={{ headerShown: false }} />
         <Stack.Screen name="battle/result" options={{ headerShown: false }} />
+        <Stack.Screen name="records" options={{ headerShown: false }} />
         <Stack.Screen name="parent/index" options={{ headerShown: false }} />
         <Stack.Screen name="parent/settings" options={{ headerShown: false }} />
       </Stack>

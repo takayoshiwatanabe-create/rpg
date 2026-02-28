@@ -63,6 +63,10 @@ export default function CampScreen() {
     setShowStatus((prev) => !prev);
   }, []);
 
+  const handleRecords = useCallback(() => {
+    router.push("/(app)/records");
+  }, []);
+
   const handleSettings = useCallback(() => {
     router.push("/(app)/parent/settings");
   }, []);
@@ -81,6 +85,7 @@ export default function CampScreen() {
   const menuItems = [
     { label: t("dq.camp.go_quest"), onPress: handleGoQuest },
     { label: t("dq.camp.create_quest"), onPress: handleCreateQuest },
+    { label: t("dq.camp.records"), onPress: handleRecords },
     { label: t("dq.camp.view_status"), onPress: handleViewStatus },
     { label: t("dq.camp.settings"), onPress: handleSettings },
   ];
@@ -184,18 +189,18 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 22,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
   },
   statusValue: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 22,
     fontFamily: FONT_FAMILY,
   },
   goldValue: {
     color: "#FFD700",
-    fontSize: 16,
+    fontSize: 22,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
   },
@@ -232,14 +237,14 @@ const styles = StyleSheet.create({
   },
   barValue: {
     color: "#AAAACC",
-    fontSize: 12,
+    fontSize: 16,
     fontFamily: FONT_FAMILY,
-    width: 70,
+    width: 80,
     textAlign: "right",
   },
   questBadge: {
     color: "#FFD700",
-    fontSize: 14,
+    fontSize: 20,
     fontFamily: FONT_FAMILY,
     textAlign: "center",
   },

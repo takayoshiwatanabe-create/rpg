@@ -30,7 +30,6 @@ import { getMonster } from "@/constants/monsters";
 import type { Quest } from "@/types";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
-const DQ_BG = "#000011";
 const DQ_BATTLE_BG = "#000000";
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
@@ -57,9 +56,8 @@ export default function BattleScreen() {
 
   const [quest, setQuest] = useState<Quest | null>(null);
   const [battleState, setBattleState] = useState<BattleState>("loading");
-  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [isQuestCompleted, setIsQuestCompleted] = useState(false);
   const battleStartTime = useRef<number | null>(null);
 
   const monsterShakeAnim = useRef(new Animated.Value(0)).current;
@@ -93,7 +91,6 @@ export default function BattleScreen() {
     const unsub = subscribeToQuest(questId, (q: Quest | null) => {
       if (q) {
         setQuest(q);
-        setTimeRemaining(q.estimatedMinutes * 60);
         if (q.status === "completed") {
           setBattleState("completed");
         } else if (q.status === "pending" || q.status === "inProgress") {
@@ -108,21 +105,16 @@ export default function BattleScreen() {
     return unsub;
   }, [questId]);
 
-  // Timer
+  // Count-up timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isTimerRunning && timeRemaining > 0) {
+    if (isTimerRunning) {
       timer = setInterval(() => {
-        setTimeRemaining((prev) => prev - 1);
+        setElapsedSeconds((prev) => prev + 1);
       }, 1000);
-    } else if (timeRemaining === 0 && isTimerRunning) {
-      setIsTimerRunning(false);
-      if (!isQuestCompleted) {
-        setBattleState("failed");
-      }
     }
     return () => clearInterval(timer);
-  }, [isTimerRunning, timeRemaining, isQuestCompleted]);
+  }, [isTimerRunning]);
 
   // Monster shake animation on fight
   const shakeMonster = useCallback(() => {
@@ -140,6 +132,7 @@ export default function BattleScreen() {
     if (!quest || !user) return;
     setBattleState("inProgress");
     setIsTimerRunning(true);
+    setElapsedSeconds(0);
     battleStartTime.current = Date.now();
     shakeMonster();
     try {
@@ -151,7 +144,7 @@ export default function BattleScreen() {
   }, [quest, user, shakeMonster]);
 
   const handleCompleteQuest = useCallback(async () => {
-    if (!quest || !user || !isQuestCompleted || !battleStartTime.current) return;
+    if (!quest || !user || !battleStartTime.current) return;
 
     setIsTimerRunning(false);
     setBattleState("completed");
@@ -188,7 +181,7 @@ export default function BattleScreen() {
       Alert.alert(t("common.error"), t("common.unknown"));
       setBattleState("error");
     }
-  }, [quest, user, isQuestCompleted]);
+  }, [quest, user]);
 
   if (battleState === "loading") {
     return (
@@ -213,7 +206,7 @@ export default function BattleScreen() {
   const monster = getMonster(quest.subject, quest.difficulty);
   const monsterName = t(monster.nameKey);
 
-  // --- READY state: monster appeared ---
+  // --- READY state: monster appeared → 「スタート！」 ---
   if (battleState === "ready") {
     return (
       <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom, direction: isRTL ? "rtl" : "ltr" }]}>
@@ -231,18 +224,18 @@ export default function BattleScreen() {
           speed={40}
         />
 
-        {/* Command */}
+        {/* Start button + back */}
         <DQCommandMenu
           items={[
-            { label: t("dq.battle.fight"), onPress: handleStartBattle },
-            { label: t("dq.battle.run"), onPress: () => router.back() },
+            { label: t("dq.battle.start"), onPress: handleStartBattle },
+            { label: t("common.back"), onPress: () => router.back() },
           ]}
         />
       </View>
     );
   }
 
-  // --- IN PROGRESS state: fighting ---
+  // --- IN PROGRESS state: count-up timer + 「できた！」 ---
   if (battleState === "inProgress") {
     return (
       <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom, direction: isRTL ? "rtl" : "ltr" }]}>
@@ -254,37 +247,21 @@ export default function BattleScreen() {
           <Text style={styles.monsterNameText}>{monsterName}</Text>
         </View>
 
-        {/* Timer */}
+        {/* Count-up Timer */}
         <DQWindow>
           <Text style={styles.timerText}>
-            {"⏱ "}{t("dq.battle.timer", { time: formatTime(timeRemaining) })}
+            {"⏱ "}{formatTime(elapsedSeconds)}
           </Text>
         </DQWindow>
 
-        {/* Checkbox */}
+        {/* Done button */}
         <TouchableOpacity
-          style={styles.checkboxRow}
-          onPress={() => setIsQuestCompleted((prev) => !prev)}
+          style={styles.doneButton}
+          onPress={handleCompleteQuest}
           activeOpacity={0.7}
         >
-          <Text style={styles.checkboxIcon}>{isQuestCompleted ? "☑" : "☐"}</Text>
-          <Text style={styles.checkboxLabel}>{t("dq.battle.hw_done")}</Text>
+          <Text style={styles.doneButtonText}>{t("dq.battle.done")}</Text>
         </TouchableOpacity>
-
-        {/* Command */}
-        <DQCommandMenu
-          items={
-            isQuestCompleted
-              ? [
-                  { label: t("dq.battle.finish"), onPress: handleCompleteQuest },
-                  { label: t("dq.battle.run"), onPress: () => router.back() },
-                ]
-              : [
-                  { label: t("dq.battle.finish"), onPress: () => {}, disabled: true },
-                  { label: t("dq.battle.run"), onPress: () => router.back() },
-                ]
-          }
-        />
       </View>
     );
   }
@@ -329,7 +306,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: FONT_FAMILY,
   },
   battleField: {
@@ -344,7 +321,7 @@ const styles = StyleSheet.create({
   },
   monsterNameText: {
     color: "#FFFFFF",
-    fontSize: 20,
+    fontSize: 28,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
     marginTop: 12,
@@ -352,29 +329,22 @@ const styles = StyleSheet.create({
   },
   timerText: {
     color: "#FFD700",
-    fontSize: 20,
+    fontSize: 48,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
     textAlign: "center",
   },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#0000AA",
+  doneButton: {
+    backgroundColor: "#228B22",
     borderWidth: 3,
     borderColor: "#FFFFFF",
-    borderRadius: 4,
-    padding: 12,
-    gap: 10,
+    borderRadius: 8,
+    paddingVertical: 20,
+    alignItems: "center",
   },
-  checkboxIcon: {
-    color: "#FFD700",
-    fontSize: 22,
-    fontFamily: FONT_FAMILY,
-  },
-  checkboxLabel: {
+  doneButtonText: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 28,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
   },

@@ -306,3 +306,29 @@ export function subscribeToRecentBattleSessions(
   loadData();
   return onDataChange(KEYS.battleSessions(), loadData);
 }
+
+export function subscribeToBattleSessions(
+  userId: string,
+  callback: (sessions: BattleSession[]) => void,
+): () => void {
+  const loadData = async () => {
+    const all = await getAllBattleSessions();
+    const filtered = all
+      .filter((s) => s.userId === userId)
+      .sort(
+        (a, b) =>
+          new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+      );
+    callback(filtered);
+  };
+
+  loadData();
+  return onDataChange(KEYS.battleSessions(), loadData);
+}
+
+export async function getQuestById(
+  questId: string,
+): Promise<Quest | null> {
+  const all = await getAllQuests();
+  return all.find((q) => q.id === questId) ?? null;
+}

@@ -449,8 +449,8 @@ const styles = StyleSheet.create({
   monsterCompleted: { opacity: 0.6 },
   monsterEmoji: { fontSize: 28 },
   monsterInfo: { flex: 1 },
-  monsterName: { color: "#FFFFFF", fontSize: 15, fontFamily: FONT_FAMILY, fontWeight: "bold" },
-  monsterQuest: { color: "#AAAACC", fontSize: 12, fontFamily: FONT_FAMILY, marginTop: 2 },
+  monsterName: { color: "#FFFFFF", fontSize: 22, fontFamily: FONT_FAMILY, fontWeight: "bold" },
+  monsterQuest: { color: "#AAAACC", fontSize: 18, fontFamily: FONT_FAMILY, marginTop: 2 },
   deleteBtn: { padding: 4 },
   deleteText: { color: "#FF4444", fontSize: 14, fontFamily: FONT_FAMILY },
 });
