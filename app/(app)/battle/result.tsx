@@ -4,8 +4,9 @@ import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
 import { subscribeToHero } from "@/lib/firestore";
-import { DQMessageBox, DQCommandMenu } from "@/components/ui";
+import { DQMessageBox, DQCommandMenu, DQWindow } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
+import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile } from "@/types";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
@@ -16,8 +17,18 @@ const FONT_FAMILY = Platform.select({
   default: "monospace",
 });
 
+function formatStudyTime(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
 export default function BattleResultScreen() {
-  const { questId, exp, gold, overdue, monsterName } = useLocalSearchParams();
+  const { questId, exp, gold, duration, overdue, monsterName } = useLocalSearchParams();
   const { user } = useAuth();
   const isRTL = getIsRTL();
   const reducedMotion = useReducedMotion();
@@ -25,31 +36,37 @@ export default function BattleResultScreen() {
 
   const parsedExp = typeof exp === "string" ? parseInt(exp, 10) : 0;
   const parsedGold = typeof gold === "string" ? parseInt(gold, 10) : 0;
+  const parsedDuration = typeof duration === "string" ? parseInt(duration, 10) : 0;
   const monster = typeof monsterName === "string" ? monsterName : "???";
 
   const [hero, setHero] = useState<HeroProfile | null>(null);
-  const [prevLevel, setPrevLevel] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [messageStep, setMessageStep] = useState(0);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const expBarAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!user) {
       setIsLoading(false);
       return;
     }
-    // Store previous level before hero data updates
-    let firstLoad = true;
     const unsub = subscribeToHero(user.uid, user.uid, (h: HeroProfile | null) => {
       if (h) {
-        if (firstLoad && prevLevel === null) {
-          // We'll check for level up by comparing with the level that was before reward
-          // Since rewards are already applied, we approximate
-          setPrevLevel(h.level);
-          firstLoad = false;
-        }
         setHero(h);
+
+        // Animate EXP bar fill
+        const progress = expProgressInCurrentLevel(h.totalExp);
+        const ratio = progress.required > 0 ? progress.current / progress.required : 1;
+        if (!reducedMotion) {
+          Animated.timing(expBarAnim, {
+            toValue: ratio,
+            duration: 1200,
+            useNativeDriver: false,
+          }).start();
+        } else {
+          expBarAnim.setValue(ratio);
+        }
       }
       setIsLoading(false);
 
@@ -64,7 +81,7 @@ export default function BattleResultScreen() {
       }
     });
     return unsub;
-  }, [user, fadeAnim, reducedMotion]);
+  }, [user, fadeAnim, expBarAnim, reducedMotion]);
 
   const handleReturnToCamp = () => {
     router.replace("/(app)/camp");
@@ -76,7 +93,6 @@ export default function BattleResultScreen() {
   messages.push(t("dq.result.exp", { exp: parsedExp }));
   messages.push(t("dq.result.gold", { gold: parsedGold }));
   if (hero && hero.level > 1) {
-    // Show level up message (we show current level as the "new" level)
     messages.push(t("dq.result.levelup", { name: hero.displayName, level: hero.level }));
   }
 
@@ -109,6 +125,8 @@ export default function BattleResultScreen() {
     );
   }
 
+  const expProgress = expProgressInCurrentLevel(hero.totalExp);
+
   return (
     <Animated.View
       style={[
@@ -124,26 +142,56 @@ export default function BattleResultScreen() {
       {/* Victory fanfare area */}
       <View style={styles.victoryArea}>
         <Text style={styles.victoryEmoji}>{"🎉"}</Text>
-        <Text style={styles.victoryTitle}>{t("result.quest_completed")}</Text>
+        <Text style={styles.victoryTitle}>{t("dq.result.defeated", { monster })}</Text>
       </View>
 
+      {/* Study time display */}
+      {parsedDuration > 0 && (
+        <DQWindow title={t("dq.result.study_time")}>
+          <Text style={styles.studyTimeText}>
+            {"📚 "}{formatStudyTime(parsedDuration)}
+          </Text>
+        </DQWindow>
+      )}
+
       {/* Reward summary */}
-      <View style={styles.rewardArea}>
+      <DQWindow title={t("dq.result.rewards")}>
         <View style={styles.rewardRow}>
-          <Text style={styles.rewardLabel}>{"✨ EXP"}</Text>
+          <Text style={styles.rewardLabel}>{"✨ "}{t("hero.exp")}</Text>
           <Text style={styles.rewardValue}>{`+${parsedExp}`}</Text>
         </View>
         <View style={styles.rewardRow}>
-          <Text style={styles.rewardLabel}>{"💰 Gold"}</Text>
+          <Text style={styles.rewardLabel}>{"💰 "}{t("hero.gold")}</Text>
           <Text style={styles.rewardGold}>{`+${parsedGold}`}</Text>
         </View>
-        {hero && (
-          <View style={styles.rewardRow}>
-            <Text style={styles.rewardLabel}>{"⚔️ Lv."}</Text>
-            <Text style={styles.rewardValue}>{hero.level}</Text>
+      </DQWindow>
+
+      {/* Hero growth: level + EXP bar */}
+      <DQWindow title={t("dq.result.hero_growth")}>
+        <View style={styles.rewardRow}>
+          <Text style={styles.heroLevelLabel}>{hero.displayName}</Text>
+          <Text style={styles.heroLevelValue}>Lv.{hero.level}</Text>
+        </View>
+        <View style={styles.expBarRow}>
+          <Text style={styles.expBarLabel}>EXP</Text>
+          <View style={styles.expBarContainer}>
+            <Animated.View
+              style={[
+                styles.expBarFill,
+                {
+                  width: expBarAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["0%", "100%"],
+                  }),
+                },
+              ]}
+            />
           </View>
-        )}
-      </View>
+          <Text style={styles.expBarValue}>
+            {expProgress.current}/{expProgress.required}
+          </Text>
+        </View>
+      </DQWindow>
 
       {/* DQ Message Box with sequential messages */}
       <DQMessageBox
@@ -168,7 +216,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: DQ_BG,
     padding: 16,
-    gap: 16,
+    gap: 12,
     justifyContent: "flex-end",
   },
   center: {
@@ -180,7 +228,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: FONT_FAMILY,
   },
   victoryArea: {
@@ -189,12 +237,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   victoryEmoji: {
-    fontSize: 64,
+    fontSize: 72,
     textAlign: "center",
   },
   victoryTitle: {
     color: "#FFD700",
-    fontSize: 32,
+    fontSize: 28,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
     textAlign: "center",
@@ -203,18 +251,20 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 0,
   },
-  rewardArea: {
-    backgroundColor: "#0000AA",
-    borderWidth: 3,
-    borderColor: "#FFFFFF",
-    borderRadius: 4,
-    padding: 16,
-    gap: 8,
+  // Study time
+  studyTimeText: {
+    color: "#FFD700",
+    fontSize: 32,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+    textAlign: "center",
   },
+  // Rewards
   rewardRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 4,
   },
   rewardLabel: {
     color: "#FFFFFF",
@@ -232,5 +282,49 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
+  },
+  // Hero growth
+  heroLevelLabel: {
+    color: "#FFD700",
+    fontSize: 22,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+  },
+  heroLevelValue: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+  },
+  expBarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    gap: 8,
+  },
+  expBarLabel: {
+    color: "#32CD32",
+    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+  },
+  expBarContainer: {
+    flex: 1,
+    height: 14,
+    backgroundColor: "#333366",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  expBarFill: {
+    height: "100%",
+    backgroundColor: "#32CD32",
+    borderRadius: 2,
+  },
+  expBarValue: {
+    color: "#AAAACC",
+    fontSize: 14,
+    fontFamily: FONT_FAMILY,
+    width: 80,
+    textAlign: "right",
   },
 });

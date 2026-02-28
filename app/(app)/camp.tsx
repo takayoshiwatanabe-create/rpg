@@ -81,6 +81,7 @@ export default function CampScreen() {
 
   const heroName = hero?.displayName ?? t("hero.defaultName");
   const expProgress = hero ? expProgressInCurrentLevel(hero.totalExp) : { current: 0, required: 100 };
+  const expRatio = expProgress.required > 0 ? expProgress.current / expProgress.required : 0;
 
   const menuItems = [
     { label: t("dq.camp.go_quest"), onPress: handleGoQuest },
@@ -99,12 +100,27 @@ export default function CampScreen() {
       ]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Status Window */}
+      {/* Hero Status Window — always visible */}
       <DQWindow title={t("hero.status") ?? "ステータス"}>
+        {/* Name + Level */}
         <View style={styles.statusRow}>
-          <Text style={styles.statusLabel}>{heroName}</Text>
-          <Text style={styles.statusValue}>Lv.{hero?.level ?? 1}</Text>
+          <Text style={styles.heroName}>{heroName}</Text>
+          <Text style={styles.levelText}>Lv.{hero?.level ?? 1}</Text>
         </View>
+
+        {/* EXP bar — always visible, key growth indicator */}
+        <View style={styles.barRow}>
+          <Text style={styles.barLabel}>EXP</Text>
+          <View style={styles.barContainer}>
+            <View style={[styles.bar, styles.barExp, { flex: expRatio || 0.01 }]} />
+            <View style={{ flex: 1 - (expRatio || 0.01) }} />
+          </View>
+          <Text style={styles.barValue}>
+            {expProgress.current}/{expProgress.required}
+          </Text>
+        </View>
+
+        {/* HP bar */}
         <View style={styles.barRow}>
           <Text style={styles.barLabel}>HP</Text>
           <View style={styles.barContainer}>
@@ -113,6 +129,8 @@ export default function CampScreen() {
           </View>
           <Text style={styles.barValue}>{hero?.hp ?? 0}/{hero?.maxHp ?? 0}</Text>
         </View>
+
+        {/* MP bar */}
         <View style={styles.barRow}>
           <Text style={styles.barLabel}>MP</Text>
           <View style={styles.barContainer}>
@@ -121,26 +139,28 @@ export default function CampScreen() {
           </View>
           <Text style={styles.barValue}>{hero?.mp ?? 0}/{hero?.maxMp ?? 0}</Text>
         </View>
+
+        {/* Gold */}
         <View style={styles.statusRow}>
-          <Text style={styles.statusLabel}>G:</Text>
-          <Text style={styles.goldValue}>{hero?.gold?.toLocaleString() ?? 0}</Text>
+          <Text style={styles.statusLabel}>{"💰 "}{t("hero.gold")}</Text>
+          <Text style={styles.goldValue}>{hero?.gold?.toLocaleString() ?? 0} G</Text>
         </View>
       </DQWindow>
 
-      {/* Extended Status (toggle) */}
+      {/* Extended Status (toggle) — attack/defense details */}
       {showStatus && hero && (
         <DQWindow title={t("dq.camp.view_status")}>
           <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>EXP</Text>
-            <Text style={styles.statusValue}>{expProgress.current}/{expProgress.required}</Text>
-          </View>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>{t("hero.attack")}</Text>
+            <Text style={styles.statusLabel}>{"⚔️ "}{t("hero.attack")}</Text>
             <Text style={styles.statusValue}>{hero.attack}</Text>
           </View>
           <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>{t("hero.defense")}</Text>
+            <Text style={styles.statusLabel}>{"🛡 "}{t("hero.defense")}</Text>
             <Text style={styles.statusValue}>{hero.defense}</Text>
+          </View>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>{"✨ "}{t("hero.exp")}</Text>
+            <Text style={styles.statusValue}>{hero.totalExp}</Text>
           </View>
         </DQWindow>
       )}
@@ -187,6 +207,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
+  heroName: {
+    color: "#FFD700",
+    fontSize: 24,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+  },
+  levelText: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+  },
   statusLabel: {
     color: "#FFFFFF",
     fontSize: 22,
@@ -207,26 +239,26 @@ const styles = StyleSheet.create({
   barRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 6,
     gap: 8,
   },
   barLabel: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
-    width: 24,
+    width: 32,
   },
   barContainer: {
     flex: 1,
-    height: 10,
+    height: 12,
     backgroundColor: "#333366",
     borderRadius: 2,
     flexDirection: "row",
     overflow: "hidden",
   },
   bar: {
-    height: 10,
+    height: 12,
     borderRadius: 2,
   },
   barHp: {
@@ -235,9 +267,12 @@ const styles = StyleSheet.create({
   barMp: {
     backgroundColor: "#1E90FF",
   },
+  barExp: {
+    backgroundColor: "#32CD32",
+  },
   barValue: {
     color: "#AAAACC",
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: FONT_FAMILY,
     width: 80,
     textAlign: "right",

@@ -39,6 +39,14 @@ const FONT_FAMILY = Platform.select({
 
 type BattleState = "loading" | "ready" | "inProgress" | "completed" | "failed" | "error";
 
+// Attack messages that cycle during battle
+const ATTACK_MESSAGES = [
+  "dq.battle.hero_attack",
+  "dq.battle.critical",
+  "dq.battle.keep_going",
+  "dq.battle.almost",
+];
+
 function formatTime(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -58,9 +66,15 @@ export default function BattleScreen() {
   const [battleState, setBattleState] = useState<BattleState>("loading");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [attackMessage, setAttackMessage] = useState("");
+  const [showAttackFlash, setShowAttackFlash] = useState(false);
   const battleStartTime = useRef<number | null>(null);
+  const attackMsgIndex = useRef(0);
 
   const monsterShakeAnim = useRef(new Animated.Value(0)).current;
+  const monsterHpAnim = useRef(new Animated.Value(1)).current;
+  const flashOpacity = useRef(new Animated.Value(0)).current;
+  const damageAnim = useRef(new Animated.Value(0)).current;
 
   // Prevent back during battle
   useEffect(() => {
@@ -116,17 +130,62 @@ export default function BattleScreen() {
     return () => clearInterval(timer);
   }, [isTimerRunning]);
 
-  // Monster shake animation on fight
+  // Periodic attack animation every 30 seconds during battle
+  useEffect(() => {
+    if (!isTimerRunning || reducedMotion) return;
+    if (elapsedSeconds > 0 && elapsedSeconds % 30 === 0) {
+      triggerAttackAnimation();
+    }
+  }, [elapsedSeconds, isTimerRunning, reducedMotion]);
+
+  // Monster shake animation
   const shakeMonster = useCallback(() => {
     if (reducedMotion) return;
     Animated.sequence([
-      Animated.timing(monsterShakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(monsterShakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
-      Animated.timing(monsterShakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
-      Animated.timing(monsterShakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
-      Animated.timing(monsterShakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+      Animated.timing(monsterShakeAnim, { toValue: 12, duration: 40, useNativeDriver: true }),
+      Animated.timing(monsterShakeAnim, { toValue: -12, duration: 40, useNativeDriver: true }),
+      Animated.timing(monsterShakeAnim, { toValue: 10, duration: 40, useNativeDriver: true }),
+      Animated.timing(monsterShakeAnim, { toValue: -10, duration: 40, useNativeDriver: true }),
+      Animated.timing(monsterShakeAnim, { toValue: 6, duration: 40, useNativeDriver: true }),
+      Animated.timing(monsterShakeAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
     ]).start();
   }, [monsterShakeAnim, reducedMotion]);
+
+  // Attack flash + monster shake + HP bar decrease + message
+  const triggerAttackAnimation = useCallback(() => {
+    if (reducedMotion) return;
+
+    // Show attack message
+    const msgKey = ATTACK_MESSAGES[attackMsgIndex.current % ATTACK_MESSAGES.length]!;
+    attackMsgIndex.current++;
+    setAttackMessage(t(msgKey));
+    setShowAttackFlash(true);
+
+    // Flash screen white briefly (attack effect)
+    Animated.sequence([
+      Animated.timing(flashOpacity, { toValue: 0.6, duration: 60, useNativeDriver: true }),
+      Animated.timing(flashOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start();
+
+    // Shake monster
+    shakeMonster();
+
+    // Decrease monster HP bar visually
+    const estimatedTotal = quest?.estimatedMinutes ? quest.estimatedMinutes * 60 : 1800;
+    const progress = Math.min(elapsedSeconds / estimatedTotal, 0.95);
+    Animated.timing(monsterHpAnim, {
+      toValue: Math.max(1 - progress, 0.05),
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+
+    // Show damage number
+    damageAnim.setValue(1);
+    Animated.timing(damageAnim, { toValue: 0, duration: 1500, useNativeDriver: true }).start();
+
+    // Hide attack message after 2s
+    setTimeout(() => setShowAttackFlash(false), 2000);
+  }, [shakeMonster, flashOpacity, monsterHpAnim, damageAnim, elapsedSeconds, quest, reducedMotion]);
 
   const handleStartBattle = useCallback(async () => {
     if (!quest || !user) return;
@@ -134,14 +193,27 @@ export default function BattleScreen() {
     setIsTimerRunning(true);
     setElapsedSeconds(0);
     battleStartTime.current = Date.now();
+    monsterHpAnim.setValue(1);
+
+    // Initial attack animation
     shakeMonster();
+    setAttackMessage(t("dq.battle.hero_attack"));
+    setShowAttackFlash(true);
+    Animated.sequence([
+      Animated.timing(flashOpacity, { toValue: 0.6, duration: 60, useNativeDriver: true }),
+      Animated.timing(flashOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start();
+    damageAnim.setValue(1);
+    Animated.timing(damageAnim, { toValue: 0, duration: 1500, useNativeDriver: true }).start();
+    setTimeout(() => setShowAttackFlash(false), 2000);
+
     try {
       await updateQuestStatus(quest.id, "inProgress");
     } catch (error) {
       console.error("Failed to update quest status:", error);
       Alert.alert(t("common.error"), t("common.unknown"));
     }
-  }, [quest, user, shakeMonster]);
+  }, [quest, user, shakeMonster, flashOpacity, monsterHpAnim, damageAnim]);
 
   const handleCompleteQuest = useCallback(async () => {
     if (!quest || !user || !battleStartTime.current) return;
@@ -172,6 +244,7 @@ export default function BattleScreen() {
           questId: quest.id,
           exp: finalExp,
           gold: finalGold,
+          duration: duration,
           overdue: overdue ? "true" : "false",
           monsterName: t(getMonster(quest.subject, quest.difficulty).nameKey),
         },
@@ -206,7 +279,7 @@ export default function BattleScreen() {
   const monster = getMonster(quest.subject, quest.difficulty);
   const monsterName = t(monster.nameKey);
 
-  // --- READY state: monster appeared → 「スタート！」 ---
+  // --- READY state: monster appeared → 「たたかう！」 ---
   if (battleState === "ready") {
     return (
       <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom, direction: isRTL ? "rtl" : "ltr" }]}>
@@ -224,37 +297,87 @@ export default function BattleScreen() {
           speed={40}
         />
 
-        {/* Start button + back */}
+        {/* Commands: たたかう / にげる */}
         <DQCommandMenu
           items={[
-            { label: t("dq.battle.start"), onPress: handleStartBattle },
-            { label: t("common.back"), onPress: () => router.back() },
+            { label: t("dq.battle.fight"), onPress: handleStartBattle },
+            { label: t("dq.battle.run"), onPress: () => router.back() },
           ]}
         />
       </View>
     );
   }
 
-  // --- IN PROGRESS state: count-up timer + 「できた！」 ---
+  // --- IN PROGRESS state: battle in progress ---
   if (battleState === "inProgress") {
     return (
       <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom, direction: isRTL ? "rtl" : "ltr" }]}>
-        {/* Monster */}
+        {/* Attack flash overlay */}
+        <Animated.View
+          style={[styles.flashOverlay, { opacity: flashOpacity }]}
+          pointerEvents="none"
+        />
+
+        {/* Monster with HP bar */}
         <View style={styles.battleField}>
+          {/* Monster HP bar */}
+          <View style={styles.monsterHpContainer}>
+            <Text style={styles.monsterHpLabel}>{monsterName}</Text>
+            <View style={styles.monsterHpBar}>
+              <Animated.View
+                style={[
+                  styles.monsterHpFill,
+                  {
+                    width: monsterHpAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ["0%", "100%"],
+                    }),
+                  },
+                ]}
+              />
+            </View>
+          </View>
+
+          {/* Monster */}
           <Animated.Text style={[styles.monsterEmoji, { transform: [{ translateX: monsterShakeAnim }] }]}>
             {monster.emoji}
           </Animated.Text>
-          <Text style={styles.monsterNameText}>{monsterName}</Text>
+
+          {/* Damage number floating up */}
+          <Animated.Text
+            style={[
+              styles.damageText,
+              {
+                opacity: damageAnim,
+                transform: [{
+                  translateY: damageAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-40, 0],
+                  }),
+                }],
+              },
+            ]}
+          >
+            {"💥"}
+          </Animated.Text>
         </View>
 
-        {/* Count-up Timer */}
+        {/* Attack message */}
+        {showAttackFlash && (
+          <DQWindow>
+            <Text style={styles.attackMessageText}>{attackMessage}</Text>
+          </DQWindow>
+        )}
+
+        {/* Timer: battle duration */}
         <DQWindow>
+          <Text style={styles.timerLabel}>{t("dq.battle.battle_time")}</Text>
           <Text style={styles.timerText}>
             {"⏱ "}{formatTime(elapsedSeconds)}
           </Text>
         </DQWindow>
 
-        {/* Done button */}
+        {/* できた！ = finishing blow */}
         <TouchableOpacity
           style={styles.doneButton}
           onPress={handleCompleteQuest}
@@ -309,6 +432,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: FONT_FAMILY,
   },
+  flashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#FFFFFF",
+    zIndex: 10,
+  },
   battleField: {
     flex: 1,
     justifyContent: "center",
@@ -327,6 +455,53 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: "center",
   },
+  // Monster HP bar
+  monsterHpContainer: {
+    width: "80%",
+    marginBottom: 16,
+  },
+  monsterHpLabel: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  monsterHpBar: {
+    height: 12,
+    backgroundColor: "#333333",
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: "#666666",
+    overflow: "hidden",
+  },
+  monsterHpFill: {
+    height: "100%",
+    backgroundColor: "#FF4500",
+    borderRadius: 1,
+  },
+  // Damage text
+  damageText: {
+    fontSize: 36,
+    position: "absolute",
+    top: "30%",
+  },
+  // Attack message
+  attackMessageText: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  // Timer
+  timerLabel: {
+    color: "#AAAACC",
+    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+    textAlign: "center",
+    marginBottom: 4,
+  },
   timerText: {
     color: "#FFD700",
     fontSize: 48,
@@ -334,6 +509,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
+  // Done button
   doneButton: {
     backgroundColor: "#228B22",
     borderWidth: 3,
