@@ -122,6 +122,15 @@ export async function signOut(): Promise<void> {
 export const signOutUser = signOut;
 
 /**
+ * Re-broadcasts the current auth user to all listeners.
+ * Call after saving user profile to ensure AuthContext picks up the profile.
+ */
+export async function refreshAuthState(): Promise<void> {
+  const user = await loadCurrentUser();
+  notifyAll(user);
+}
+
+/**
  * Subscribes to authentication state changes.
  * Loads persisted state asynchronously and fires handler.
  * Fires on every subsequent auth change.

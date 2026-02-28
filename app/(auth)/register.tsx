@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { t, getLang, getIsRTL } from "@/i18n";
-import { signUpWithEmail } from "@/lib/firebase";
+import { signUpWithEmail, refreshAuthState } from "@/lib/firebase";
 import { setUserProfile, setHeroProfile } from "@/lib/firestore";
 import { createHeroProfile } from "@/lib/gameLogic";
 import { PixelButton, PixelCard, PixelText } from "@/components/ui";
@@ -68,7 +68,11 @@ export default function RegisterScreen() {
         const { id: _heroId, ...heroData } = createHeroProfile(uid, heroName.trim());
         await setHeroProfile(uid, uid, heroData);
       }
-      // Auth layout will redirect to /(app) once onAuthStateChange fires.
+      // Re-trigger auth state now that profile is saved.
+      // The initial onAuthStateChange from signUpWithEmail fires before the
+      // profile exists, causing user to be set to null. This refresh ensures
+      // AuthContext picks up the newly-saved profile.
+      await refreshAuthState();
     } catch {
       setError(t("auth.register_error"));
     } finally {

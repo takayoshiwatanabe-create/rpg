@@ -19,7 +19,12 @@ export default function AppIndexRedirect() {
   useEffect(() => {
     if (isLoading || !user) return;
 
-    if (userProfile?.role === "parent") {
+    // Wait for userProfile to be available before redirecting.
+    // Without this, a parent user could be prematurely sent to camp
+    // because userProfile is still null during initial auth resolution.
+    if (!userProfile) return;
+
+    if (userProfile.role === "parent") {
       router.replace("/(app)/parent");
     } else {
       router.replace("/(app)/camp");

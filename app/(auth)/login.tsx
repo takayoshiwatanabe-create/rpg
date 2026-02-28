@@ -9,9 +9,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { router } from "expo-router";
 import { t, getLang } from "@/i18n";
-import { signInAsGuest, signInWithEmail } from "@/lib/firebase";
+import { signInAsGuest, signInWithEmail, refreshAuthState } from "@/lib/firebase";
 import { setUserProfile, setHeroProfile } from "@/lib/firestore";
 import { createHeroProfile } from "@/lib/gameLogic";
 import { PixelButton, PixelCard, PixelText } from "@/components/ui";
@@ -68,7 +67,10 @@ export default function LoginScreen() {
       const { id: _heroId, ...heroData } = hero;
       await setHeroProfile(uid, uid, heroData);
 
-      router.replace("/(app)");
+      // Re-trigger auth state now that profile is saved.
+      // AuthContext's handler will find the profile and set user correctly.
+      // The auth layout will then redirect to /(app).
+      await refreshAuthState();
     } catch {
       setError(t("common.error"));
       setIsLoading(false);
