@@ -200,6 +200,46 @@ export const translations: Record<Locale, TranslationKeys> = {
       invalid_email: "無効なメールアドレスです。",
       hero_not_found: "勇者が見つかりませんでした。",
     },
+    dq: {
+      camp: {
+        greeting: "「{name}よ、きょうも ぼうけんに でかけるのじゃ！」",
+        go_quest: "クエストにでかける",
+        create_quest: "しゅくだいをつくる",
+        view_status: "つよさをみる",
+        settings: "せってい",
+      },
+      battle: {
+        appeared: "{monster}が あらわれた！",
+        fight: "たたかう",
+        run: "にげる",
+        finish: "とどめをさす",
+        hw_done: "しゅくだい おわった！",
+        timer: "のこり {time}",
+      },
+      result: {
+        defeated: "{monster}を たおした！",
+        exp: "けいけんち {exp} かくとく",
+        gold: "ゴールド {gold} かくとく",
+        levelup: "{name}は レベル{level}に あがった！",
+        next: "つぎのぼうけんへ",
+      },
+      quest: {
+        create_title: "どんな しゅくだい？",
+      },
+      login: {
+        start: "ぼうけんを はじめる",
+        continue: "ぼうけんを つづける",
+        name_prompt: "ゆうしゃよ、なまえを つけてください",
+      },
+    },
+    monster: {
+      math: { easy: "スライム", normal: "ドロル", hard: "ゴーレム", boss: "キングスライム" },
+      japanese: { easy: "ゴースト", normal: "バンパイア", hard: "デスナイト", boss: "りゅうおう" },
+      english: { easy: "ドラキー", normal: "メイジ", hard: "デーモン", boss: "ゾーマ" },
+      science: { easy: "バブルスライム", normal: "キメラ", hard: "ドラゴン", boss: "しんりゅう" },
+      social: { easy: "おおがらす", normal: "アーマーナイト", hard: "はぐれメタル", boss: "デスピサロ" },
+      other: { easy: "ももんじゃ", normal: "くさったしたい", hard: "あくまのきし", boss: "ミルドラース" },
+    },
   },
   en: {
     app: {
@@ -396,6 +436,46 @@ export const translations: Record<Locale, TranslationKeys> = {
       invalid_email: "Invalid email address.",
       hero_not_found: "Hero not found.",
     },
+    dq: {
+      camp: {
+        greeting: '"{name}, it\'s time for another adventure!"',
+        go_quest: "Go on Quest",
+        create_quest: "Create Homework",
+        view_status: "View Status",
+        settings: "Settings",
+      },
+      battle: {
+        appeared: "{monster} appeared!",
+        fight: "Fight",
+        run: "Run",
+        finish: "Finish Off",
+        hw_done: "Homework done!",
+        timer: "Time left: {time}",
+      },
+      result: {
+        defeated: "Defeated {monster}!",
+        exp: "Gained {exp} EXP",
+        gold: "Gained {gold} Gold",
+        levelup: "{name} reached Level {level}!",
+        next: "Next Adventure",
+      },
+      quest: {
+        create_title: "What homework?",
+      },
+      login: {
+        start: "Start Adventure",
+        continue: "Continue Adventure",
+        name_prompt: "Hero, what is your name?",
+      },
+    },
+    monster: {
+      math: { easy: "Slime", normal: "Droll", hard: "Golem", boss: "King Slime" },
+      japanese: { easy: "Ghost", normal: "Vampire", hard: "Death Knight", boss: "Dragonlord" },
+      english: { easy: "Dracky", normal: "Mage", hard: "Demon", boss: "Zoma" },
+      science: { easy: "Bubble Slime", normal: "Chimera", hard: "Dragon", boss: "Great Dragon" },
+      social: { easy: "Raven", normal: "Armored Knight", hard: "Metal Slime", boss: "Psaro" },
+      other: { easy: "Momonja", normal: "Zombie", hard: "Dark Knight", boss: "Mildrath" },
+    },
   },
   zh: {
     app: {
@@ -573,6 +653,46 @@ export const translations: Record<Locale, TranslationKeys> = {
       required_field: "必填字段为空。",
       invalid_email: "无效的电子邮件地址。",
       hero_not_found: "未找到勇者。",
+    },
+    dq: {
+      camp: {
+        greeting: "「{name}，今天也去冒险吧！」",
+        go_quest: "出发冒险",
+        create_quest: "创建作业",
+        view_status: "查看能力",
+        settings: "设置",
+      },
+      battle: {
+        appeared: "{monster}出现了！",
+        fight: "战斗",
+        run: "逃跑",
+        finish: "终结一击",
+        hw_done: "作业完成了！",
+        timer: "剩余 {time}",
+      },
+      result: {
+        defeated: "击败了{monster}！",
+        exp: "获得 {exp} 经验值",
+        gold: "获得 {gold} 金币",
+        levelup: "{name}升到了{level}级！",
+        next: "下一次冒险",
+      },
+      quest: {
+        create_title: "什么作业？",
+      },
+      login: {
+        start: "开始冒险",
+        continue: "继续冒险",
+        name_prompt: "勇者，请输入你的名字",
+      },
+    },
+    monster: {
+      math: { easy: "史莱姆", normal: "德罗尔", hard: "石巨人", boss: "史莱姆王" },
+      japanese: { easy: "幽灵", normal: "吸血鬼", hard: "死亡骑士", boss: "龙王" },
+      english: { easy: "小蝙蝠", normal: "法师", hard: "恶魔", boss: "佐玛" },
+      science: { easy: "泡泡史莱姆", normal: "奇美拉", hard: "巨龙", boss: "神龙" },
+      social: { easy: "大乌鸦", normal: "铠甲骑士", hard: "金属史莱姆", boss: "迪斯皮萨罗" },
+      other: { easy: "毛毛怪", normal: "僵尸", hard: "暗黑骑士", boss: "米尔德拉斯" },
     },
   },
   ko: {
@@ -753,6 +873,46 @@ export const translations: Record<Locale, TranslationKeys> = {
       invalid_email: "유효하지 않은 이메일 주소입니다.",
       hero_not_found: "용사를 찾을 수 없습니다.",
     },
+    dq: {
+      camp: {
+        greeting: "「{name}아, 오늘도 모험을 떠나자!」",
+        go_quest: "퀘스트 출발",
+        create_quest: "숙제 만들기",
+        view_status: "능력치 보기",
+        settings: "설정",
+      },
+      battle: {
+        appeared: "{monster}이(가) 나타났다!",
+        fight: "싸우다",
+        run: "도망치다",
+        finish: "마무리 일격",
+        hw_done: "숙제 완료!",
+        timer: "남은 시간: {time}",
+      },
+      result: {
+        defeated: "{monster}을(를) 물리쳤다!",
+        exp: "경험치 {exp} 획득",
+        gold: "골드 {gold} 획득",
+        levelup: "{name}이(가) 레벨 {level}이 되었다!",
+        next: "다음 모험으로",
+      },
+      quest: {
+        create_title: "어떤 숙제?",
+      },
+      login: {
+        start: "모험 시작",
+        continue: "모험 계속하기",
+        name_prompt: "용사여, 이름을 정해주세요",
+      },
+    },
+    monster: {
+      math: { easy: "슬라임", normal: "드롤", hard: "골렘", boss: "킹슬라임" },
+      japanese: { easy: "고스트", normal: "뱀파이어", hard: "데스나이트", boss: "용왕" },
+      english: { easy: "드래키", normal: "메이지", hard: "데몬", boss: "조마" },
+      science: { easy: "버블슬라임", normal: "키메라", hard: "드래곤", boss: "신룡" },
+      social: { easy: "큰까마귀", normal: "아머나이트", hard: "메탈슬라임", boss: "데스피사로" },
+      other: { easy: "모몬자", normal: "좀비", hard: "암흑기사", boss: "밀드라스" },
+    },
   },
   es: {
     app: {
@@ -931,6 +1091,46 @@ export const translations: Record<Locale, TranslationKeys> = {
       required_field: "Campo obligatorio vacío.",
       invalid_email: "Dirección de correo electrónico no válida.",
       hero_not_found: "Héroe no encontrado.",
+    },
+    dq: {
+      camp: {
+        greeting: "「¡{name}, es hora de otra aventura!」",
+        go_quest: "Ir de aventura",
+        create_quest: "Crear tarea",
+        view_status: "Ver estado",
+        settings: "Ajustes",
+      },
+      battle: {
+        appeared: "¡{monster} ha aparecido!",
+        fight: "Luchar",
+        run: "Huir",
+        finish: "Golpe final",
+        hw_done: "¡Tarea completada!",
+        timer: "Tiempo restante: {time}",
+      },
+      result: {
+        defeated: "¡Has derrotado a {monster}!",
+        exp: "Obtienes {exp} EXP",
+        gold: "Obtienes {gold} Oro",
+        levelup: "¡{name} alcanzó el nivel {level}!",
+        next: "Siguiente aventura",
+      },
+      quest: {
+        create_title: "¿Qué tarea?",
+      },
+      login: {
+        start: "Comenzar aventura",
+        continue: "Continuar aventura",
+        name_prompt: "Héroe, ¿cuál es tu nombre?",
+      },
+    },
+    monster: {
+      math: { easy: "Slime", normal: "Droll", hard: "Gólem", boss: "Rey Slime" },
+      japanese: { easy: "Fantasma", normal: "Vampiro", hard: "Caballero de la muerte", boss: "Señor Dragón" },
+      english: { easy: "Dracky", normal: "Mago", hard: "Demonio", boss: "Zoma" },
+      science: { easy: "Burbuja Slime", normal: "Quimera", hard: "Dragón", boss: "Gran Dragón" },
+      social: { easy: "Cuervo", normal: "Caballero blindado", hard: "Metal Slime", boss: "Psaro" },
+      other: { easy: "Momonja", normal: "Zombi", hard: "Caballero oscuro", boss: "Mildrath" },
     },
   },
   fr: {
@@ -1111,6 +1311,46 @@ export const translations: Record<Locale, TranslationKeys> = {
       invalid_email: "Adresse e-mail invalide.",
       hero_not_found: "Héros introuvable.",
     },
+    dq: {
+      camp: {
+        greeting: "「{name}, c'est l'heure de l'aventure !」",
+        go_quest: "Partir en quête",
+        create_quest: "Créer un devoir",
+        view_status: "Voir les stats",
+        settings: "Paramètres",
+      },
+      battle: {
+        appeared: "{monster} est apparu !",
+        fight: "Combattre",
+        run: "Fuir",
+        finish: "Coup de grâce",
+        hw_done: "Devoir terminé !",
+        timer: "Temps restant : {time}",
+      },
+      result: {
+        defeated: "{monster} est vaincu !",
+        exp: "{exp} EXP obtenus",
+        gold: "{gold} Or obtenus",
+        levelup: "{name} est passé au niveau {level} !",
+        next: "Prochaine aventure",
+      },
+      quest: {
+        create_title: "Quel devoir ?",
+      },
+      login: {
+        start: "Commencer l'aventure",
+        continue: "Continuer l'aventure",
+        name_prompt: "Héros, quel est votre nom ?",
+      },
+    },
+    monster: {
+      math: { easy: "Gluant", normal: "Droll", hard: "Golem", boss: "Roi Gluant" },
+      japanese: { easy: "Fantôme", normal: "Vampire", hard: "Chevalier noir", boss: "Seigneur Dragon" },
+      english: { easy: "Dracky", normal: "Mage", hard: "Démon", boss: "Zoma" },
+      science: { easy: "Gluant bulle", normal: "Chimère", hard: "Dragon", boss: "Grand Dragon" },
+      social: { easy: "Corbeau", normal: "Chevalier blindé", hard: "Gluant métal", boss: "Psaro" },
+      other: { easy: "Momonja", normal: "Zombie", hard: "Chevalier sombre", boss: "Mildrath" },
+    },
   },
   de: {
     app: {
@@ -1289,6 +1529,46 @@ export const translations: Record<Locale, TranslationKeys> = {
       required_field: "Pflichtfeld ist leer.",
       invalid_email: "Ungültige E-Mail-Adresse.",
       hero_not_found: "Held nicht gefunden.",
+    },
+    dq: {
+      camp: {
+        greeting: "「{name}, auf ins nächste Abenteuer!」",
+        go_quest: "Auf Abenteuer gehen",
+        create_quest: "Hausaufgabe erstellen",
+        view_status: "Status anzeigen",
+        settings: "Einstellungen",
+      },
+      battle: {
+        appeared: "{monster} ist erschienen!",
+        fight: "Kämpfen",
+        run: "Fliehen",
+        finish: "Gnadenstoß",
+        hw_done: "Hausaufgabe fertig!",
+        timer: "Verbleibend: {time}",
+      },
+      result: {
+        defeated: "{monster} wurde besiegt!",
+        exp: "{exp} EP erhalten",
+        gold: "{gold} Gold erhalten",
+        levelup: "{name} hat Stufe {level} erreicht!",
+        next: "Nächstes Abenteuer",
+      },
+      quest: {
+        create_title: "Welche Hausaufgabe?",
+      },
+      login: {
+        start: "Abenteuer starten",
+        continue: "Abenteuer fortsetzen",
+        name_prompt: "Held, wie ist dein Name?",
+      },
+    },
+    monster: {
+      math: { easy: "Schleim", normal: "Droll", hard: "Golem", boss: "Schleimkönig" },
+      japanese: { easy: "Geist", normal: "Vampir", hard: "Todesritter", boss: "Drachenlord" },
+      english: { easy: "Dracky", normal: "Magier", hard: "Dämon", boss: "Zoma" },
+      science: { easy: "Blasenschleim", normal: "Chimäre", hard: "Drache", boss: "Großer Drache" },
+      social: { easy: "Rabe", normal: "Panzerritter", hard: "Metallschleim", boss: "Psaro" },
+      other: { easy: "Momonja", normal: "Zombie", hard: "Dunkler Ritter", boss: "Mildrath" },
     },
   },
   pt: {
@@ -1469,6 +1749,46 @@ export const translations: Record<Locale, TranslationKeys> = {
       invalid_email: "Endereço de e-mail inválido.",
       hero_not_found: "Herói não encontrado.",
     },
+    dq: {
+      camp: {
+        greeting: "「{name}, é hora de mais uma aventura!」",
+        go_quest: "Ir para aventura",
+        create_quest: "Criar tarefa",
+        view_status: "Ver status",
+        settings: "Configurações",
+      },
+      battle: {
+        appeared: "{monster} apareceu!",
+        fight: "Lutar",
+        run: "Fugir",
+        finish: "Golpe final",
+        hw_done: "Tarefa concluída!",
+        timer: "Tempo restante: {time}",
+      },
+      result: {
+        defeated: "{monster} foi derrotado!",
+        exp: "Obteve {exp} EXP",
+        gold: "Obteve {gold} Ouro",
+        levelup: "{name} alcançou o nível {level}!",
+        next: "Próxima aventura",
+      },
+      quest: {
+        create_title: "Qual tarefa?",
+      },
+      login: {
+        start: "Iniciar aventura",
+        continue: "Continuar aventura",
+        name_prompt: "Herói, qual é o seu nome?",
+      },
+    },
+    monster: {
+      math: { easy: "Slime", normal: "Droll", hard: "Golem", boss: "Rei Slime" },
+      japanese: { easy: "Fantasma", normal: "Vampiro", hard: "Cavaleiro da morte", boss: "Senhor Dragão" },
+      english: { easy: "Dracky", normal: "Mago", hard: "Demônio", boss: "Zoma" },
+      science: { easy: "Slime bolha", normal: "Quimera", hard: "Dragão", boss: "Grande Dragão" },
+      social: { easy: "Corvo", normal: "Cavaleiro blindado", hard: "Metal Slime", boss: "Psaro" },
+      other: { easy: "Momonja", normal: "Zumbi", hard: "Cavaleiro sombrio", boss: "Mildrath" },
+    },
   },
   ar: {
     app: {
@@ -1648,6 +1968,46 @@ export const translations: Record<Locale, TranslationKeys> = {
       invalid_email: "عنوان البريد الإلكتروني غير صالح.",
       hero_not_found: "البطل غير موجود.",
     },
+    dq: {
+      camp: {
+        greeting: "「{name}، حان وقت مغامرة جديدة!」",
+        go_quest: "انطلق في المهمة",
+        create_quest: "إنشاء واجب",
+        view_status: "عرض الحالة",
+        settings: "الإعدادات",
+      },
+      battle: {
+        appeared: "ظهر {monster}!",
+        fight: "قاتل",
+        run: "اهرب",
+        finish: "الضربة الأخيرة",
+        hw_done: "تم إنجاز الواجب!",
+        timer: "الوقت المتبقي: {time}",
+      },
+      result: {
+        defeated: "تم هزيمة {monster}!",
+        exp: "حصلت على {exp} نقطة خبرة",
+        gold: "حصلت على {gold} ذهب",
+        levelup: "وصل {name} إلى المستوى {level}!",
+        next: "المغامرة التالية",
+      },
+      quest: {
+        create_title: "أي واجب؟",
+      },
+      login: {
+        start: "ابدأ المغامرة",
+        continue: "تابع المغامرة",
+        name_prompt: "أيها البطل، ما اسمك؟",
+      },
+    },
+    monster: {
+      math: { easy: "سلايم", normal: "درول", hard: "غولم", boss: "ملك سلايم" },
+      japanese: { easy: "شبح", normal: "مصاص دماء", hard: "فارس الموت", boss: "سيد التنين" },
+      english: { easy: "دراكي", normal: "ساحر", hard: "شيطان", boss: "زوما" },
+      science: { easy: "سلايم فقاعة", normal: "كايميرا", hard: "تنين", boss: "التنين العظيم" },
+      social: { easy: "غراب", normal: "فارس مدرع", hard: "سلايم معدني", boss: "بسارو" },
+      other: { easy: "مومونجا", normal: "زومبي", hard: "فارس مظلم", boss: "ميلدراث" },
+    },
   },
   hi: {
     app: {
@@ -1826,6 +2186,46 @@ export const translations: Record<Locale, TranslationKeys> = {
       required_field: "आवश्यक फ़ील्ड खाली है।",
       invalid_email: "अमान्य ईमेल पता।",
       hero_not_found: "हीरो नहीं मिला।",
+    },
+    dq: {
+      camp: {
+        greeting: "「{name}, आज भी साहसिक यात्रा पर चलो!」",
+        go_quest: "क्वेस्ट पर जाओ",
+        create_quest: "होमवर्क बनाओ",
+        view_status: "स्थिति देखो",
+        settings: "सेटिंग्स",
+      },
+      battle: {
+        appeared: "{monster} प्रकट हुआ!",
+        fight: "लड़ो",
+        run: "भागो",
+        finish: "अंतिम प्रहार",
+        hw_done: "होमवर्क पूरा!",
+        timer: "शेष समय: {time}",
+      },
+      result: {
+        defeated: "{monster} को हराया!",
+        exp: "{exp} अनुभव अंक प्राप्त",
+        gold: "{gold} स्वर्ण प्राप्त",
+        levelup: "{name} लेवल {level} पर पहुंचा!",
+        next: "अगला साहसिक कार्य",
+      },
+      quest: {
+        create_title: "कौन सा होमवर्क?",
+      },
+      login: {
+        start: "साहसिक यात्रा शुरू करो",
+        continue: "साहसिक यात्रा जारी रखो",
+        name_prompt: "वीर, अपना नाम बताओ",
+      },
+    },
+    monster: {
+      math: { easy: "स्लाइम", normal: "ड्रॉल", hard: "गोलेम", boss: "किंग स्लाइम" },
+      japanese: { easy: "भूत", normal: "वैम्पायर", hard: "डेथ नाइट", boss: "ड्रैगनलॉर्ड" },
+      english: { easy: "ड्रैकी", normal: "जादूगर", hard: "दानव", boss: "ज़ोमा" },
+      science: { easy: "बबल स्लाइम", normal: "काइमेरा", hard: "ड्रैगन", boss: "महा ड्रैगन" },
+      social: { easy: "कौवा", normal: "कवच योद्धा", hard: "मेटल स्लाइम", boss: "सारो" },
+      other: { easy: "मोमोंजा", normal: "ज़ॉम्बी", hard: "अंधेरा शूरवीर", boss: "मिल्ड्राथ" },
     },
     // Duplicate keys removed for brevity, assuming they are handled by the linter
   },

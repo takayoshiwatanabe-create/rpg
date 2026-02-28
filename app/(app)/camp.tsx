@@ -4,29 +4,38 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Platform,
+  Text,
 } from "react-native";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
 import {
   subscribeToHero,
   subscribeToActiveQuests,
 } from "@/lib/firestore";
-import { HeroStatus } from "@/components/HeroStatus";
-import { QuestCard } from "@/components/QuestCard";
-import { PixelText, PixelButton, PixelCard } from "@/components/ui";
+import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme";
+import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile, Quest } from "@/types";
+
+const DQ_BG = "#000011";
+const FONT_FAMILY = Platform.select({
+  ios: "Courier New",
+  android: "monospace",
+  default: "monospace",
+});
 
 export default function CampScreen() {
   const { user } = useAuth();
   const isRTL = getIsRTL();
+  const insets = useSafeAreaInsets();
 
   const [hero, setHero] = useState<HeroProfile | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [heroLoading, setHeroLoading] = useState(true);
+  const [showStatus, setShowStatus] = useState(false);
 
-  // heroId equals userId per the registration flow (setHeroProfile(uid, uid, ...))
   const heroId = user?.uid ?? "";
 
   useEffect(() => {
@@ -42,65 +51,112 @@ export default function CampScreen() {
     };
   }, [user, heroId]);
 
-  const handleStartBattle = useCallback((questId: string) => {
-    router.push({ pathname: "/(app)/battle", params: { questId } });
+  const handleGoQuest = useCallback(() => {
+    router.push("/(app)/quests");
   }, []);
 
-  const handleAddQuest = useCallback(() => {
+  const handleCreateQuest = useCallback(() => {
     router.push("/(app)/quests/new");
+  }, []);
+
+  const handleViewStatus = useCallback(() => {
+    setShowStatus((prev) => !prev);
+  }, []);
+
+  const handleSettings = useCallback(() => {
+    router.push("/(app)/parent/settings");
   }, []);
 
   if (heroLoading) {
     return (
-      <View style={styles.center} testID="activity-indicator">
-        <ActivityIndicator color={COLORS.gold} size="large" />
+      <View style={styles.center}>
+        <ActivityIndicator color="#FFD700" size="large" />
       </View>
     );
   }
+
+  const heroName = hero?.displayName ?? t("hero.defaultName");
+  const expProgress = hero ? expProgressInCurrentLevel(hero.totalExp) : { current: 0, required: 100 };
+
+  const menuItems = [
+    { label: t("dq.camp.go_quest"), onPress: handleGoQuest },
+    { label: t("dq.camp.create_quest"), onPress: handleCreateQuest },
+    { label: t("dq.camp.view_status"), onPress: handleViewStatus },
+    { label: t("dq.camp.settings"), onPress: handleSettings },
+  ];
 
   return (
     <ScrollView
       style={styles.root}
       contentContainerStyle={[
         styles.content,
-        { direction: isRTL ? "rtl" : "ltr" },
+        { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 },
       ]}
       showsVerticalScrollIndicator={false}
     >
-      {hero && (
-        <PixelText variant="body" color="cream" style={styles.greeting}>
-          {t("hero.greeting", { name: hero.displayName })}
-        </PixelText>
+      {/* Status Window */}
+      <DQWindow title={t("hero.status") ?? "ステータス"}>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>{heroName}</Text>
+          <Text style={styles.statusValue}>Lv.{hero?.level ?? 1}</Text>
+        </View>
+        <View style={styles.barRow}>
+          <Text style={styles.barLabel}>HP</Text>
+          <View style={styles.barContainer}>
+            <View style={[styles.bar, styles.barHp, { flex: hero ? hero.hp / hero.maxHp : 1 }]} />
+            <View style={{ flex: hero ? 1 - hero.hp / hero.maxHp : 0 }} />
+          </View>
+          <Text style={styles.barValue}>{hero?.hp ?? 0}/{hero?.maxHp ?? 0}</Text>
+        </View>
+        <View style={styles.barRow}>
+          <Text style={styles.barLabel}>MP</Text>
+          <View style={styles.barContainer}>
+            <View style={[styles.bar, styles.barMp, { flex: hero ? hero.mp / hero.maxMp : 1 }]} />
+            <View style={{ flex: hero ? 1 - hero.mp / hero.maxMp : 0 }} />
+          </View>
+          <Text style={styles.barValue}>{hero?.mp ?? 0}/{hero?.maxMp ?? 0}</Text>
+        </View>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>G:</Text>
+          <Text style={styles.goldValue}>{hero?.gold?.toLocaleString() ?? 0}</Text>
+        </View>
+      </DQWindow>
+
+      {/* Extended Status (toggle) */}
+      {showStatus && hero && (
+        <DQWindow title={t("dq.camp.view_status")}>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>EXP</Text>
+            <Text style={styles.statusValue}>{expProgress.current}/{expProgress.required}</Text>
+          </View>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>{t("hero.attack")}</Text>
+            <Text style={styles.statusValue}>{hero.attack}</Text>
+          </View>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>{t("hero.defense")}</Text>
+            <Text style={styles.statusValue}>{hero.defense}</Text>
+          </View>
+        </DQWindow>
       )}
 
-      {hero && <HeroStatus hero={hero} style={styles.heroStatus} />}
+      {/* Active quest count badge */}
+      {quests.length > 0 && (
+        <DQWindow>
+          <Text style={styles.questBadge}>
+            {"⚔️ "}{t("camp.activeQuests")}: {quests.length}
+          </Text>
+        </DQWindow>
+      )}
 
-      <View style={styles.section}>
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
-          {t("camp.activeQuests")}
-        </PixelText>
+      {/* Command Menu */}
+      <DQCommandMenu items={menuItems} />
 
-        {quests.length === 0 ? (
-          <PixelCard variant="default">
-            <PixelText variant="body" color="gray" style={styles.emptyText}>
-              {t("camp.noActiveQuests")}
-            </PixelText>
-          </PixelCard>
-        ) : (
-          quests.map((q) => (
-            <QuestCard key={q.id} quest={q} onStartBattle={handleStartBattle} />
-          ))
-        )}
-      </View>
-
-      <View style={styles.addBtnWrapper}>
-        <PixelButton
-          label={t("camp.addQuest")}
-          variant="secondary"
-          size="lg"
-          onPress={handleAddQuest}
-        />
-      </View>
+      {/* NPC Message */}
+      <DQMessageBox
+        text={t("dq.camp.greeting", { name: heroName })}
+        speed={40}
+      />
     </ScrollView>
   );
 }
@@ -108,37 +164,83 @@ export default function CampScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   content: {
-    padding: SPACING.md,
-    paddingBottom: SPACING.xxl,
-    gap: SPACING.md,
+    padding: 16,
+    gap: 12,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
-  greeting: {
-    fontSize: FONT_SIZES.sm,
-    textAlign: "center",
-  },
-  heroStatus: {
-    marginBottom: SPACING.xs,
-  },
-  section: {
-    gap: SPACING.sm,
-  },
-  sectionTitle: {
-    marginBottom: SPACING.xs,
-  },
-  emptyText: {
-    textAlign: "center",
-  },
-  addBtnWrapper: {
-    marginTop: SPACING.sm,
+  statusRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 4,
+  },
+  statusLabel: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+  },
+  statusValue: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+  },
+  goldValue: {
+    color: "#FFD700",
+    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+  },
+  barRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+    gap: 8,
+  },
+  barLabel: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+    width: 24,
+  },
+  barContainer: {
+    flex: 1,
+    height: 10,
+    backgroundColor: "#333366",
+    borderRadius: 2,
+    flexDirection: "row",
+    overflow: "hidden",
+  },
+  bar: {
+    height: 10,
+    borderRadius: 2,
+  },
+  barHp: {
+    backgroundColor: "#FF4500",
+  },
+  barMp: {
+    backgroundColor: "#1E90FF",
+  },
+  barValue: {
+    color: "#AAAACC",
+    fontSize: 12,
+    fontFamily: FONT_FAMILY,
+    width: 70,
+    textAlign: "right",
+  },
+  questBadge: {
+    color: "#FFD700",
+    fontSize: 14,
+    fontFamily: FONT_FAMILY,
+    textAlign: "center",
   },
 });

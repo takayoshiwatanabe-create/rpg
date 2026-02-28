@@ -8,13 +8,21 @@ import {
   StyleSheet,
   TextInput,
   View,
+  Text,
 } from "react-native";
 import { t, getLang } from "@/i18n";
 import { signInAsGuest, signInWithEmail, refreshAuthState } from "@/lib/firebase";
 import { setUserProfile, setHeroProfile } from "@/lib/firestore";
 import { createHeroProfile } from "@/lib/gameLogic";
-import { PixelButton, PixelCard, PixelText } from "@/components/ui";
-import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
+import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
+
+const DQ_BG = "#000000";
+const DQ_BLUE = "#0000AA";
+const FONT_FAMILY = Platform.select({
+  ios: "Courier New",
+  android: "monospace",
+  default: "monospace",
+});
 
 type Step = "title" | "consent" | "heroName" | "creating" | "emailLogin";
 
@@ -24,11 +32,9 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Email login (hidden, for returning users only)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Fade-in animation for each step
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   function transitionTo(nextStep: Step) {
@@ -47,7 +53,6 @@ export default function LoginScreen() {
     });
   }
 
-  // ── Create guest hero ──
   async function handleCreateHero() {
     const name = heroName.trim() || t("hero.defaultName");
     setIsLoading(true);
@@ -56,20 +61,14 @@ export default function LoginScreen() {
     try {
       const credential = await signInAsGuest();
       const uid = credential.user.uid;
-
       await setUserProfile(uid, {
         role: "child",
         locale: getLang(),
         createdAt: new Date().toISOString(),
       });
-
       const hero = createHeroProfile(uid, name);
       const { id: _heroId, ...heroData } = hero;
       await setHeroProfile(uid, uid, heroData);
-
-      // Re-trigger auth state now that profile is saved.
-      // AuthContext's handler will find the profile and set user correctly.
-      // The auth layout will then redirect to /(app).
       await refreshAuthState();
     } catch {
       setError(t("common.error"));
@@ -78,7 +77,6 @@ export default function LoginScreen() {
     }
   }
 
-  // ── Email login for returning users ──
   async function handleEmailLogin() {
     if (!email.trim() || !password) {
       setError(t("auth.login_error"));
@@ -88,7 +86,6 @@ export default function LoginScreen() {
     setError(null);
     try {
       await signInWithEmail(email.trim(), password);
-      // useAuth in auth layout will redirect
     } catch {
       setError(t("auth.login_error"));
     } finally {
@@ -106,187 +103,99 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-          {/* ──────── STEP 1: Title Screen ──────── */}
+          {/* ──── TITLE SCREEN (DQ Opening) ──── */}
           {step === "title" && (
             <View style={styles.stepContainer}>
-              <View style={styles.titleSection}>
-                <PixelText variant="body" color="gold" style={styles.emoji}>
-                  {"⚔️  🛡️  ⚔️"}
-                </PixelText>
-                <PixelText variant="title" color="gold" style={styles.title}>
-                  {t("app.name")}
-                </PixelText>
-                <View style={styles.tagline}>
-                  <PixelText variant="caption" color="cream" style={styles.taglineText}>
-                    {t("auth.welcome")}
-                  </PixelText>
+              <View style={styles.titleArea}>
+                <Text style={styles.titleEmoji}>{"⚔️"}</Text>
+                <Text style={styles.titleText}>{t("app.name")}</Text>
+                <View style={styles.subtitleBox}>
+                  <Text style={styles.subtitleText}>{t("auth.welcome")}</Text>
                 </View>
               </View>
 
-              <PixelCard style={styles.featureCard}>
-                <PixelText variant="body" color="cream" style={styles.featureText}>
-                  {"🗡️ " + t("camp.questDescription")}
-                </PixelText>
-                <View style={styles.featureList}>
-                  <PixelText variant="caption" color="gold" style={styles.featureItem}>
-                    {"✨ " + t("hero.levelUp")}
-                  </PixelText>
-                  <PixelText variant="caption" color="gold" style={styles.featureItem}>
-                    {"💰 " + t("hero.earnGold")}
-                  </PixelText>
-                  <PixelText variant="caption" color="gold" style={styles.featureItem}>
-                    {"⚔️ " + t("hero.battleMonsters")}
-                  </PixelText>
-                </View>
-              </PixelCard>
-
-              <PixelButton
-                label={"⚔️ " + t("auth.startAdventure")}
-                variant="primary"
-                size="lg"
-                onPress={() => transitionTo("consent")}
-                style={styles.fullWidth}
+              <DQCommandMenu
+                items={[
+                  { label: t("dq.login.start"), onPress: () => transitionTo("consent") },
+                  { label: t("dq.login.continue"), onPress: () => transitionTo("emailLogin") },
+                ]}
               />
-
-              <Pressable
-                style={styles.returningUser}
-                onPress={() => transitionTo("emailLogin")}
-              >
-                <PixelText variant="caption" color="gray" style={styles.linkText}>
-                  {t("auth.have_account")}
-                </PixelText>
-              </Pressable>
             </View>
           )}
 
-          {/* ──────── STEP 2: Parent Consent ──────── */}
+          {/* ──── CONSENT (Parent notice) ──── */}
           {step === "consent" && (
             <View style={styles.stepContainer}>
-              <View style={styles.titleSection}>
-                <PixelText variant="body" color="gold" style={styles.emoji}>
-                  {"🛡️"}
-                </PixelText>
-                <PixelText variant="heading" color="gold" style={styles.stepTitle}>
-                  {t("auth.coppa_notice_title")}
-                </PixelText>
-              </View>
-
-              <PixelCard style={styles.consentCard}>
-                <PixelText variant="body" color="cream" style={styles.consentText}>
-                  {t("auth.coppa_notice_short")}
-                </PixelText>
-              </PixelCard>
-
-              <PixelButton
-                label={"✅ " + t("auth.coppa_agree")}
-                variant="primary"
-                size="lg"
-                onPress={() => transitionTo("heroName")}
-                style={styles.fullWidth}
+              <DQMessageBox
+                text={t("auth.coppa_notice_short")}
+                speed={30}
               />
 
-              <Pressable
-                style={styles.backLink}
-                onPress={() => transitionTo("title")}
-              >
-                <PixelText variant="caption" color="gray" style={styles.linkText}>
-                  {t("common.back")}
-                </PixelText>
-              </Pressable>
+              <DQCommandMenu
+                items={[
+                  { label: t("auth.coppa_agree"), onPress: () => transitionTo("heroName") },
+                  { label: t("common.back"), onPress: () => transitionTo("title") },
+                ]}
+              />
             </View>
           )}
 
-          {/* ──────── STEP 3: Hero Name (Tutorial) ──────── */}
+          {/* ──── HERO NAME (DQ name entry) ──── */}
           {step === "heroName" && (
             <View style={styles.stepContainer}>
-              <View style={styles.titleSection}>
-                <PixelText variant="body" color="gold" style={styles.emoji}>
-                  {"📜"}
-                </PixelText>
-                <PixelText variant="heading" color="gold" style={styles.stepTitle}>
-                  {t("tutorial.greeting")}
-                </PixelText>
-              </View>
+              <DQMessageBox text={t("dq.login.name_prompt")} speed={40} />
 
-              <PixelCard style={styles.tutorialCard}>
-                <PixelText variant="body" color="cream" style={styles.tutorialNarration}>
-                  {t("tutorial.ask_name")}
-                </PixelText>
-
-                <View style={styles.nameInputContainer}>
-                  <TextInput
-                    style={styles.nameInput}
-                    value={heroName}
-                    onChangeText={setHeroName}
-                    placeholder={t("tutorial.name_placeholder")}
-                    placeholderTextColor={COLORS.grayDark}
-                    maxLength={12}
-                    autoFocus
-                    returnKeyType="done"
-                    onSubmitEditing={handleCreateHero}
-                  />
-                </View>
-
-                <PixelText variant="caption" color="gray" style={styles.nameHint}>
-                  {t("tutorial.name_hint")}
-                </PixelText>
-              </PixelCard>
+              <DQWindow>
+                <TextInput
+                  style={styles.nameInput}
+                  value={heroName}
+                  onChangeText={setHeroName}
+                  placeholder={t("tutorial.name_placeholder")}
+                  placeholderTextColor="#666688"
+                  maxLength={12}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleCreateHero}
+                />
+                <Text style={styles.nameHint}>{t("tutorial.name_hint")}</Text>
+              </DQWindow>
 
               {error && (
-                <View style={styles.errorBox}>
-                  <PixelText variant="caption" color="danger">{error}</PixelText>
-                </View>
+                <DQWindow>
+                  <Text style={styles.errorText}>{error}</Text>
+                </DQWindow>
               )}
 
-              <PixelButton
-                label={isLoading ? t("common.loading") : "⚔️ " + t("tutorial.start_quest")}
-                variant="primary"
-                size="lg"
-                disabled={isLoading}
-                onPress={handleCreateHero}
-                style={styles.fullWidth}
+              <DQCommandMenu
+                items={[
+                  {
+                    label: isLoading ? t("common.loading") : t("tutorial.start_quest"),
+                    onPress: handleCreateHero,
+                    disabled: isLoading,
+                  },
+                  { label: t("common.back"), onPress: () => transitionTo("consent") },
+                ]}
               />
-
-              <Pressable
-                style={styles.backLink}
-                onPress={() => transitionTo("consent")}
-              >
-                <PixelText variant="caption" color="gray" style={styles.linkText}>
-                  {t("common.back")}
-                </PixelText>
-              </Pressable>
             </View>
           )}
 
-          {/* ──────── STEP 4: Creating... ──────── */}
+          {/* ──── CREATING... ──── */}
           {step === "creating" && (
             <View style={styles.stepContainer}>
-              <View style={styles.titleSection}>
-                <PixelText variant="body" color="gold" style={styles.emoji}>
-                  {"⚔️"}
-                </PixelText>
-                <PixelText variant="heading" color="gold" style={styles.stepTitle}>
-                  {t("tutorial.creating_hero")}
-                </PixelText>
+              <View style={styles.titleArea}>
+                <Text style={styles.titleEmoji}>{"⚔️"}</Text>
+                <Text style={styles.creatingText}>{t("tutorial.creating_hero")}</Text>
                 <LoadingDots />
               </View>
             </View>
           )}
 
-          {/* ──────── Email Login (returning users) ──────── */}
+          {/* ──── EMAIL LOGIN ──── */}
           {step === "emailLogin" && (
             <View style={styles.stepContainer}>
-              <View style={styles.titleSection}>
-                <PixelText variant="heading" color="gold" style={styles.stepTitle}>
-                  {t("auth.login")}
-                </PixelText>
-              </View>
-
-              <PixelCard style={styles.loginCard}>
+              <DQWindow title={t("auth.login")}>
                 <View style={styles.fieldGroup}>
-                  <PixelText variant="label" color="cream" style={styles.fieldLabel}>
-                    {t("auth.email")}
-                  </PixelText>
+                  <Text style={styles.fieldLabel}>{t("auth.email")}</Text>
                   <TextInput
                     style={styles.input}
                     value={email}
@@ -296,14 +205,12 @@ export default function LoginScreen() {
                     keyboardType="email-address"
                     returnKeyType="next"
                     placeholder={t("auth.email_placeholder")}
-                    placeholderTextColor={COLORS.grayDark}
+                    placeholderTextColor="#666688"
                   />
                 </View>
 
                 <View style={styles.fieldGroup}>
-                  <PixelText variant="label" color="cream" style={styles.fieldLabel}>
-                    {t("auth.password")}
-                  </PixelText>
+                  <Text style={styles.fieldLabel}>{t("auth.password")}</Text>
                   <TextInput
                     style={styles.input}
                     value={password}
@@ -312,33 +219,23 @@ export default function LoginScreen() {
                     returnKeyType="done"
                     onSubmitEditing={handleEmailLogin}
                     placeholder={t("auth.password_placeholder")}
-                    placeholderTextColor={COLORS.grayDark}
+                    placeholderTextColor="#666688"
                   />
                 </View>
 
-                {error && (
-                  <View style={styles.errorBox}>
-                    <PixelText variant="caption" color="danger">{error}</PixelText>
-                  </View>
-                )}
+                {error && <Text style={styles.errorText}>{error}</Text>}
+              </DQWindow>
 
-                <PixelButton
-                  label={isLoading ? t("common.loading") : t("auth.login")}
-                  variant="secondary"
-                  size="md"
-                  disabled={isLoading}
-                  onPress={handleEmailLogin}
-                />
-              </PixelCard>
-
-              <Pressable
-                style={styles.backLink}
-                onPress={() => transitionTo("title")}
-              >
-                <PixelText variant="caption" color="gray" style={styles.linkText}>
-                  {t("common.back")}
-                </PixelText>
-              </Pressable>
+              <DQCommandMenu
+                items={[
+                  {
+                    label: isLoading ? t("common.loading") : t("auth.login"),
+                    onPress: handleEmailLogin,
+                    disabled: isLoading,
+                  },
+                  { label: t("common.back"), onPress: () => transitionTo("title") },
+                ]}
+              />
             </View>
           )}
         </Animated.View>
@@ -347,7 +244,6 @@ export default function LoginScreen() {
   );
 }
 
-// ── Simple loading dots animation ──
 function LoadingDots() {
   const [dots, setDots] = useState("");
   useEffect(() => {
@@ -356,161 +252,119 @@ function LoadingDots() {
     }, 500);
     return () => clearInterval(interval);
   }, []);
-  return (
-    <PixelText variant="body" color="cream" style={styles.loadingDots}>
-      {dots || " "}
-    </PixelText>
-  );
+  return <Text style={styles.loadingDots}>{dots || " "}</Text>;
 }
 
-// ── Styles ──
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   scroll: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.xl,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
   },
   container: {
     flex: 1,
     justifyContent: "center",
   },
   stepContainer: {
-    gap: SPACING.md,
+    gap: 16,
   },
-  titleSection: {
+  titleArea: {
     alignItems: "center",
-    marginBottom: SPACING.sm,
+    marginBottom: 16,
   },
-  emoji: {
+  titleEmoji: {
+    fontSize: 48,
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  titleText: {
+    color: "#FFD700",
     fontSize: 28,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
     textAlign: "center",
-    marginBottom: SPACING.sm,
-  },
-  title: {
-    textAlign: "center",
-    textShadowColor: COLORS.goldDark,
+    textShadowColor: "#B8860B",
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 0,
   },
-  tagline: {
+  subtitleBox: {
     borderWidth: 1,
-    borderColor: COLORS.goldDark,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    marginTop: SPACING.sm,
+    borderColor: "#B8860B",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginTop: 8,
   },
-  taglineText: {
+  subtitleText: {
+    color: "#F5F5DC",
+    fontSize: 13,
+    fontFamily: FONT_FAMILY,
     textAlign: "center",
   },
-  stepTitle: {
-    textAlign: "center",
-  },
-  featureCard: {
-    gap: SPACING.sm,
-  },
-  featureText: {
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  featureList: {
-    gap: SPACING.xs,
-  },
-  featureItem: {
-    textAlign: "center",
-  },
-  fullWidth: {
-    width: "100%",
-  },
-  returningUser: {
-    alignItems: "center",
-    paddingVertical: SPACING.md,
-  },
-  backLink: {
-    alignItems: "center",
-    paddingVertical: SPACING.sm,
-  },
-  linkText: {
-    textDecorationLine: "underline",
-    textAlign: "center",
-  },
-  // Consent
-  consentCard: {
-    gap: SPACING.sm,
-  },
-  consentText: {
-    textAlign: "center",
-    lineHeight: 24,
-  },
-  // Tutorial
-  tutorialCard: {
-    gap: SPACING.md,
-  },
-  tutorialNarration: {
-    textAlign: "center",
-    lineHeight: 26,
-    fontSize: FONT_SIZES.lg,
-  },
-  nameInputContainer: {
-    borderWidth: 3,
-    borderColor: COLORS.gold,
-    backgroundColor: COLORS.bgMid,
-  },
-  nameInput: {
-    color: COLORS.gold,
-    fontSize: FONT_SIZES.xl,
-    fontFamily: Platform.select({
-      ios: "Courier New",
-      android: "monospace",
-      default: "monospace",
-    }),
+  creatingText: {
+    color: "#FFD700",
+    fontSize: 18,
+    fontFamily: FONT_FAMILY,
     fontWeight: "bold",
     textAlign: "center",
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.sm,
-    letterSpacing: 2,
   },
-  nameHint: {
-    textAlign: "center",
-  },
-  // Loading
   loadingDots: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontFamily: FONT_FAMILY,
     textAlign: "center",
-    fontSize: FONT_SIZES.xl,
-    marginTop: SPACING.sm,
+    marginTop: 8,
     minHeight: 30,
   },
-  // Error
-  errorBox: {
-    backgroundColor: "#3A0000",
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.hp,
-    padding: SPACING.sm,
+  nameInput: {
+    color: "#FFD700",
+    fontSize: 22,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+    textAlign: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    letterSpacing: 2,
+    borderWidth: 2,
+    borderColor: "#4444AA",
+    backgroundColor: "#000044",
+    borderRadius: 2,
   },
-  // Email login
-  loginCard: {
-    gap: SPACING.sm,
+  nameHint: {
+    color: "#888899",
+    fontSize: 12,
+    fontFamily: FONT_FAMILY,
+    textAlign: "center",
+    marginTop: 8,
   },
   fieldGroup: {
-    gap: SPACING.xs,
+    gap: 4,
+    marginBottom: 8,
   },
-  fieldLabel: {},
+  fieldLabel: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontFamily: FONT_FAMILY,
+  },
   input: {
-    backgroundColor: COLORS.bgMid,
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: PIXEL_BORDER.borderColor,
-    color: COLORS.cream,
-    fontSize: FONT_SIZES.md,
-    fontFamily: Platform.select({
-      ios: "Courier New",
-      android: "monospace",
-      default: "monospace",
-    }),
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.sm,
+    backgroundColor: "#000044",
+    borderWidth: 2,
+    borderColor: "#4444AA",
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontFamily: FONT_FAMILY,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 2,
+  },
+  errorText: {
+    color: "#FF4444",
+    fontSize: 13,
+    fontFamily: FONT_FAMILY,
+    marginTop: 4,
   },
 });

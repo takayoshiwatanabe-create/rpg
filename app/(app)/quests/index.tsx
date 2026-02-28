@@ -4,11 +4,14 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
-import { router, Stack } from "expo-router";
+import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
 import {
   subscribeToQuests,
@@ -16,37 +19,24 @@ import {
   softDeleteQuest,
 } from "@/lib/firestore";
 import { calculateQuestRewards } from "@/lib/gameLogic";
-import { QuestCard } from "@/components/QuestCard";
-import { PixelButton, PixelCard, PixelText } from "@/components/ui";
+import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
 import { t, getIsRTL, getLang } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
+import { COLORS } from "@/constants/theme";
 import { DEFAULT_ESTIMATED_MINUTES } from "@/constants/game";
+import { getMonster } from "@/constants/monsters";
 import type { Difficulty, Quest, QuestStatus, Subject } from "@/types";
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
+const DQ_BG = "#000011";
+const DQ_BLUE = "#0000AA";
+const FONT_FAMILY = Platform.select({
+  ios: "Courier New",
+  android: "monospace",
+  default: "monospace",
+});
 
-const SUBJECTS: Subject[] = [
-  "math",
-  "japanese",
-  "english",
-  "science",
-  "social",
-  "other",
-];
-
+const SUBJECTS: Subject[] = ["math", "japanese", "english", "science", "social", "other"];
 const DIFFICULTIES: Difficulty[] = ["easy", "normal", "hard", "boss"];
-
-type FilterKey = "all" | "active" | "completed";
-
-const FILTERS: FilterKey[] = ["all", "active", "completed"];
-
 const ACTIVE_STATUSES: QuestStatus[] = ["pending", "inProgress"];
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function todayPlusDays(days: number): string {
   const d = new Date();
@@ -68,76 +58,8 @@ function addDays(dateStr: string, delta: number): string {
   return d.toISOString().split("T")[0]!;
 }
 
-function filterQuests(quests: Quest[], filter: FilterKey): Quest[] {
-  switch (filter) {
-    case "active":
-      return quests.filter((q) => ACTIVE_STATUSES.includes(q.status));
-    case "completed":
-      return quests.filter((q) => q.status === "completed");
-    default:
-      return quests;
-  }
-}
-
 // ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-type FilterTabsProps = {
-  current: FilterKey;
-  onChange: (f: FilterKey) => void;
-};
-
-function FilterTabs({ current, onChange }: FilterTabsProps) {
-  const filterLabel = (f: FilterKey) => {
-    if (f === "all") return t("quest.filter.all");
-    if (f === "active") return t("quest.filter.active");
-    return t("quest.completed");
-  };
-
-  return (
-    <View style={tabStyles.row}>
-      {FILTERS.map((f) => (
-        <TouchableOpacity
-          key={f}
-          style={[tabStyles.tab, current === f && tabStyles.tabActive]}
-          onPress={() => onChange(f)}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: current === f }}
-        >
-          <PixelText
-            variant="caption"
-            color={current === f ? "gold" : "gray"}
-          >
-            {filterLabel(f)}
-          </PixelText>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
-
-const tabStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    gap: SPACING.xs,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: SPACING.xs,
-    alignItems: "center",
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.grayDark,
-    borderRadius: PIXEL_BORDER.borderRadius,
-  },
-  tabActive: {
-    borderColor: COLORS.gold,
-    backgroundColor: COLORS.bgMid,
-  },
-});
-
-// ---------------------------------------------------------------------------
-// Quest creation form
+// Quest Form (DQ-themed)
 // ---------------------------------------------------------------------------
 
 type FormState = {
@@ -160,65 +82,6 @@ function initialForm(): FormState {
   };
 }
 
-type SelectorRowProps<T extends string> = {
-  values: T[];
-  selected: T;
-  colorMap: Record<string, string>;
-  labelFn: (v: T) => string;
-  onSelect: (v: T) => void;
-};
-
-function SelectorRow<T extends string>({
-  values,
-  selected,
-  colorMap,
-  labelFn,
-  onSelect,
-}: SelectorRowProps<T>) {
-  return (
-    <View style={selectorStyles.row}>
-      {values.map((v) => {
-        const color = colorMap[v] ?? COLORS.cream;
-        const isSelected = v === selected;
-        return (
-          <TouchableOpacity
-            key={v}
-            style={[
-              selectorStyles.chip,
-              { borderColor: color },
-              isSelected && { backgroundColor: color + "33" },
-            ]}
-            onPress={() => onSelect(v)}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: isSelected }}
-          >
-            <PixelText
-              variant="caption"
-              style={{ color: isSelected ? color : COLORS.gray }}
-            >
-              {labelFn(v)}
-            </PixelText>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-const selectorStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: SPACING.xs,
-  },
-  chip: {
-    borderWidth: 1,
-    borderRadius: PIXEL_BORDER.borderRadius,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-  },
-});
-
 type QuestFormProps = {
   userId: string;
   heroId: string;
@@ -228,27 +91,9 @@ type QuestFormProps = {
 
 function QuestForm({ userId, heroId, onSuccess, onCancel }: QuestFormProps) {
   const isRTL = getIsRTL();
+  const insets = useSafeAreaInsets();
   const [form, setForm] = useState<FormState>(initialForm);
   const [submitting, setSubmitting] = useState(false);
-
-  const subjectColors = useMemo(
-    () =>
-      Object.fromEntries(
-        SUBJECTS.map((s) => [s, COLORS[s as keyof typeof COLORS] as string]),
-      ),
-    [],
-  );
-
-  const difficultyColors = useMemo(
-    () =>
-      Object.fromEntries(
-        DIFFICULTIES.map((d) => [
-          d,
-          COLORS[d as keyof typeof COLORS] as string,
-        ]),
-      ),
-    [],
-  );
 
   const updateDifficulty = useCallback((d: Difficulty) => {
     setForm((prev) => ({
@@ -268,15 +113,10 @@ function QuestForm({ userId, heroId, onSuccess, onCancel }: QuestFormProps) {
   const handleSubmit = useCallback(async () => {
     const title = form.title.trim();
     if (!title) {
-      setForm((prev) => ({
-        ...prev,
-        titleError: t("quest.error.title_required"),
-      }));
+      setForm((prev) => ({ ...prev, titleError: t("quest.error.title_required") }));
       return;
     }
-
     const rewards = calculateQuestRewards(form.difficulty, false);
-
     setSubmitting(true);
     try {
       await createQuest({
@@ -291,241 +131,173 @@ function QuestForm({ userId, heroId, onSuccess, onCancel }: QuestFormProps) {
         expReward: rewards.exp,
         goldReward: rewards.gold,
         createdAt: new Date().toISOString(),
-        deletedAt: null, // Explicitly set deletedAt to null for new quests
+        deletedAt: null,
       });
       onSuccess();
     } catch {
-      Alert.alert(t("common.error"), t("error.unknown"));
+      Alert.alert(t("common.error"), t("common.unknown"));
     } finally {
       setSubmitting(false);
     }
   }, [form, userId, heroId, onSuccess]);
 
+  const monster = getMonster(form.subject, form.difficulty);
+  const rewards = calculateQuestRewards(form.difficulty, false);
+
   return (
     <ScrollView
-      style={formStyles.scroll}
-      contentContainerStyle={[
-        formStyles.content,
-        { direction: isRTL ? "rtl" : "ltr" },
-      ]}
+      style={[formStyles.root, { paddingTop: insets.top }]}
+      contentContainerStyle={[formStyles.content, { direction: isRTL ? "rtl" : "ltr", paddingBottom: insets.bottom + 24 }]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <PixelText variant="heading" color="gold" style={formStyles.heading}>
-        {t("quest.new")}
-      </PixelText>
+      <DQMessageBox text={t("dq.quest.create_title")} speed={30} />
 
-      {/* Quest title */}
-      <View style={formStyles.field}>
-        <PixelText variant="label" color="cream">
-          {t("quest.title")}
-        </PixelText>
+      {/* Monster Preview */}
+      <View style={formStyles.previewContainer}>
+        <Text style={formStyles.previewEmoji}>{monster.emoji}</Text>
+        <Text style={formStyles.previewName}>{t(monster.nameKey)}</Text>
+      </View>
+
+      {/* Quest Title */}
+      <DQWindow title={t("quest.title")}>
         <TextInput
-          style={[
-            formStyles.input,
-            form.titleError ? formStyles.inputError : null,
-          ]}
+          style={formStyles.input}
           value={form.title}
-          onChangeText={(v) =>
-            setForm((prev) => ({ ...prev, title: v, titleError: "" }))
-          }
+          onChangeText={(v) => setForm((prev) => ({ ...prev, title: v, titleError: "" }))}
           placeholder={t("quest.title_hint")}
-          placeholderTextColor={COLORS.grayDark}
+          placeholderTextColor="#666688"
           maxLength={60}
           accessibilityLabel={t("quest.title")}
         />
-        {!!form.titleError && (
-          <PixelText variant="caption" color="danger">
-            {form.titleError}
-          </PixelText>
-        )}
-      </View>
+        {!!form.titleError && <Text style={formStyles.errorText}>{form.titleError}</Text>}
+      </DQWindow>
 
-      {/* Subject */}
-      <View style={formStyles.field}>
-        <PixelText variant="label" color="cream">
-          {t("quest.subject")}
-        </PixelText>
-        <SelectorRow
-          values={SUBJECTS}
-          selected={form.subject}
-          colorMap={subjectColors}
-          labelFn={(s) => t(`quest.subject.${s}`)}
-          onSelect={(s) => setForm((prev) => ({ ...prev, subject: s }))}
-        />
-      </View>
+      {/* Subject selector */}
+      <DQWindow title={t("quest.subject")}>
+        <View style={formStyles.chipRow}>
+          {SUBJECTS.map((s) => (
+            <TouchableOpacity
+              key={s}
+              style={[formStyles.chip, form.subject === s && formStyles.chipActive]}
+              onPress={() => setForm((prev) => ({ ...prev, subject: s }))}
+            >
+              <Text style={[formStyles.chipText, form.subject === s && formStyles.chipTextActive]}>
+                {t(`quest.subject.${s}`)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </DQWindow>
 
-      {/* Difficulty */}
-      <View style={formStyles.field}>
-        <PixelText variant="label" color="cream">
-          {t("quest.difficulty")}
-        </PixelText>
-        <SelectorRow
-          values={DIFFICULTIES}
-          selected={form.difficulty}
-          colorMap={difficultyColors}
-          labelFn={(d) => t(`quest.difficulty.${d}`)}
-          onSelect={updateDifficulty}
-        />
-      </View>
+      {/* Difficulty selector */}
+      <DQWindow title={t("quest.difficulty")}>
+        <View style={formStyles.chipRow}>
+          {DIFFICULTIES.map((d) => (
+            <TouchableOpacity
+              key={d}
+              style={[formStyles.chip, form.difficulty === d && formStyles.chipActive]}
+              onPress={() => updateDifficulty(d)}
+            >
+              <Text style={[formStyles.chipText, form.difficulty === d && formStyles.chipTextActive]}>
+                {t(`quest.difficulty.${d}`)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </DQWindow>
 
       {/* Deadline */}
-      <View style={formStyles.field}>
-        <PixelText variant="label" color="cream">
-          {t("quest.deadline")}
-        </PixelText>
+      <DQWindow title={t("quest.deadline")}>
         <View style={formStyles.deadlineRow}>
-          <TouchableOpacity
-            style={formStyles.deadlineBtn}
-            onPress={() => shiftDeadline(-1)}
-            accessibilityRole="button"
-            accessibilityLabel={t("quest.deadline.prev_day")}
-          >
-            <PixelText variant="body" color="cream">
-              {"−"}
-            </PixelText>
+          <TouchableOpacity style={formStyles.deadlineBtn} onPress={() => shiftDeadline(-1)}>
+            <Text style={formStyles.deadlineBtnText}>{"−"}</Text>
           </TouchableOpacity>
-          <PixelText variant="body" color="gold" style={formStyles.deadlineVal}>
-            {formatDeadline(form.deadlineDate, getLang())}
-          </PixelText>
-          <TouchableOpacity
-            style={formStyles.deadlineBtn}
-            onPress={() => shiftDeadline(1)}
-            accessibilityRole="button"
-            accessibilityLabel={t("quest.deadline.next_day")}
-          >
-            <PixelText variant="body" color="cream">
-              {"+"}
-            </PixelText>
+          <Text style={formStyles.deadlineVal}>{formatDeadline(form.deadlineDate, getLang())}</Text>
+          <TouchableOpacity style={formStyles.deadlineBtn} onPress={() => shiftDeadline(1)}>
+            <Text style={formStyles.deadlineBtnText}>{"+"}</Text>
           </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Estimated time */}
-      <View style={formStyles.field}>
-        <PixelText variant="label" color="cream">
-          {t("quest.estimatedTime")}
-        </PixelText>
-        <PixelText variant="body" color="gray">
-          {t("time.minutes", { n: form.estimatedMinutes })}
-        </PixelText>
-      </View>
+      </DQWindow>
 
       {/* Rewards preview */}
-      <PixelCard variant="default" style={formStyles.rewardCard}>
-        <View style={formStyles.rewardRow}>
-          <PixelText variant="caption" color="exp">
-            {t("quest.reward_exp", {
-              exp: calculateQuestRewards(form.difficulty, false).exp,
-            })}
-          </PixelText>
-          <PixelText variant="caption" color="gold">
-            {t("quest.reward_gold", {
-              gold: calculateQuestRewards(form.difficulty, false).gold,
-            })}
-          </PixelText>
-        </View>
-      </PixelCard>
+      <DQWindow title={t("quest.rewards")}>
+        <Text style={formStyles.rewardText}>
+          {"✨ "}{t("quest.reward_exp", { exp: rewards.exp })}{"   💰 "}{t("quest.reward_gold", { gold: rewards.gold })}
+        </Text>
+      </DQWindow>
 
       {/* Actions */}
-      <View style={formStyles.actions}>
-        <PixelButton
-          label={t("common.cancel")}
-          variant="ghost"
-          size="md"
-          onPress={onCancel}
-          disabled={submitting}
-        />
-        <PixelButton
-          label={submitting ? t("common.loading") : t("quest.register")}
-          variant="primary"
-          size="md"
-          onPress={handleSubmit}
-          disabled={submitting}
-        />
-      </View>
+      <DQCommandMenu
+        items={[
+          {
+            label: submitting ? t("common.loading") : t("quest.register"),
+            onPress: handleSubmit,
+            disabled: submitting,
+          },
+          { label: t("common.cancel"), onPress: onCancel },
+        ]}
+      />
     </ScrollView>
   );
 }
 
 const formStyles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-    backgroundColor: COLORS.bgDark,
-  },
-  content: {
-    padding: SPACING.md,
-    paddingBottom: SPACING.xxl,
-    gap: SPACING.md,
-  },
-  heading: {
-    textAlign: "center",
-    marginBottom: SPACING.xs,
-  },
-  field: {
-    gap: SPACING.xs,
-  },
+  root: { flex: 1, backgroundColor: DQ_BG },
+  content: { padding: 16, gap: 12 },
+  previewContainer: { alignItems: "center", paddingVertical: 8 },
+  previewEmoji: { fontSize: 48 },
+  previewName: { color: "#FFFFFF", fontSize: 16, fontFamily: FONT_FAMILY, fontWeight: "bold", marginTop: 4 },
   input: {
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.pixelBorder,
-    borderRadius: PIXEL_BORDER.borderRadius,
-    backgroundColor: COLORS.bgCard,
-    color: COLORS.cream,
-    fontFamily: "monospace",
-    fontSize: FONT_SIZES.md,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.sm,
+    borderWidth: 2,
+    borderColor: "#4444AA",
+    backgroundColor: "#000044",
+    color: "#FFFFFF",
+    fontFamily: FONT_FAMILY,
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 2,
   },
-  inputError: {
-    borderColor: COLORS.hp,
+  errorText: { color: "#FF4444", fontSize: 12, fontFamily: FONT_FAMILY, marginTop: 4 },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chip: {
+    borderWidth: 1,
+    borderColor: "#4444AA",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 2,
   },
-  deadlineRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-  },
+  chipActive: { borderColor: "#FFD700", backgroundColor: "#222244" },
+  chipText: { color: "#888899", fontSize: 13, fontFamily: FONT_FAMILY },
+  chipTextActive: { color: "#FFD700" },
+  deadlineRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   deadlineBtn: {
     width: 36,
     height: 36,
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.pixelBorder,
-    borderRadius: PIXEL_BORDER.borderRadius,
-    backgroundColor: COLORS.bgMid,
+    borderWidth: 2,
+    borderColor: "#4444AA",
+    backgroundColor: "#000044",
     justifyContent: "center",
     alignItems: "center",
+    borderRadius: 2,
   },
-  deadlineVal: {
-    flex: 1,
-    textAlign: "center",
-  },
-  rewardCard: {
-    marginTop: SPACING.xs,
-  },
-  rewardRow: {
-    flexDirection: "row",
-    gap: SPACING.md,
-    justifyContent: "center",
-  },
-  actions: {
-    flexDirection: "row",
-    gap: SPACING.sm,
-    justifyContent: "flex-end",
-    marginTop: SPACING.sm,
-  },
+  deadlineBtnText: { color: "#FFFFFF", fontSize: 18, fontFamily: FONT_FAMILY },
+  deadlineVal: { flex: 1, color: "#FFD700", fontSize: 14, fontFamily: FONT_FAMILY, textAlign: "center" },
+  rewardText: { color: "#FFFFFF", fontSize: 14, fontFamily: FONT_FAMILY, textAlign: "center" },
 });
 
 // ---------------------------------------------------------------------------
-// Main screen
+// Main screen — Monster List
 // ---------------------------------------------------------------------------
 
 export default function QuestsScreen() {
   const { user } = useAuth();
   const isRTL = getIsRTL();
+  const insets = useSafeAreaInsets();
 
   const heroId = user?.uid ?? "";
-
   const [quests, setQuests] = useState<Quest[]>([]);
-  const [filter, setFilter] = useState<FilterKey>("active");
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
@@ -534,20 +306,25 @@ export default function QuestsScreen() {
     return unsub;
   }, [user, heroId]);
 
-  const visible = useMemo(
-    () => filterQuests(quests, filter),
-    [quests, filter],
+  const activeQuests = useMemo(
+    () => quests.filter((q) => ACTIVE_STATUSES.includes(q.status)),
+    [quests],
+  );
+
+  const completedQuests = useMemo(
+    () => quests.filter((q) => q.status === "completed"),
+    [quests],
   );
 
   const handleStartBattle = useCallback((questId: string) => {
-    router.push({ pathname: "/(app)/battle", params: { questId } });
+    router.push({ pathname: "/(app)/battle/[questId]", params: { questId } });
   }, []);
 
   const handleDelete = useCallback(async (questId: string) => {
     try {
       await softDeleteQuest(questId);
     } catch {
-      Alert.alert(t("common.error"), t("error.unknown"));
+      Alert.alert(t("common.error"), t("common.unknown"));
     }
   }, []);
 
@@ -557,56 +334,80 @@ export default function QuestsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t("nav.quests") }} />
-
-      <View
-        style={[styles.root, { direction: isRTL ? "rtl" : "ltr" }]}
-      >
-        {/* Filter tabs */}
-        <View style={styles.filterRow}>
-          <FilterTabs current={filter} onChange={setFilter} />
-        </View>
-
-        {/* Quest list */}
+      <View style={[styles.root, { direction: isRTL ? "rtl" : "ltr" }]}>
         <ScrollView
           style={styles.list}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}
           showsVerticalScrollIndicator={false}
         >
-          {visible.length === 0 ? (
-            <PixelCard variant="default" style={styles.emptyCard}>
-              <PixelText variant="body" color="gray" style={styles.emptyText}>
-                {t("quest.empty")}
-              </PixelText>
-              <PixelText
-                variant="caption"
-                color="gray"
-                style={styles.emptyText}
-              >
-                {t("quest.add_prompt")}
-              </PixelText>
-            </PixelCard>
-          ) : (
-            visible.map((q) => (
-              <QuestCard
-                key={q.id}
-                quest={q}
-                onStartBattle={handleStartBattle}
-                onDelete={q.status !== "completed" ? handleDelete : undefined}
-              />
-            ))
-          )}
-        </ScrollView>
+          {/* Back button */}
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Text style={styles.backText}>{"◀ "}{t("common.back")}</Text>
+          </TouchableOpacity>
 
-        {/* Add quest button */}
-        <View style={styles.addRow}>
-          <PixelButton
-            label={t("quest.new")}
-            variant="secondary"
-            size="lg"
-            onPress={() => setShowForm(true)}
+          {/* Active monsters */}
+          {activeQuests.length === 0 ? (
+            <DQWindow>
+              <Text style={styles.emptyText}>{t("quest.empty")}</Text>
+              <Text style={styles.emptyHint}>{t("quest.add_prompt")}</Text>
+            </DQWindow>
+          ) : (
+            <DQWindow title={"⚔️ " + t("camp.activeQuests")}>
+              {activeQuests.map((q) => {
+                const monster = getMonster(q.subject, q.difficulty);
+                return (
+                  <TouchableOpacity
+                    key={q.id}
+                    style={styles.monsterRow}
+                    onPress={() => handleStartBattle(q.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.monsterEmoji}>{monster.emoji}</Text>
+                    <View style={styles.monsterInfo}>
+                      <Text style={styles.monsterName}>
+                        {t(monster.nameKey)} Lv.{q.difficulty === "easy" ? "E" : q.difficulty === "normal" ? "N" : q.difficulty === "hard" ? "H" : "B"}
+                      </Text>
+                      <Text style={styles.monsterQuest}>{"「"}{q.title}{"」"}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={() => handleDelete(q.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Text style={styles.deleteText}>{"✕"}</Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                );
+              })}
+            </DQWindow>
+          )}
+
+          {/* Completed monsters (faded) */}
+          {completedQuests.length > 0 && (
+            <DQWindow title={"🏆 " + t("quest.completed")}>
+              {completedQuests.slice(0, 10).map((q) => {
+                const monster = getMonster(q.subject, q.difficulty);
+                return (
+                  <View key={q.id} style={[styles.monsterRow, styles.monsterCompleted]}>
+                    <Text style={[styles.monsterEmoji, { opacity: 0.4 }]}>{monster.emoji}</Text>
+                    <View style={styles.monsterInfo}>
+                      <Text style={[styles.monsterName, { opacity: 0.4 }]}>{t(monster.nameKey)}</Text>
+                      <Text style={[styles.monsterQuest, { opacity: 0.3 }]}>{"「"}{q.title}{"」"}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </DQWindow>
+          )}
+
+          {/* Add quest button */}
+          <DQCommandMenu
+            items={[
+              { label: t("dq.camp.create_quest"), onPress: () => setShowForm(true) },
+              { label: t("common.back"), onPress: () => router.back() },
+            ]}
           />
-        </View>
+        </ScrollView>
       </View>
 
       {/* New quest modal */}
@@ -630,35 +431,26 @@ export default function QuestsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: COLORS.bgDark,
-  },
-  filterRow: {
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.sm,
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md,
-    gap: SPACING.xs,
-  },
-  emptyCard: {
-    marginTop: SPACING.lg,
-    gap: SPACING.xs,
-  },
-  emptyText: {
-    textAlign: "center",
-  },
-  addRow: {
-    padding: SPACING.md,
+  root: { flex: 1, backgroundColor: DQ_BG },
+  list: { flex: 1 },
+  listContent: { padding: 16, gap: 12 },
+  backBtn: { marginBottom: 4 },
+  backText: { color: "#AAAACC", fontSize: 14, fontFamily: FONT_FAMILY },
+  emptyText: { color: "#AAAACC", fontSize: 14, fontFamily: FONT_FAMILY, textAlign: "center" },
+  emptyHint: { color: "#666688", fontSize: 12, fontFamily: FONT_FAMILY, textAlign: "center", marginTop: 4 },
+  monsterRow: {
+    flexDirection: "row",
     alignItems: "center",
-    borderTopWidth: PIXEL_BORDER.borderWidth,
-    borderTopColor: COLORS.pixelBorderDark,
-    backgroundColor: COLORS.bgDark,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#222244",
+    gap: 10,
   },
+  monsterCompleted: { opacity: 0.6 },
+  monsterEmoji: { fontSize: 28 },
+  monsterInfo: { flex: 1 },
+  monsterName: { color: "#FFFFFF", fontSize: 15, fontFamily: FONT_FAMILY, fontWeight: "bold" },
+  monsterQuest: { color: "#AAAACC", fontSize: 12, fontFamily: FONT_FAMILY, marginTop: 2 },
+  deleteBtn: { padding: 4 },
+  deleteText: { color: "#FF4444", fontSize: 14, fontFamily: FONT_FAMILY },
 });

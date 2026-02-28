@@ -5,8 +5,12 @@ import {
   StyleSheet,
   View,
   BackHandler,
+  Text,
+  Platform,
+  TouchableOpacity,
 } from "react-native";
-import { useLocalSearchParams, router, Stack } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
 import {
   subscribeToQuest,
@@ -20,21 +24,27 @@ import {
   applyExpPenalty,
   applyGoldPenalty,
 } from "@/lib/gameLogic";
-import { PixelButton, PixelText } from "@/components/ui";
+import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
-import { COLORS, SPACING } from "@/constants/theme";
+import { getMonster } from "@/constants/monsters";
 import type { Quest } from "@/types";
-import { BattleScene } from "@/components/BattleScene";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
-// Battle states for the UI and logic flow
-type BattleState =
-  | "loading"
-  | "ready"
-  | "inProgress"
-  | "completed"
-  | "failed"
-  | "error";
+const DQ_BG = "#000011";
+const DQ_BATTLE_BG = "#000000";
+const FONT_FAMILY = Platform.select({
+  ios: "Courier New",
+  android: "monospace",
+  default: "monospace",
+});
+
+type BattleState = "loading" | "ready" | "inProgress" | "completed" | "failed" | "error";
+
+function formatTime(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+}
 
 export default function BattleScreen() {
   const { questId: questIdParam } = useLocalSearchParams();
@@ -43,82 +53,62 @@ export default function BattleScreen() {
   const { user } = useAuth();
   const isRTL = getIsRTL();
   const reducedMotion = useReducedMotion();
+  const insets = useSafeAreaInsets();
 
   const [quest, setQuest] = useState<Quest | null>(null);
   const [battleState, setBattleState] = useState<BattleState>("loading");
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [isQuestCompleted, setIsQuestCompleted] = useState(false); // Checkbox state
-  const battleStartTime = useRef<number | null>(null); // To record battle start time for session
+  const [isQuestCompleted, setIsQuestCompleted] = useState(false);
+  const battleStartTime = useRef<number | null>(null);
 
-  // Animation for battle scene entry
-  const animatedValue = useRef(new Animated.Value(0)).current;
+  const monsterShakeAnim = useRef(new Animated.Value(0)).current;
 
-  // Prevent back button during battle
+  // Prevent back during battle
   useEffect(() => {
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        if (battleState === "inProgress") {
-          Alert.alert(
-            t("battle.exit_confirm_title"),
-            t("battle.exit_confirm_message"),
-            [
-              { text: t("common.cancel"), style: "cancel" },
-              {
-                text: t("common.exit"),
-                style: "destructive",
-                onPress: () => router.back(),
-              },
-            ],
-            { cancelable: false },
-          );
-          return true; // Prevent default back action
-        }
-        return false; // Allow default back action
-      },
-    );
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (battleState === "inProgress") {
+        Alert.alert(
+          t("battle.exit_confirm_title"),
+          t("battle.exit_confirm_message"),
+          [
+            { text: t("common.cancel"), style: "cancel" },
+            { text: t("common.exit"), style: "destructive", onPress: () => router.back() },
+          ],
+          { cancelable: false },
+        );
+        return true;
+      }
+      return false;
+    });
     return () => backHandler.remove();
   }, [battleState]);
 
+  // Subscribe to quest data
   useEffect(() => {
     if (!questId) {
       setBattleState("error");
       return;
     }
-
     const unsub = subscribeToQuest(questId, (q: Quest | null) => {
       if (q) {
         setQuest(q);
-        setTimeRemaining(q.estimatedMinutes * 60); // Convert minutes to seconds
+        setTimeRemaining(q.estimatedMinutes * 60);
         if (q.status === "completed") {
           setBattleState("completed");
         } else if (q.status === "pending" || q.status === "inProgress") {
           setBattleState("ready");
         } else {
-          setBattleState("error"); // e.g., deleted quest
-        }
-
-        // Animate in when quest data is loaded
-        if (!reducedMotion) {
-          Animated.spring(animatedValue, {
-            toValue: 1,
-            useNativeDriver: true,
-            speed: 10,
-            bounciness: 8,
-          }).start();
-        } else {
-          animatedValue.setValue(1); // Instantly show if reduced motion is preferred
+          setBattleState("error");
         }
       } else {
         setBattleState("error");
       }
     });
-
     return unsub;
-  }, [questId, animatedValue, reducedMotion]);
+  }, [questId]);
 
-  // Timer logic
+  // Timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isTimerRunning && timeRemaining > 0) {
@@ -128,24 +118,37 @@ export default function BattleScreen() {
     } else if (timeRemaining === 0 && isTimerRunning) {
       setIsTimerRunning(false);
       if (!isQuestCompleted) {
-        setBattleState("failed"); // Time ran out, quest not completed
+        setBattleState("failed");
       }
     }
     return () => clearInterval(timer);
   }, [isTimerRunning, timeRemaining, isQuestCompleted]);
 
+  // Monster shake animation on fight
+  const shakeMonster = useCallback(() => {
+    if (reducedMotion) return;
+    Animated.sequence([
+      Animated.timing(monsterShakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(monsterShakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(monsterShakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
+      Animated.timing(monsterShakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
+      Animated.timing(monsterShakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+    ]).start();
+  }, [monsterShakeAnim, reducedMotion]);
+
   const handleStartBattle = useCallback(async () => {
     if (!quest || !user) return;
     setBattleState("inProgress");
     setIsTimerRunning(true);
-    battleStartTime.current = Date.now(); // Record start time
+    battleStartTime.current = Date.now();
+    shakeMonster();
     try {
       await updateQuestStatus(quest.id, "inProgress");
     } catch (error) {
-      console.error("Failed to update quest status to inProgress:", error);
-      Alert.alert(t("common.error"), t("error.unknown"));
+      console.error("Failed to update quest status:", error);
+      Alert.alert(t("common.error"), t("common.unknown"));
     }
-  }, [quest, user]);
+  }, [quest, user, shakeMonster]);
 
   const handleCompleteQuest = useCallback(async () => {
     if (!quest || !user || !isQuestCompleted || !battleStartTime.current) return;
@@ -158,14 +161,11 @@ export default function BattleScreen() {
     const finalExp = applyExpPenalty(baseRewards.exp, overdue);
     const finalGold = applyGoldPenalty(baseRewards.gold, overdue);
     const endTime = Date.now();
-    const duration = Math.floor((endTime - battleStartTime.current) / 1000); // Duration in seconds
+    const duration = Math.floor((endTime - battleStartTime.current) / 1000);
 
     try {
       await updateQuestStatus(quest.id, "completed");
-      await updateHeroStats(user.uid, {
-        totalExp: finalExp,
-        gold: finalGold,
-      });
+      await updateHeroStats(user.uid, { totalExp: finalExp, gold: finalGold });
       await createBattleSession(user.uid, quest.id, {
         startTime: new Date(battleStartTime.current).toISOString(),
         endTime: new Date(endTime).toISOString(),
@@ -180,102 +180,202 @@ export default function BattleScreen() {
           exp: finalExp,
           gold: finalGold,
           overdue: overdue ? "true" : "false",
+          monsterName: t(getMonster(quest.subject, quest.difficulty).nameKey),
         },
       });
     } catch (error) {
-      console.error("Failed to complete quest or update hero stats:", error);
-      Alert.alert(t("common.error"), t("error.unknown"));
+      console.error("Failed to complete quest:", error);
+      Alert.alert(t("common.error"), t("common.unknown"));
       setBattleState("error");
     }
   }, [quest, user, isQuestCompleted]);
 
-  // const formatTime = (totalSeconds: number) => { // Removed as it's not directly used in this file's render
-  //   const minutes = Math.floor(totalSeconds / 60);
-  //   const seconds = totalSeconds % 60;
-  //   return `${minutes.toString().padStart(2, "0")}:${seconds
-  //     .toString()
-  //     .padStart(2, "0")}`;
-  // };
-
-  const cardAnimation = {
-    opacity: animatedValue,
-    transform: [
-      {
-        scale: animatedValue.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.9, 1],
-        }),
-      },
-    ],
-  };
-
   if (battleState === "loading") {
     return (
       <View style={styles.center}>
-        <PixelText variant="body" color="cream">
-          {t("common.loading")}...
-        </PixelText>
+        <Text style={styles.loadingText}>{t("common.loading")}...</Text>
       </View>
     );
   }
 
   if (battleState === "error" || !quest) {
     return (
-      <View style={styles.center}>
-        <PixelText variant="body" color="danger">
-          {t("battle.error.notFound")}
-        </PixelText>
-        <PixelButton
-          label={t("common.back")}
-          variant="secondary"
-          onPress={() => router.back()}
-          style={styles.backButton}
+      <View style={[styles.center, { paddingTop: insets.top }]}>
+        <DQMessageBox text={t("battle.error.notFound")} />
+        <DQCommandMenu
+          items={[{ label: t("common.back"), onPress: () => router.back() }]}
+          style={{ marginTop: 16 }}
         />
       </View>
     );
   }
 
-  const isOverdue = isQuestOverdue(quest.deadlineDate);
-  const rewards = calculateQuestRewards(quest.difficulty, isOverdue);
+  const monster = getMonster(quest.subject, quest.difficulty);
+  const monsterName = t(monster.nameKey);
 
-  return (
-    <>
-      <Stack.Screen options={{ title: t("battle.title") }} />
-      <Animated.View
-        style={[styles.root, { direction: isRTL ? "rtl" : "ltr" }, cardAnimation]}
-      >
-        <BattleScene
-          quest={quest}
-          battleState={battleState}
-          timeRemaining={timeRemaining}
-          isTimerRunning={isTimerRunning}
-          isQuestCompleted={isQuestCompleted}
-          onStartBattle={handleStartBattle}
-          onCompleteQuest={handleCompleteQuest}
-          onToggleQuestCompleted={() => setIsQuestCompleted((prev) => !prev)}
-          onExitBattle={() => router.back()}
-          rewards={rewards}
-          isRTL={isRTL}
+  // --- READY state: monster appeared ---
+  if (battleState === "ready") {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom, direction: isRTL ? "rtl" : "ltr" }]}>
+        {/* Monster display area */}
+        <View style={styles.battleField}>
+          <Animated.Text style={[styles.monsterEmoji, { transform: [{ translateX: monsterShakeAnim }] }]}>
+            {monster.emoji}
+          </Animated.Text>
+          <Text style={styles.monsterNameText}>{monsterName}</Text>
+        </View>
+
+        {/* Message */}
+        <DQMessageBox
+          text={t("dq.battle.appeared", { monster: monsterName })}
+          speed={40}
         />
-      </Animated.View>
-    </>
+
+        {/* Command */}
+        <DQCommandMenu
+          items={[
+            { label: t("dq.battle.fight"), onPress: handleStartBattle },
+            { label: t("dq.battle.run"), onPress: () => router.back() },
+          ]}
+        />
+      </View>
+    );
+  }
+
+  // --- IN PROGRESS state: fighting ---
+  if (battleState === "inProgress") {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom, direction: isRTL ? "rtl" : "ltr" }]}>
+        {/* Monster */}
+        <View style={styles.battleField}>
+          <Animated.Text style={[styles.monsterEmoji, { transform: [{ translateX: monsterShakeAnim }] }]}>
+            {monster.emoji}
+          </Animated.Text>
+          <Text style={styles.monsterNameText}>{monsterName}</Text>
+        </View>
+
+        {/* Timer */}
+        <DQWindow>
+          <Text style={styles.timerText}>
+            {"⏱ "}{t("dq.battle.timer", { time: formatTime(timeRemaining) })}
+          </Text>
+        </DQWindow>
+
+        {/* Checkbox */}
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => setIsQuestCompleted((prev) => !prev)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.checkboxIcon}>{isQuestCompleted ? "☑" : "☐"}</Text>
+          <Text style={styles.checkboxLabel}>{t("dq.battle.hw_done")}</Text>
+        </TouchableOpacity>
+
+        {/* Command */}
+        <DQCommandMenu
+          items={
+            isQuestCompleted
+              ? [
+                  { label: t("dq.battle.finish"), onPress: handleCompleteQuest },
+                  { label: t("dq.battle.run"), onPress: () => router.back() },
+                ]
+              : [
+                  { label: t("dq.battle.finish"), onPress: () => {}, disabled: true },
+                  { label: t("dq.battle.run"), onPress: () => router.back() },
+                ]
+          }
+        />
+      </View>
+    );
+  }
+
+  // --- FAILED state ---
+  if (battleState === "failed") {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom, direction: isRTL ? "rtl" : "ltr" }]}>
+        <View style={styles.battleField}>
+          <Text style={styles.monsterEmoji}>{monster.emoji}</Text>
+        </View>
+        <DQMessageBox text={t("common.error")} speed={60} />
+        <DQCommandMenu
+          items={[{ label: t("common.back"), onPress: () => router.replace("/(app)/camp") }]}
+        />
+      </View>
+    );
+  }
+
+  // --- COMPLETED state (redirect should happen, but fallback) ---
+  return (
+    <View style={styles.center}>
+      <Text style={styles.loadingText}>{t("common.loading")}...</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
-    padding: SPACING.md,
-    justifyContent: "center",
+    backgroundColor: DQ_BATTLE_BG,
+    padding: 16,
+    gap: 12,
+    justifyContent: "flex-end",
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BATTLE_BG,
+    padding: 16,
   },
-  backButton: {
-    marginTop: SPACING.md,
+  loadingText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+  },
+  battleField: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 200,
+  },
+  monsterEmoji: {
+    fontSize: 80,
+    textAlign: "center",
+  },
+  monsterNameText: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+    marginTop: 12,
+    textAlign: "center",
+  },
+  timerText: {
+    color: "#FFD700",
+    fontSize: 20,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0000AA",
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+    borderRadius: 4,
+    padding: 12,
+    gap: 10,
+  },
+  checkboxIcon: {
+    color: "#FFD700",
+    fontSize: 22,
+    fontFamily: FONT_FAMILY,
+  },
+  checkboxLabel: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
   },
 });

@@ -3,19 +3,10 @@ import { View, StyleSheet, ActivityIndicator, I18nManager } from "react-native";
 import { Stack, router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
 import { getIsRTL } from "@/i18n";
-import { COLORS, PIXEL_BORDER } from "@/constants/theme";
 
+const DQ_BLUE = "#0000AA";
+const DQ_BG = "#000011";
 
-/**
- * Layout for the authenticated route group: dashboard, quests, battle, etc.
- *
- * Behaviour:
- * - Shows a pixel-themed loading indicator while auth state resolves.
- * - Redirects unauthenticated users to /(auth).
- * - Authenticated users see the Stack of app screens.
- * - Writing direction switches to RTL when Arabic is active.
- * - Stack header uses the retro pixel art palette.
- */
 export default function AppLayout() {
   const { user, isLoading } = useAuth();
   const isRTL = getIsRTL();
@@ -26,30 +17,16 @@ export default function AppLayout() {
     }
   }, [user, isLoading]);
 
-  // Apply RTL layout if necessary. This is a fallback/double-check,
-  // as the root layout already tries to set it.
   useEffect(() => {
     if (I18nManager.isRTL !== isRTL) {
       I18nManager.forceRTL(isRTL);
-      // On native, forceRTL requires a reload to take full effect.
-      // For simplicity in this demo, we'll let the user experience it on next app launch.
-      // In a real app, you might prompt the user to restart or handle it more gracefully.
     }
   }, [isRTL]);
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color={COLORS.gold} size="large" />
-      </View>
-    );
-  }
-
-  // Show loading indicator while redirect completes (prevents black screen).
-  if (!user) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={COLORS.gold} size="large" />
+        <ActivityIndicator color="#FFD700" size="large" />
       </View>
     );
   }
@@ -58,14 +35,19 @@ export default function AppLayout() {
     <View style={[styles.root, { direction: isRTL ? "rtl" : "ltr" }]}>
       <Stack
         screenOptions={{
-          headerStyle: styles.header,
-          headerTintColor: COLORS.cream,
-          headerTitleStyle: styles.headerTitle,
-          headerShadowVisible: false,
+          headerShown: false,
           contentStyle: styles.screen,
           animation: isRTL ? "slide_from_left" : "slide_from_right",
         }}
-      />
+      >
+        <Stack.Screen name="camp" />
+        <Stack.Screen name="quests/index" options={{ headerShown: false }} />
+        <Stack.Screen name="quests/new" options={{ headerShown: false }} />
+        <Stack.Screen name="battle/[questId]" options={{ headerShown: false }} />
+        <Stack.Screen name="battle/result" options={{ headerShown: false }} />
+        <Stack.Screen name="parent/index" options={{ headerShown: false }} />
+        <Stack.Screen name="parent/settings" options={{ headerShown: false }} />
+      </Stack>
     </View>
   );
 }
@@ -73,26 +55,15 @@ export default function AppLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   loading: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
     justifyContent: "center",
     alignItems: "center",
   },
-  header: {
-    backgroundColor: COLORS.bgMid,
-    borderBottomWidth: PIXEL_BORDER.borderWidth,
-    borderBottomColor: PIXEL_BORDER.borderColor,
-  },
-  headerTitle: {
-    fontFamily: "monospace",
-    color: COLORS.cream,
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
   screen: {
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
 });

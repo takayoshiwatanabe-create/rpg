@@ -55,6 +55,13 @@ export const COLORS = {
 
   // Basic
   white: "#FFFFFF",
+
+  // Dragon Quest UI
+  dqBlue: "#0000AA",
+  dqBorder: "#FFFFFF",
+  dqText: "#FFFFFF",
+  dqCursor: "#FFD700",
+  dqBattleBg: "#000000",
 } as const; // `as const` makes this a readonly tuple, improving type safety
 
 // ---------------------------------------------------------------------------
