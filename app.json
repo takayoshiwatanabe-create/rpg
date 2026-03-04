@@ -7,12 +7,12 @@
     "icon": "./assets/app_icon.png",
     "scheme": "rpg",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "description": "「シュクダイ・クエスト」は、子供たちの毎日の宿題をRPGの冒険に変える画期的なアプリです。宿題をクリアすると経験値やゴールドを獲得し、勇者をレベルアップさせ、新たなスキルを習得できます。保護者も進捗を管理でき、子供の学習意欲を自然に引き出します。さあ、宿題を倒して世界を救う勇者になろう！日々の学習が、ワクワクする冒険に変わる！退屈な勉強時間を、ワクワクする冒険の時間に変えましょう！このアプリは、子供たちが自ら進んで学習に取り組むためのモチベーションを提供し、保護者も安心して見守れる機能が充実しています。毎日の学習が、忘れられない冒険の物語へと変わります。",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zerocode.rpg",
-      "buildNumber": "21",
+      "buildNumber": "22",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
