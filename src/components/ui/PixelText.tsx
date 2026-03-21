@@ -3,7 +3,7 @@ import { Text, StyleSheet, TextProps, Platform } from "react-native";
 import { FONT_SIZES, COLORS, FONT_FAMILY_MAIN, FONT_FAMILY_SUB } from "@/constants/theme";
 
 type PixelTextVariant = "heading" | "body" | "label" | "caption" | "title" | "stat";
-type PixelTextColor = keyof typeof COLORS; // Removed "default" as it's not a key in COLORS
+type PixelTextColor = keyof typeof COLORS;
 
 interface PixelTextProps extends TextProps {
   variant?: PixelTextVariant;
@@ -53,21 +53,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   heading: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.heading, // Use FONT_SIZES.heading
     fontWeight: "bold",
   },
   body: {
-    fontSize: FONT_SIZES.md,
+    fontSize: FONT_SIZES.body, // Use FONT_SIZES.body
   },
   label: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.label, // Use FONT_SIZES.label
     fontWeight: "bold",
   },
   caption: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.caption, // Use FONT_SIZES.caption
   },
   stat: {
-    fontSize: FONT_SIZES.lg,
+    fontSize: FONT_SIZES.stat, // Use FONT_SIZES.stat
     fontWeight: "bold",
   },
 });

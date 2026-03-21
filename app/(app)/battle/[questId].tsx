@@ -29,8 +29,9 @@ import { t, getIsRTL } from "@/i18n";
 import { getMonster } from "@/constants/monsters";
 import type { Quest } from "@/types";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { COLORS } from "@/constants/theme";
 
-const DQ_BATTLE_BG = "#000000";
+const DQ_BATTLE_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
@@ -140,7 +141,10 @@ export default function BattleScreen() {
 
   // Monster shake animation
   const shakeMonster = useCallback(() => {
-    if (reducedMotion) return;
+    if (reducedMotion) {
+      monsterShakeAnim.setValue(0); // Ensure it's reset
+      return;
+    }
     Animated.sequence([
       Animated.timing(monsterShakeAnim, { toValue: 12, duration: 40, useNativeDriver: true }),
       Animated.timing(monsterShakeAnim, { toValue: -12, duration: 40, useNativeDriver: true }),
@@ -153,7 +157,14 @@ export default function BattleScreen() {
 
   // Attack flash + monster shake + HP bar decrease + message
   const triggerAttackAnimation = useCallback(() => {
-    if (reducedMotion) return;
+    if (reducedMotion) {
+      setAttackMessage(t(ATTACK_MESSAGES[attackMsgIndex.current % ATTACK_MESSAGES.length]!));
+      setShowAttackFlash(true);
+      setTimeout(() => setShowAttackFlash(false), 2000);
+      monsterHpAnim.setValue(Math.max(1 - (elapsedSeconds / (quest?.estimatedMinutes ? quest.estimatedMinutes * 60 : 1800)), 0.05));
+      damageAnim.setValue(0); // Reset for no animation
+      return;
+    }
 
     // Show attack message
     const msgKey = ATTACK_MESSAGES[attackMsgIndex.current % ATTACK_MESSAGES.length]!;
@@ -196,16 +207,25 @@ export default function BattleScreen() {
     monsterHpAnim.setValue(1);
 
     // Initial attack animation
-    shakeMonster();
-    setAttackMessage(t("dq.battle.hero_attack"));
-    setShowAttackFlash(true);
-    Animated.sequence([
-      Animated.timing(flashOpacity, { toValue: 0.6, duration: 60, useNativeDriver: true }),
-      Animated.timing(flashOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-    ]).start();
-    damageAnim.setValue(1);
-    Animated.timing(damageAnim, { toValue: 0, duration: 1500, useNativeDriver: true }).start();
-    setTimeout(() => setShowAttackFlash(false), 2000);
+    if (!reducedMotion) {
+      shakeMonster();
+      setAttackMessage(t("dq.battle.hero_attack"));
+      setShowAttackFlash(true);
+      Animated.sequence([
+        Animated.timing(flashOpacity, { toValue: 0.6, duration: 60, useNativeDriver: true }),
+        Animated.timing(flashOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      ]).start();
+      damageAnim.setValue(1);
+      Animated.timing(damageAnim, { toValue: 0, duration: 1500, useNativeDriver: true }).start();
+      setTimeout(() => setShowAttackFlash(false), 2000);
+    } else {
+      setAttackMessage(t("dq.battle.hero_attack"));
+      setShowAttackFlash(true);
+      setTimeout(() => setShowAttackFlash(false), 2000);
+      monsterShakeAnim.setValue(0);
+      flashOpacity.setValue(0);
+      damageAnim.setValue(0);
+    }
 
     try {
       await updateQuestStatus(quest.id, "inProgress");
@@ -213,7 +233,7 @@ export default function BattleScreen() {
       console.error("Failed to update quest status:", error);
       Alert.alert(t("common.error"), t("common.unknown"));
     }
-  }, [quest, user, shakeMonster, flashOpacity, monsterHpAnim, damageAnim]);
+  }, [quest, user, shakeMonster, flashOpacity, monsterHpAnim, damageAnim, reducedMotion]);
 
   const handleCompleteQuest = useCallback(async () => {
     if (!quest || !user || !battleStartTime.current) return;
@@ -269,7 +289,7 @@ export default function BattleScreen() {
       <View style={[styles.center, { paddingTop: insets.top }]}>
         <DQMessageBox text={t("battle.error.notFound")} />
         <DQCommandMenu
-          items={[{ label: t("common.back"), onPress: () => router.back() }]}
+          items={[{ label: t("common.back"), onPress: () => router.back(), accessibilityLabel: t("common.back") }]}
           style={{ marginTop: 16 }}
         />
       </View>
@@ -300,8 +320,8 @@ export default function BattleScreen() {
         {/* Commands: たたかう / にげる */}
         <DQCommandMenu
           items={[
-            { label: t("dq.battle.fight"), onPress: handleStartBattle },
-            { label: t("dq.battle.run"), onPress: () => router.back() },
+            { label: t("dq.battle.fight"), onPress: handleStartBattle, accessibilityLabel: t("dq.battle.fight") },
+            { label: t("dq.battle.run"), onPress: () => router.back(), accessibilityLabel: t("dq.battle.run") },
           ]}
         />
       </View>
@@ -382,6 +402,7 @@ export default function BattleScreen() {
           style={styles.doneButton}
           onPress={handleCompleteQuest}
           activeOpacity={0.7}
+          accessibilityLabel={t("dq.battle.done")}
         >
           <Text style={styles.doneButtonText}>{t("dq.battle.done")}</Text>
         </TouchableOpacity>
@@ -398,7 +419,7 @@ export default function BattleScreen() {
         </View>
         <DQMessageBox text={t("common.error")} speed={60} />
         <DQCommandMenu
-          items={[{ label: t("common.back"), onPress: () => router.replace("/(app)/camp") }]}
+          items={[{ label: t("common.back"), onPress: () => router.replace("/(app)/camp"), accessibilityLabel: t("common.back") }]}
         />
       </View>
     );

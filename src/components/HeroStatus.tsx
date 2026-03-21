@@ -1,8 +1,8 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { PixelText, PixelCard, PixelProgressBar } from "@/components/ui"; // Added PixelProgressBar
+import { PixelText, PixelCard, PixelProgressBar } from "@/components/ui";
 import { t } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
+import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme"; // Removed PIXEL_BORDER as it's not directly used here
 import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile } from "@/types";
 
@@ -15,7 +15,6 @@ type HeroStatusProps = {
 export const HeroStatus = React.memo(
   ({ hero, isRTL, showExtendedStats = false }: HeroStatusProps) => {
     const expProgress = expProgressInCurrentLevel(hero.totalExp);
-    // const expRatio = expProgress.required > 0 ? expProgress.current / expProgress.required : 0; // No longer needed directly
 
     return (
       <PixelCard variant="default">
@@ -31,7 +30,7 @@ export const HeroStatus = React.memo(
 
         {/* EXP bar */}
         <PixelProgressBar
-          label="EXP"
+          label={t("hero.exp")} // Use translation for label
           value={expProgress.current}
           max={expProgress.required}
           color="exp"
@@ -40,7 +39,7 @@ export const HeroStatus = React.memo(
 
         {/* HP bar */}
         <PixelProgressBar
-          label="HP"
+          label={t("hero.hp")} // Use translation for label
           value={hero.hp}
           max={hero.maxHp}
           color="danger"
@@ -49,7 +48,7 @@ export const HeroStatus = React.memo(
 
         {/* MP bar */}
         <PixelProgressBar
-          label="MP"
+          label={t("hero.mp")} // Use translation for label
           value={hero.mp}
           max={hero.maxMp}
           color="info"
@@ -120,41 +119,5 @@ const styles = StyleSheet.create({
   goldValue: {
     fontSize: FONT_SIZES.lg,
   },
-  barRow: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    alignItems: "center",
-    marginBottom: SPACING.xs,
-    gap: SPACING.xs,
-  },
-  barLabel: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    fontSize: FONT_SIZES.sm,
-    width: 32,
-  },
-  barContainer: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    flex: 1,
-    height: 12,
-    backgroundColor: COLORS.bgMid,
-    borderRadius: PIXEL_BORDER.borderRadius,
-    flexDirection: "row",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.windowBorder,
-  },
-  bar: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    height: "100%",
-    borderRadius: PIXEL_BORDER.borderRadius,
-  },
-  barHp: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    backgroundColor: COLORS.danger,
-  },
-  barMp: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    backgroundColor: COLORS.info,
-  },
-  barExp: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    backgroundColor: COLORS.exp,
-  },
-  barValue: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    fontSize: FONT_SIZES.xs,
-    width: 80,
-    textAlign: "right",
-  },
+  // Removed unused bar styles
 });

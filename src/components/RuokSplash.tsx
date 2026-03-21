@@ -37,6 +37,7 @@ export function RuokSplash({ onFinish }: Props) {
         source={require("@/assets/ruok-splash.png")}
         style={[styles.image, { opacity }]}
         resizeMode="contain"
+        accessibilityLabel="App Splash Screen" // Added accessibility label
       />
     </View>
   );

@@ -9,8 +9,9 @@ import { t, getIsRTL } from "@/i18n";
 import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile } from "@/types";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { COLORS } from "@/constants/theme";
 
-const DQ_BG = "#000000";
+const DQ_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
@@ -92,7 +93,7 @@ export default function BattleResultScreen() {
   messages.push(t("dq.result.defeated", { monster }));
   messages.push(t("dq.result.exp", { exp: parsedExp }));
   messages.push(t("dq.result.gold", { gold: parsedGold }));
-  if (hero && hero.level > 1) {
+  if (hero && hero.level > 1) { // Only show level up message if level actually increased
     messages.push(t("dq.result.levelup", { name: hero.displayName, level: hero.level }));
   }
 
@@ -118,7 +119,7 @@ export default function BattleResultScreen() {
       <View style={[styles.center, { paddingTop: insets.top }]}>
         <DQMessageBox text={t("error.hero_not_found")} />
         <DQCommandMenu
-          items={[{ label: t("common.back"), onPress: handleReturnToCamp }]}
+          items={[{ label: t("common.back"), onPress: handleReturnToCamp, accessibilityLabel: t("common.back") }]}
           style={{ marginTop: 16 }}
         />
       </View>
@@ -204,7 +205,7 @@ export default function BattleResultScreen() {
       {/* Return command */}
       {isLastMessage && (
         <DQCommandMenu
-          items={[{ label: t("dq.result.next"), onPress: handleReturnToCamp }]}
+          items={[{ label: t("dq.result.next"), onPress: handleReturnToCamp, accessibilityLabel: t("dq.result.next") }]}
         />
       )}
     </Animated.View>

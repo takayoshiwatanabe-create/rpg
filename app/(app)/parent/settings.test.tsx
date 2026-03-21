@@ -44,8 +44,25 @@ vi.mock("react-native", async (importOriginal) => {
     Alert: {
       alert: vi.fn(),
     },
+    View: actual.View,
+    ScrollView: actual.ScrollView,
+    StyleSheet: actual.StyleSheet,
+    ActivityIndicator: actual.ActivityIndicator,
   };
 });
+vi.mock("@/components/ui", () => ({
+  PixelText: ({ children, variant, color, style }: any) => (
+    <actual.Text style={style}>{children}</actual.Text>
+  ),
+  PixelButton: ({ label, onPress, variant, size, style, accessibilityRole, accessibilityState }: any) => (
+    <actual.TouchableOpacity onPress={onPress} style={style} accessibilityRole={accessibilityRole} accessibilityState={accessibilityState}>
+      <actual.Text>{label}</actual.Text>
+    </actual.TouchableOpacity>
+  ),
+  PixelCard: ({ children, variant, style }: any) => (
+    <actual.View style={style}>{children}</actual.View>
+  ),
+}));
 
 describe("ParentSettingsScreen", () => {
   beforeEach(() => {

@@ -33,17 +33,17 @@ export const COLORS = {
   japanese: "#4682B4", // SteelBlue
   english: "#DAA520", // Goldenrod
   science: "#3CB371", // MediumSeaGreen
-  social: "#8A2BE2", // BlueViolet (Changed from social_studies to social)
-  art: "#FF69B4", // HotPink
-  music: "#BA55D3", // MediumOrchid
-  pe: "#20B2AA", // LightSeaGreen
+  social: "#8A2BE2", // BlueViolet
+  art: "#FF69B4", // HotPink (Added for new subject)
+  music: "#BA55D3", // MediumOrchid (Added for new subject)
+  pe: "#20B2AA", // LightSeaGreen (Added for new subject)
   other: "#696969", // DimGray
 
   // Difficulty colors
   easy: "#32CD32", // LimeGreen
   normal: "#1E90FF", // DodgerBlue
   hard: "#FF8C00", // DarkOrange
-  very_hard: "#FF4500", // OrangeRed
+  very_hard: "#FF4500", // OrangeRed (Added for new difficulty)
   boss: "#DC143C", // Crimson
 };
 
@@ -61,17 +61,16 @@ export const FONT_SIZES = {
   caption: 12,
   label: 14,
   body: 16,
-  button: 18,
+  button: 18, // This is a general button size, not a variant
   title: 20,
   heading: 24,
-  xl: 20, // Added explicit xl for consistency with design spec's usage in HeroStatus
-  lg: 18, // Added explicit lg for consistency
-  md: 16, // Added explicit md for consistency
-  sm: 14, // Added explicit sm for consistency
-  xs: 12, // Added explicit xs for consistency
-  heroName: 28, // This is already defined, but ensuring it's clear
-  level: 32, // This is already defined, but ensuring it's clear
-  gold: 28, // This is already defined, but ensuring it's clear
+  xl: 20, // Consistent with design spec's usage in HeroStatus
+  lg: 18, // Consistent with design spec
+  md: 16, // Consistent with design spec
+  sm: 14, // Consistent with design spec
+  xs: 12, // Consistent with design spec
+  stat: 18, // Explicitly defined for stat text, matches FONT_SIZES.lg
+  // Removed redundant heroName, level, gold as they can use existing variants
 };
 
 export const PIXEL_BORDER = {

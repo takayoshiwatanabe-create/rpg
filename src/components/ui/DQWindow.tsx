@@ -8,13 +8,18 @@ interface DQWindowProps {
   children: React.ReactNode;
   title?: string;
   style?: ViewStyle;
+  accessibilityLabel?: string; // Added accessibilityLabel
 }
 
-export function DQWindow({ children, title, style }: DQWindowProps) {
+export function DQWindow({ children, title, style, accessibilityLabel }: DQWindowProps) {
   const isRTL = getIsRTL();
 
   return (
-    <View style={[styles.window, style, { direction: isRTL ? "rtl" : "ltr" }]}>
+    <View
+      style={[styles.window, style, { direction: isRTL ? "rtl" : "ltr" }]}
+      accessibilityRole="group"
+      accessibilityLabel={accessibilityLabel || (title ? `${title} window` : "Game window")}
+    >
       {title && (
         <View style={[styles.titleContainer, {
           alignSelf: isRTL ? "flex-end" : "flex-start",
@@ -46,7 +51,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     position: "absolute",
-    top: -FONT_SIZES.md / 2 - PIXEL_BORDER.borderWidth,
+    top: -FONT_SIZES.md / 2 - PIXEL_BORDER.borderWidth, // Adjust position based on font size and border
     backgroundColor: COLORS.bgCard,
     paddingHorizontal: SPACING.xs,
     zIndex: 1,

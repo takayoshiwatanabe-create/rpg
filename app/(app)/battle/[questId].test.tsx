@@ -50,6 +50,9 @@ vi.mock("react-native", async (importOriginal) => {
       spring: vi.fn(() => ({
         start: vi.fn(),
       })),
+      timing: vi.fn(() => ({
+        start: vi.fn(),
+      })),
       Value: vi.fn(() => ({
         setValue: vi.fn(),
         interpolate: vi.fn(() => 1), // Mock interpolate to return 1 for simplicity
@@ -61,8 +64,34 @@ vi.mock("react-native", async (importOriginal) => {
     BackHandler: {
       addEventListener: vi.fn(() => ({ remove: vi.fn() })),
     },
+    Platform: {
+      select: vi.fn((options) => options.default),
+    },
+    TouchableOpacity: actual.TouchableOpacity,
+    Text: actual.Text,
+    View: actual.View,
+    StyleSheet: actual.StyleSheet,
   };
 });
+vi.mock("@/components/ui", () => ({
+  DQWindow: ({ children }: { children: React.ReactNode }) => (
+    <actual.View>{children}</actual.View>
+  ),
+  DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void }[] }) => (
+    <actual.View>
+      {items.map((item) => (
+        <actual.TouchableOpacity key={item.label} onPress={item.onPress}>
+          <actual.Text>{item.label}</actual.Text>
+        </actual.TouchableOpacity>
+      ))}
+    </actual.View>
+  ),
+  DQMessageBox: ({ text, onComplete }: { text: string; onComplete?: () => void }) => (
+    <actual.View>
+      <actual.Text onPress={onComplete}>{text}</actual.Text>
+    </actual.View>
+  ),
+}));
 
 const mockQuest = {
   id: "test-quest-id",
@@ -102,8 +131,7 @@ describe("BattleScreen", () => {
   it("renders quest details when loaded", async () => {
     render(<BattleScreen />);
     await waitFor(() => {
-      expect(screen.getByText(mockQuest.title)).toBeVisible();
-      expect(screen.getByText("battle.start_quest")).toBeVisible();
+      expect(screen.getByText("dq.battle.fight")).toBeVisible();
     });
   });
 
@@ -122,31 +150,28 @@ describe("BattleScreen", () => {
   it("starts battle and updates quest status", async () => {
     render(<BattleScreen />);
     await waitFor(() => {
-      expect(screen.getByText("battle.start_quest")).toBeVisible();
+      expect(screen.getByText("dq.battle.fight")).toBeVisible();
     });
 
-    screen.getByText("battle.start_quest").props.onPress();
+    fireEvent.press(screen.getByText("dq.battle.fight"));
 
     await waitFor(() => {
       expect(updateQuestStatus).toHaveBeenCalledWith(
         mockQuest.id,
         "inProgress",
       );
-      expect(screen.getByText("battle.complete_quest")).toBeVisible();
+      expect(screen.getByText("dq.battle.done")).toBeVisible();
     });
   });
 
   it("completes quest and updates stats", async () => {
     render(<BattleScreen />);
-    await waitFor(() => screen.getByText("battle.start_quest"));
+    await waitFor(() => screen.getByText("dq.battle.fight"));
 
-    screen.getByText("battle.start_quest").props.onPress();
-    await waitFor(() => screen.getByText("battle.complete_quest"));
+    fireEvent.press(screen.getByText("dq.battle.fight"));
+    await waitFor(() => screen.getByText("dq.battle.done"));
 
-    // Simulate checking the checkbox
-    screen.getByTestId("quest-completed-checkbox").props.onPress();
-
-    screen.getByText("battle.complete_quest").props.onPress();
+    fireEvent.press(screen.getByText("dq.battle.done"));
 
     await waitFor(() => {
       expect(updateQuestStatus).toHaveBeenCalledWith(mockQuest.id, "completed");
@@ -175,10 +200,10 @@ describe("BattleScreen", () => {
 
   it("shows exit confirmation when back button pressed during battle", async () => {
     render(<BattleScreen />);
-    await waitFor(() => screen.getByText("battle.start_quest"));
+    await waitFor(() => screen.getByText("dq.battle.fight"));
 
-    screen.getByText("battle.start_quest").props.onPress();
-    await waitFor(() => screen.getByText("battle.complete_quest"));
+    fireEvent.press(screen.getByText("dq.battle.fight"));
+    await waitFor(() => screen.getByText("dq.battle.done"));
 
     // Simulate hardware back press
     const backHandler = (
@@ -196,14 +221,15 @@ describe("BattleScreen", () => {
 
   it("navigates back when exit is confirmed", async () => {
     render(<BattleScreen />);
-    await waitFor(() => screen.getByText("battle.start_quest"));
+    await waitFor(() => screen.getByText("dq.battle.fight"));
 
-    screen.getByText("battle.start_quest").props.onPress();
-    await waitFor(() => screen.getByText("battle.complete_quest"));
+    fireEvent.press(screen.getByText("dq.battle.fight"));
+    await waitFor(() => screen.getByText("dq.battle.done"));
 
-    const backHandler = (require("react-native").Alert.alert as vi.Mock).mock
-      .calls[0][2][1].onPress; // Get the onPress for 'Exit' button
-    backHandler();
+    // Simulate pressing the 'Exit' button in the alert
+    const exitAction = (require("react-native").Alert.alert as vi.Mock).mock
+      .calls[0][2][1].onPress;
+    exitAction();
 
     expect(router.back).toHaveBeenCalled();
   });
@@ -212,9 +238,9 @@ describe("BattleScreen", () => {
     (useReducedMotion as vi.Mock).mockReturnValue(true);
     render(<BattleScreen />);
     await waitFor(() => {
-      expect(screen.getByText(mockQuest.title)).toBeVisible();
+      expect(screen.getByText("dq.battle.fight")).toBeVisible();
     });
-    expect(require("react-native").Animated.spring).not.toHaveBeenCalled();
+    expect(require("react-native").Animated.timing).not.toHaveBeenCalled();
     expect(require("react-native").Animated.Value().setValue).toHaveBeenCalledWith(1);
   });
 });

@@ -5,7 +5,7 @@ export const QUEST_SUBJECTS: Subject[] = [
   "japanese",
   "english",
   "science",
-  "social", // Changed from social_studies to social to match the type and monster constant
+  "social",
   "art",
   "music",
   "pe",
@@ -16,6 +16,6 @@ export const QUEST_DIFFICULTIES: Difficulty[] = [
   "easy",
   "normal",
   "hard",
-  "very_hard",
+  "very_hard", // Added "very_hard" difficulty
   "boss",
 ];

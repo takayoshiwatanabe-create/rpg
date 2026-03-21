@@ -5,6 +5,7 @@ import { PixelCard } from "./PixelCard";
 import { SPACING, FONT_SIZES, COLORS } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
 import { getIsRTL } from "@/i18n";
+import { MESSAGE_TYPING_SPEED_MS } from "@/constants/game"; // Import from game constants
 
 type DQMessageBoxProps = {
   text: string;
@@ -15,7 +16,7 @@ type DQMessageBoxProps = {
 };
 
 export const DQMessageBox = React.memo(
-  ({ text, speed = 50, variant = "default", onComplete, skippable = true }: DQMessageBoxProps) => {
+  ({ text, speed = MESSAGE_TYPING_SPEED_MS, variant = "default", onComplete, skippable = true }: DQMessageBoxProps) => {
     const [displayedText, setDisplayedText] = useState("");
     const currentIndex = useRef(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -82,6 +83,8 @@ export const DQMessageBox = React.memo(
         onPress={handlePress}
         activeOpacity={skippable || isTypingComplete.current ? 0.7 : 1}
         style={[styles.touchableContainer, { direction: isRTL ? "rtl" : "ltr" }]}
+        accessibilityLabel={isTypingComplete.current ? "Message box, tap to continue" : "Message box, tap to skip typing"}
+        accessibilityHint={isTypingComplete.current ? "Continues to the next action or message" : "Skips the current typing animation"}
       >
         <PixelCard variant="default" style={styles.container}>
           <PixelText variant="body" color={textColor} style={styles.text}>

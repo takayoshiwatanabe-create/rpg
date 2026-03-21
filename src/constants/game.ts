@@ -16,21 +16,21 @@ import type { Difficulty } from "@/types";
  * This array should be cumulative.
  */
 export const HERO_EXP_CURVE: number[] = [
-  0, // Level 1 (0 EXP)
-  100, // Level 2
-  250, // Level 3
-  450, // Level 4
-  700, // Level 5
-  1000, // Level 6
-  1350, // Level 7
-  1750, // Level 8
-  2200, // Level 9
-  2700, // Level 10
-  3250, // Level 11
-  3850, // Level 12
-  4500, // Level 13
-  5200, // Level 14
-  6000, // Level 15 (Max Level)
+  0, // Level 1 (0 EXP to start)
+  100, // Level 2 (requires 100 total EXP)
+  250, // Level 3 (requires 250 total EXP)
+  450, // Level 4 (requires 450 total EXP)
+  700, // Level 5 (requires 700 total EXP)
+  1000, // Level 6 (requires 1000 total EXP)
+  1350, // Level 7 (requires 1350 total EXP)
+  1750, // Level 8 (requires 1750 total EXP)
+  2200, // Level 9 (requires 2200 total EXP)
+  2700, // Level 10 (requires 2700 total EXP)
+  3250, // Level 11 (requires 3250 total EXP)
+  3850, // Level 12 (requires 3850 total EXP)
+  4500, // Level 13 (requires 4500 total EXP)
+  5200, // Level 14 (requires 5200 total EXP)
+  6000, // Level 15 (requires 6000 total EXP to reach, which is MAX_LEVEL)
 ];
 
 /**
@@ -81,6 +81,7 @@ export const DEFAULT_EXP_REWARDS: Record<Difficulty, number> = {
   easy: 50,
   normal: 100,
   hard: 200,
+  very_hard: 300, // Added very_hard difficulty
   boss: 400,
 };
 
@@ -91,6 +92,7 @@ export const DEFAULT_GOLD_REWARDS: Record<Difficulty, number> = {
   easy: 20,
   normal: 50,
   hard: 100,
+  very_hard: 150, // Added very_hard difficulty
   boss: 200,
 };
 
@@ -111,6 +113,7 @@ export const DEFAULT_ESTIMATED_MINUTES: Record<Difficulty, number> = {
   easy: 15,
   normal: 30,
   hard: 60,
+  very_hard: 90, // Added very_hard difficulty
   boss: 120,
 };
 

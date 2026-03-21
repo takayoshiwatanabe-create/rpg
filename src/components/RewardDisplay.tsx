@@ -1,8 +1,8 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { PixelText, PixelCard, PixelProgressBar } from "@/components/ui"; // Added PixelProgressBar
+import { PixelText, PixelCard, PixelProgressBar } from "@/components/ui";
 import { t } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
+import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme"; // Removed PIXEL_BORDER as it's not directly used here
 import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile } from "@/types";
 
@@ -35,7 +35,6 @@ export const RewardDisplay = React.memo(
     durationSeconds,
   }: RewardDisplayProps) => {
     const expProgress = expProgressInCurrentLevel(hero.totalExp);
-    // const expRatio = expProgress.required > 0 ? expProgress.current / expProgress.required : 0; // No longer needed directly
 
     return (
       <View style={[styles.container, { direction: isRTL ? "rtl" : "ltr" }]}>
@@ -95,7 +94,7 @@ export const RewardDisplay = React.memo(
             </PixelText>
           </View>
           <PixelProgressBar
-            label="EXP"
+            label={t("hero.exp")} // Use translation for label
             value={expProgress.current}
             max={expProgress.required}
             color="exp"
@@ -147,32 +146,5 @@ const styles = StyleSheet.create({
   heroLevelValue: {
     fontSize: FONT_SIZES.lg,
   },
-  expBarRow: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    alignItems: "center",
-    gap: SPACING.xs,
-  },
-  expBarLabel: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    fontSize: FONT_SIZES.sm,
-    width: 32,
-  },
-  expBarContainer: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    flex: 1,
-    height: 12,
-    backgroundColor: COLORS.bgMid,
-    borderRadius: PIXEL_BORDER.borderRadius,
-    flexDirection: "row",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.windowBorder,
-  },
-  expBarFill: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    height: "100%",
-    backgroundColor: COLORS.exp,
-    borderRadius: PIXEL_BORDER.borderRadius,
-  },
-  expBarValue: { // This style is no longer directly used for progress bars, but kept for other potential rows
-    fontSize: FONT_SIZES.xs,
-    width: 80,
-    textAlign: "right",
-  },
+  // Removed unused expBar styles
 });

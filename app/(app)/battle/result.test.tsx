@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "@vitest/globals";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import BattleResultScreen from "./result";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +15,7 @@ vi.mock("expo-router", () => ({
     exp: "100",
     gold: "50",
     overdue: "false",
+    monsterName: "スライム",
   })),
   router: {
     replace: vi.fn(),
@@ -31,9 +32,20 @@ vi.mock("@/lib/firestore", () => ({
 }));
 vi.mock("@/i18n", () => ({
   t: vi.fn((key, params) => {
-    if (key === "hero.level_up") return `Level Up! ${params?.level}`;
-    if (key === "result.gained_exp") return `+${params?.exp} EXP`;
-    if (key === "result.gained_gold") return `+${params?.gold} Gold`;
+    if (key === "dq.result.levelup") return `レベルアップ！${params?.name}はLv.${params?.level}になった！`;
+    if (key === "dq.result.exp") return `経験値を${params?.exp}獲得した！`;
+    if (key === "dq.result.gold") return `ゴールドを${params?.gold}獲得した！`;
+    if (key === "dq.result.defeated") return `${params?.monster}を倒した！`;
+    if (key === "hero.exp") return "経験値";
+    if (key === "hero.gold") return "ゴールド";
+    if (key === "dq.result.next") return "次へ";
+    if (key === "dq.result.study_time") return "学習時間";
+    if (key === "dq.result.rewards") return "報酬";
+    if (key === "dq.result.hero_growth") return "勇者の成長";
+    if (key === "hero.defaultName") return "名もなき勇者";
+    if (key === "error.hero_not_found") return "勇者が見つかりませんでした。";
+    if (key === "common.back") return "戻る";
+    if (key === "common.loading") return "読み込み中";
     return key;
   }),
   getIsRTL: vi.fn(() => false),
@@ -50,18 +62,49 @@ vi.mock("react-native", async (importOriginal) => {
       spring: vi.fn(() => ({
         start: vi.fn(),
       })),
+      timing: vi.fn(() => ({
+        start: vi.fn(),
+      })),
       Value: vi.fn(() => ({
         setValue: vi.fn(),
         interpolate: vi.fn(() => 1), // Mock interpolate to return 1 for simplicity
       })),
     },
+    Platform: {
+      select: vi.fn((options) => options.default),
+    },
+    Text: actual.Text,
+    View: actual.View,
+    StyleSheet: actual.StyleSheet,
   };
 });
+vi.mock("@/components/ui", () => ({
+  DQWindow: ({ children, title }: { children: React.ReactNode; title?: string }) => (
+    <actual.View>
+      {title && <actual.Text>{title}</actual.Text>}
+      {children}
+    </actual.View>
+  ),
+  DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void }[] }) => (
+    <actual.View>
+      {items.map((item) => (
+        <actual.TouchableOpacity key={item.label} onPress={item.onPress}>
+          <actual.Text>{item.label}</actual.Text>
+        </actual.TouchableOpacity>
+      ))}
+    </actual.View>
+  ),
+  DQMessageBox: ({ text, onComplete }: { text: string; onComplete?: () => void }) => (
+    <actual.View>
+      <actual.Text onPress={onComplete}>{text}</actual.Text>
+    </actual.View>
+  ),
+}));
 
 const mockHero: HeroProfile = {
   id: "hero-123",
   userId: "user-123",
-  displayName: "Test Hero",
+  displayName: "テスト勇者",
   level: 1,
   currentExp: 0,
   totalExp: 0,
@@ -73,6 +116,8 @@ const mockHero: HeroProfile = {
   skills: [],
   inventory: [],
   createdAt: "2024-01-01T00:00:00Z",
+  mp: 0,
+  maxMp: 0,
 };
 
 describe("BattleResultScreen", () => {
@@ -83,7 +128,7 @@ describe("BattleResultScreen", () => {
       isLoading: false,
     });
     (subscribeToHero as vi.Mock).mockImplementation((_userId, _heroId, callback) => {
-      callback({ ...mockHero, totalExp: 100, gold: 50, level: 2 }); // Simulate updated hero
+      callback({ ...mockHero, totalExp: 100, gold: 50, level: 2, displayName: "テスト勇者" }); // Simulate updated hero
       return vi.fn();
     });
   });
@@ -91,18 +136,18 @@ describe("BattleResultScreen", () => {
   it("renders loading state initially", () => {
     (subscribeToHero as vi.Mock).mockReturnValueOnce(vi.fn()); // Prevent immediate callback
     render(<BattleResultScreen />);
-    expect(screen.getByText("common.loading")).toBeVisible();
+    expect(screen.getByText("読み込み中")).toBeVisible();
   });
 
   it("renders reward details and hero stats", async () => {
     render(<BattleResultScreen />);
     await waitFor(() => {
-      expect(screen.getByText("result.title")).toBeVisible();
-      expect(screen.getByText("Test Hero")).toBeVisible();
-      expect(screen.getByText("Level 2")).toBeVisible();
-      expect(screen.getByText("+100 EXP")).toBeVisible();
-      expect(screen.getByText("+50 Gold")).toBeVisible();
-      expect(screen.getByText("result.return_to_camp")).toBeVisible();
+      expect(screen.getByText("スライムを倒した！")).toBeVisible();
+      expect(screen.getByText("テスト勇者")).toBeVisible();
+      expect(screen.getByText("Lv.2")).toBeVisible();
+      expect(screen.getByText("+100")).toBeVisible(); // EXP
+      expect(screen.getByText("+50")).toBeVisible(); // Gold
+      expect(screen.getByText("次へ")).toBeVisible();
     });
   });
 
@@ -113,16 +158,16 @@ describe("BattleResultScreen", () => {
     });
     render(<BattleResultScreen />);
     await waitFor(() => {
-      expect(screen.getByText("error.hero_not_found")).toBeVisible();
-      expect(screen.getByText("common.back")).toBeVisible();
+      expect(screen.getByText("勇者が見つかりませんでした。")).toBeVisible();
+      expect(screen.getByText("戻る")).toBeVisible();
     });
   });
 
   it("navigates to camp when return button is pressed", async () => {
     render(<BattleResultScreen />);
-    await waitFor(() => screen.getByText("result.return_to_camp"));
+    await waitFor(() => screen.getByText("次へ"));
 
-    screen.getByText("result.return_to_camp").props.onPress();
+    fireEvent.press(screen.getByText("次へ"));
     expect(router.replace).toHaveBeenCalledWith("/(app)/camp");
   });
 
@@ -130,9 +175,29 @@ describe("BattleResultScreen", () => {
     (useReducedMotion as vi.Mock).mockReturnValue(true);
     render(<BattleResultScreen />);
     await waitFor(() => {
-      expect(screen.getByText("result.title")).toBeVisible();
+      expect(screen.getByText("スライムを倒した！")).toBeVisible();
     });
-    expect(require("react-native").Animated.spring).not.toHaveBeenCalled();
+    expect(require("react-native").Animated.timing).not.toHaveBeenCalled();
     expect(require("react-native").Animated.Value().setValue).toHaveBeenCalledWith(1);
+  });
+
+  it("displays sequential messages", async () => {
+    render(<BattleResultScreen />);
+
+    // Initial message
+    await waitFor(() => expect(screen.getByText("スライムを倒した！")).toBeVisible());
+
+    // Simulate message complete
+    fireEvent.press(screen.getByText("スライムを倒した！")); // Pressing DQMessageBox text triggers onComplete
+    await waitFor(() => expect(screen.getByText("経験値を100獲得した！")).toBeVisible());
+
+    fireEvent.press(screen.getByText("経験値を100獲得した！"));
+    await waitFor(() => expect(screen.getByText("ゴールドを50獲得した！")).toBeVisible());
+
+    fireEvent.press(screen.getByText("ゴールドを50獲得した！"));
+    await waitFor(() => expect(screen.getByText("レベルアップ！テスト勇者はLv.2になった！")).toBeVisible());
+
+    // After last message, "次へ" button should be visible
+    await waitFor(() => expect(screen.getByText("次へ")).toBeVisible());
   });
 });

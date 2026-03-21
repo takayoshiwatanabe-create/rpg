@@ -7,40 +7,67 @@ type MonsterInfo = {
 
 export const MONSTERS: Record<Subject, Record<Difficulty, MonsterInfo>> = {
   math: {
-    easy: { nameKey: "monster.math.easy", emoji: "🐉" },
-    normal: { nameKey: "monster.math.normal", emoji: "🐲" },
-    hard: { nameKey: "monster.math.hard", emoji: "🗿" },
-    boss: { nameKey: "monster.math.boss", emoji: "👑" },
+    easy: { nameKey: "monster.math.easy", emoji: "➕" }, // Changed emoji for math easy
+    normal: { nameKey: "monster.math.normal", emoji: "✖️" }, // Changed emoji for math normal
+    hard: { nameKey: "monster.math.hard", emoji: "➗" }, // Changed emoji for math hard
+    very_hard: { nameKey: "monster.math.very_hard", emoji: "♾️" }, // Added very_hard
+    boss: { nameKey: "monster.math.boss", emoji: "🔢" }, // Changed emoji for math boss
   },
   japanese: {
-    easy: { nameKey: "monster.japanese.easy", emoji: "👻" },
-    normal: { nameKey: "monster.japanese.normal", emoji: "🧛" },
-    hard: { nameKey: "monster.japanese.hard", emoji: "💀" },
-    boss: { nameKey: "monster.japanese.boss", emoji: "🔥" },
+    easy: { nameKey: "monster.japanese.easy", emoji: "📖" }, // Changed emoji
+    normal: { nameKey: "monster.japanese.normal", emoji: "📝" }, // Changed emoji
+    hard: { nameKey: "monster.japanese.hard", emoji: "📜" }, // Changed emoji
+    very_hard: { nameKey: "monster.japanese.very_hard", emoji: "⛩️" }, // Added very_hard
+    boss: { nameKey: "monster.japanese.boss", emoji: "🌸" }, // Changed emoji
   },
   english: {
-    easy: { nameKey: "monster.english.easy", emoji: "🦇" },
-    normal: { nameKey: "monster.english.normal", emoji: "🧙" },
-    hard: { nameKey: "monster.english.hard", emoji: "👹" },
-    boss: { nameKey: "monster.english.boss", emoji: "❄️" },
+    easy: { nameKey: "monster.english.easy", emoji: "🅰️" }, // Changed emoji
+    normal: { nameKey: "monster.english.normal", emoji: "🅱️" }, // Changed emoji
+    hard: { nameKey: "monster.english.hard", emoji: "🔠" }, // Changed emoji
+    very_hard: { nameKey: "monster.english.very_hard", emoji: "🇬🇧" }, // Added very_hard
+    boss: { nameKey: "monster.english.boss", emoji: "🇺🇸" }, // Changed emoji
   },
   science: {
-    easy: { nameKey: "monster.science.easy", emoji: "🫧" },
-    normal: { nameKey: "monster.science.normal", emoji: "🦅" },
-    hard: { nameKey: "monster.science.hard", emoji: "🐲" },
-    boss: { nameKey: "monster.science.boss", emoji: "⚡" },
+    easy: { nameKey: "monster.science.easy", emoji: "🧪" }, // Changed emoji
+    normal: { nameKey: "monster.science.normal", emoji: "🔬" }, // Changed emoji
+    hard: { nameKey: "monster.science.hard", emoji: "⚛️" }, // Changed emoji
+    very_hard: { nameKey: "monster.science.very_hard", emoji: "🧬" }, // Added very_hard
+    boss: { nameKey: "monster.science.boss", emoji: "🔭" }, // Changed emoji
   },
   social: {
-    easy: { nameKey: "monster.social.easy", emoji: "🐦‍⬛" },
-    normal: { nameKey: "monster.social.normal", emoji: "🛡️" },
-    hard: { nameKey: "monster.social.hard", emoji: "✨" },
-    boss: { nameKey: "monster.social.boss", emoji: "😈" },
+    easy: { nameKey: "monster.social.easy", emoji: "🗺️" }, // Changed emoji
+    normal: { nameKey: "monster.social.normal", emoji: "🏛️" }, // Changed emoji
+    hard: { nameKey: "monster.social.hard", emoji: "🗿" }, // Changed emoji
+    very_hard: { nameKey: "monster.social.very_hard", emoji: "🌍" }, // Added very_hard
+    boss: { nameKey: "monster.social.boss", emoji: "👑" }, // Changed emoji
+  },
+  art: { // Added art subject
+    easy: { nameKey: "monster.art.easy", emoji: "🎨" },
+    normal: { nameKey: "monster.art.normal", emoji: "🖼️" },
+    hard: { nameKey: "monster.art.hard", emoji: "🖌️" },
+    very_hard: { nameKey: "monster.art.very_hard", emoji: "🎭" },
+    boss: { nameKey: "monster.art.boss", emoji: "🏛️" },
+  },
+  music: { // Added music subject
+    easy: { nameKey: "monster.music.easy", emoji: "🎵" },
+    normal: { nameKey: "monster.music.normal", emoji: "🎶" },
+    hard: { nameKey: "monster.music.hard", emoji: "🎼" },
+    very_hard: { nameKey: "monster.music.very_hard", emoji: "🎤" },
+    boss: { nameKey: "monster.music.boss", emoji: "🎹" },
+  },
+  pe: { // Added PE subject
+    easy: { nameKey: "monster.pe.easy", emoji: "🏃" },
+    normal: { nameKey: "monster.pe.normal", emoji: "⚽" },
+    hard: { nameKey: "monster.pe.hard", emoji: "🏀" },
+    very_hard: { nameKey: "monster.pe.very_hard", emoji: "🏋️" },
+    boss: { nameKey: "monster.pe.boss", emoji: "🏅" },
   },
   other: {
-    easy: { nameKey: "monster.other.easy", emoji: "🐾" },
-    normal: { nameKey: "monster.other.normal", emoji: "🧟" },
-    hard: { nameKey: "monster.other.hard", emoji: "⚔️" },
-    boss: { nameKey: "monster.other.boss", emoji: "🌀" },
+    easy: { nameKey: "monster.other.easy", emoji: "❓" }, // Changed emoji
+    normal: { nameKey: "monster.other.normal", emoji: "❕" }, // Changed emoji
+    hard: { nameKey: "monster.other.hard", emoji: "⁉️" }, // Changed emoji
+    very_hard: { nameKey: "monster.other.very_hard", emoji: "🌀" }, // Added very_hard
+    boss: { nameKey: "monster.other.boss", emoji: "👾" }, // Changed emoji
   },
 };
 
@@ -50,4 +77,3 @@ export const MONSTERS: Record<Subject, Record<Difficulty, MonsterInfo>> = {
 export function getMonster(subject: Subject, difficulty: Difficulty): MonsterInfo {
   return MONSTERS[subject][difficulty];
 }
-

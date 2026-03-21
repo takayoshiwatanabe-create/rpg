@@ -20,7 +20,7 @@ import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile, Quest } from "@/types";
 import { COLORS } from "@/constants/theme";
 
-const DQ_BG = "#000011";
+const DQ_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
@@ -289,4 +289,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-

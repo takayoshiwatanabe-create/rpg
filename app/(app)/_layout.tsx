@@ -3,9 +3,9 @@ import { View, StyleSheet, ActivityIndicator, I18nManager } from "react-native";
 import { Stack, router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
 import { getIsRTL } from "@/i18n";
+import { COLORS } from "@/constants/theme";
 
-const DQ_BLUE = "#0000AA";
-const DQ_BG = "#000011";
+const DQ_BG = COLORS.bgDark;
 
 export default function AppLayout() {
   const { user, isLoading } = useAuth();
@@ -26,7 +26,7 @@ export default function AppLayout() {
   if (isLoading || !user) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color="#FFD700" size="large" />
+        <ActivityIndicator color={COLORS.gold} size="large" />
       </View>
     );
   }
@@ -68,4 +68,3 @@ const styles = StyleSheet.create({
     backgroundColor: DQ_BG,
   },
 });
-

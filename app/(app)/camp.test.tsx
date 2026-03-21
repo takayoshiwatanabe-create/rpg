@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "@vitest/globals";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import CampScreen from "./camp";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,10 +37,62 @@ vi.mock("@/i18n", () => ({
     if (key === "dq.camp.view_status") return "詳細ステータス";
     if (key === "dq.camp.settings") return "設定";
     if (key === "camp.activeQuests") return "アクティブクエスト";
+    if (key === "dq.camp.accessibility.camp_screen") return "キャンプ画面";
+    if (key === "hero.name_label") return `${params?.name}の名前`;
+    if (key === "hero.level_label") return `レベル${params?.level}`;
+    if (key === "hero.exp_label") return "経験値";
+    if (key === "hero.exp_progress_label") return `経験値 ${params?.current} / ${params?.required}`;
+    if (key === "hero.hp_label") return "HP";
+    if (key === "hero.hp_value_label") return `HP ${params?.current} / ${params?.max}`;
+    if (key === "hero.mp_label") return "MP";
+    if (key === "hero.mp_value_label") return `MP ${params?.current} / ${params?.max}`;
+    if (key === "hero.gold_label") return "ゴールド";
+    if (key === "hero.gold_value_label") return `ゴールド ${params?.gold}`;
+    if (key === "hero.attack_label") return "攻撃力";
+    if (key === "hero.defense_label") return "防御力";
+    if (key === "hero.total_exp_label") return "総経験値";
+    if (key === "camp.activeQuests_count") return `アクティブクエスト ${params?.count}件`;
     return key;
   }),
   getIsRTL: vi.fn(() => false),
 }));
+vi.mock("@/components/ui", () => ({
+  DQWindow: ({ children, title }: { children: React.ReactNode; title?: string }) => (
+    <View>
+      {title && <Text>{title}</Text>}
+      {children}
+    </View>
+  ),
+  DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void; accessibilityLabel: string }[] }) => (
+    <View>
+      {items.map((item) => (
+        <TouchableOpacity key={item.label} onPress={item.onPress} accessibilityLabel={item.accessibilityLabel}>
+          <Text>{item.label}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  ),
+  DQMessageBox: ({ text }: { text: string }) => (
+    <View>
+      <Text>{text}</Text>
+    </View>
+  ),
+}));
+vi.mock("react-native", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-native")>();
+  return {
+    ...actual,
+    Platform: {
+      select: vi.fn((options) => options.default),
+    },
+    Text: actual.Text,
+    View: actual.View,
+    ScrollView: actual.ScrollView,
+    StyleSheet: actual.StyleSheet,
+    ActivityIndicator: actual.ActivityIndicator,
+    TouchableOpacity: actual.TouchableOpacity,
+  };
+});
 
 const mockHero: HeroProfile = {
   id: "hero-123",
@@ -157,7 +209,7 @@ describe("CampScreen", () => {
     expect(screen.queryByText("防御力")).toBeNull();
 
     // Press "詳細ステータス" to show
-    screen.getByText("詳細ステータス").props.onPress();
+    fireEvent.press(screen.getByText("詳細ステータス"));
     await waitFor(() => {
       expect(screen.getByText("攻撃力")).toBeVisible();
       expect(screen.getByText("防御力")).toBeVisible();
@@ -165,7 +217,7 @@ describe("CampScreen", () => {
     });
 
     // Press "詳細ステータス" again to hide
-    screen.getByText("詳細ステータス").props.onPress();
+    fireEvent.press(screen.getByText("詳細ステータス"));
     await waitFor(() => {
       expect(screen.queryByText("攻撃力")).toBeNull();
       expect(screen.queryByText("防御力")).toBeNull();
@@ -176,7 +228,7 @@ describe("CampScreen", () => {
     render(<CampScreen />);
     await waitFor(() => screen.getByText("クエストへ行く"));
 
-    screen.getByText("クエストへ行く").props.onPress();
+    fireEvent.press(screen.getByText("クエストへ行く"));
     expect(router.push).toHaveBeenCalledWith("/(app)/quests");
   });
 
@@ -184,7 +236,7 @@ describe("CampScreen", () => {
     render(<CampScreen />);
     await waitFor(() => screen.getByText("クエストを作成"));
 
-    screen.getByText("クエストを作成").props.onPress();
+    fireEvent.press(screen.getByText("クエストを作成"));
     expect(router.push).toHaveBeenCalledWith("/(app)/quests/new");
   });
 
@@ -192,7 +244,7 @@ describe("CampScreen", () => {
     render(<CampScreen />);
     await waitFor(() => screen.getByText("記録を見る"));
 
-    screen.getByText("記録を見る").props.onPress();
+    fireEvent.press(screen.getByText("記録を見る"));
     expect(router.push).toHaveBeenCalledWith("/(app)/records");
   });
 
@@ -200,8 +252,7 @@ describe("CampScreen", () => {
     render(<CampScreen />);
     await waitFor(() => screen.getByText("設定"));
 
-    screen.getByText("設定").props.onPress();
+    fireEvent.press(screen.getByText("設定"));
     expect(router.push).toHaveBeenCalledWith("/(app)/parent/settings");
   });
 });
-

@@ -61,7 +61,16 @@ export function PixelProgressBar({
           {label}
         </PixelText>
       )}
-      <View style={styles.progressBar}>
+      <View
+        style={styles.progressBar}
+        accessibilityRole="progressbar"
+        accessibilityValue={{
+          min: 0,
+          max: max,
+          now: value,
+        }}
+        accessibilityLabel={`${label || 'Progress'} ${value} of ${max}`}
+      >
         <Animated.View
           style={[
             styles.progressBarFill,

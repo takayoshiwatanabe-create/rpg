@@ -1,14 +1,11 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import { View, Animated, StyleSheet, Text, Platform } from "react-native";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { PIXEL_BORDER, FONT_FAMILY_MAIN, FONT_FAMILY_SUB, COLORS } from "@/constants/theme";
+import { PIXEL_BORDER, FONT_FAMILY_MAIN, FONT_FAMILY_SUB, COLORS, FONT_SIZES } from "@/constants/theme";
 import { t } from "@/i18n"; // Import t for i18n
 
-const FONT_FAMILY = Platform.select({
-  ios: FONT_FAMILY_SUB,
-  android: FONT_FAMILY_SUB,
-  default: FONT_FAMILY_SUB,
-});
+// FONT_FAMILY_SUB is used for general text, FONT_FAMILY_MAIN for titles/emojis
+const FONT_FAMILY = FONT_FAMILY_SUB;
 
 interface BattleSceneProps {
   monsterEmoji: string;
@@ -41,7 +38,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   const monsterShakeAnim = useRef(new Animated.Value(0)).current;
   const heroShakeAnim = useRef(new Animated.Value(0)).current;
   const flashOpacity = useRef(new Animated.Value(0)).current;
-  const damageAnim = useRef(new Animated.Value(0)).current;
+  const damageAnim = useRef(new Animated.Value(0)).current; // For damage text animation
 
   const shake = useCallback(
     (targetAnim: Animated.Value) => {
@@ -67,7 +64,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
         Animated.timing(flashOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
       ]).start();
       shake(monsterShakeAnim); // Monster shakes when attacked
-      damageAnim.setValue(1); // Show damage number
+      damageAnim.setValue(1); // Start damage animation from 1 (visible)
       Animated.timing(damageAnim, { toValue: 0, duration: 1500, useNativeDriver: true }).start();
     } else if (reducedMotion) {
       flashOpacity.setValue(0);
@@ -112,18 +109,18 @@ const BattleScene: React.FC<BattleSceneProps> = ({
               transform: [{
                 translateY: damageAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [-40, 0],
+                  outputRange: [-40, 0], // Floats up by 40px
                 }),
               }],
             },
           ]}
         >
-          {"💥"}
+          {"💥"} {/* Placeholder for damage effect */}
         </Animated.Text>
 
         {/* Hero (placeholder for now) */}
         <Animated.Text style={[styles.heroEmoji, { transform: [{ translateX: heroShakeAnim }] }]}>
-          {"🧝"}
+          {"🧝"} {/* Placeholder hero emoji */}
         </Animated.Text>
       </View>
 
@@ -154,7 +151,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.bgDark, // Dark background for battle
     justifyContent: "space-between",
-    padding: 16,
+    padding: SPACING.md, // Use SPACING.md for consistent padding
   },
   flashOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -162,12 +159,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   topPanel: {
-    padding: 8,
+    padding: SPACING.sm, // Use SPACING.sm
     backgroundColor: COLORS.bgCard,
     borderWidth: PIXEL_BORDER.borderWidth,
     borderColor: COLORS.windowBorder,
     borderRadius: PIXEL_BORDER.borderRadius,
-    marginBottom: 16,
+    marginBottom: SPACING.md, // Use SPACING.md
   },
   battleField: {
     flex: 1,
@@ -176,63 +173,68 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   monsterEmoji: {
-    fontSize: 80,
+    fontSize: FONT_SIZES.xxl, // Use a larger font size for monster emoji
     textAlign: "center",
-    fontFamily: FONT_FAMILY_MAIN, // Use main font for emojis if available, or a system emoji font
+    fontFamily: FONT_FAMILY_MAIN, // Use main font for emojis
   },
   heroEmoji: {
-    fontSize: 60,
+    fontSize: FONT_SIZES.xl, // Use a slightly smaller font size for hero emoji
     textAlign: "center",
-    fontFamily: FONT_FAMILY_MAIN, // Use main font for emojis if available, or a system emoji font
+    fontFamily: FONT_FAMILY_MAIN, // Use main font for emojis
   },
   damageText: {
-    fontSize: 36,
+    fontSize: FONT_SIZES.heading, // Use FONT_SIZES.heading
     position: "absolute",
-    top: "30%",
+    top: "30%", // Position relative to monster
     color: COLORS.danger,
     fontWeight: "bold",
     fontFamily: FONT_FAMILY,
+    textShadowColor: COLORS.shadow, // Add text shadow for pixel art feel
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 0,
   },
   bottomPanel: {
-    marginTop: 16,
+    marginTop: SPACING.md, // Use SPACING.md
   },
   heroStatusBox: {
     backgroundColor: COLORS.bgCard,
     borderWidth: PIXEL_BORDER.borderWidth,
     borderColor: COLORS.windowBorder,
     borderRadius: PIXEL_BORDER.borderRadius,
-    padding: 8,
-    marginBottom: 8,
+    padding: SPACING.sm, // Use SPACING.sm
+    marginBottom: SPACING.xs, // Use SPACING.xs
   },
   heroNameText: {
     color: COLORS.gold,
-    fontSize: 20,
+    fontSize: FONT_SIZES.lg, // Use FONT_SIZES.lg
     fontFamily: FONT_FAMILY,
     fontWeight: "bold",
-    marginBottom: 4,
+    marginBottom: SPACING.xxs, // Use SPACING.xxs
   },
   hpBarContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: SPACING.xxs, // Use SPACING.xxs
   },
   hpBarLabel: {
     color: COLORS.cream,
-    fontSize: 16,
+    fontSize: FONT_SIZES.sm, // Use FONT_SIZES.sm
     fontFamily: FONT_FAMILY,
-    width: 40,
+    width: 40, // Fixed width for label
   },
   hpBar: {
     flex: 1,
     height: 10,
     backgroundColor: COLORS.darkGray,
-    borderRadius: 2,
+    borderRadius: PIXEL_BORDER.borderRadius, // Use PIXEL_BORDER.borderRadius
     overflow: "hidden",
-    marginHorizontal: 8,
+    marginHorizontal: SPACING.xs, // Use SPACING.xs
+    borderWidth: 1, // Add border to HP bar
+    borderColor: COLORS.gray, // Border color for HP bar
   },
   hpFill: {
     height: "100%",
-    borderRadius: 2,
+    borderRadius: PIXEL_BORDER.borderRadius, // Use PIXEL_BORDER.borderRadius
   },
   monsterHpFill: {
     backgroundColor: COLORS.danger, // Red for monster HP
@@ -242,9 +244,9 @@ const styles = StyleSheet.create({
   },
   hpValue: {
     color: COLORS.cream,
-    fontSize: 14,
+    fontSize: FONT_SIZES.caption, // Use FONT_SIZES.caption
     fontFamily: FONT_FAMILY,
-    width: 60,
+    width: 60, // Fixed width for HP value
     textAlign: "right",
   },
   messageBox: {
@@ -252,13 +254,13 @@ const styles = StyleSheet.create({
     borderWidth: PIXEL_BORDER.borderWidth,
     borderColor: COLORS.windowBorder,
     borderRadius: PIXEL_BORDER.borderRadius,
-    padding: 12,
+    padding: SPACING.md, // Use SPACING.md
     minHeight: 80,
     justifyContent: "center",
   },
   messageText: {
     color: COLORS.cream,
-    fontSize: 18,
+    fontSize: FONT_SIZES.body, // Use FONT_SIZES.body
     fontFamily: FONT_FAMILY,
     textAlign: "center",
   },

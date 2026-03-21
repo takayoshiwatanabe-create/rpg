@@ -3,7 +3,8 @@ import { onAuthStateChange, type LocalUser } from "@/lib/firebase";
 import { getUserProfile } from "@/lib/firestore";
 import type { UserProfile } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { calculateLevelFromExp, HERO_STAT_GROWTH } from "@/constants/game"; // Import calculateLevelFromExp and HERO_STAT_GROWTH
+import { calculateLevelFromExpCorrected } from "@/lib/expCalculator"; // Use corrected function
+import { HERO_STAT_GROWTH } from "@/constants/game";
 
 export type AuthState = {
   user: (LocalUser & UserProfile) | null;
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (storedProfile) {
         // Recalculate derived stats like level, maxHp, maxMp, attack, defense
-        const level = calculateLevelFromExp(storedProfile.totalExp);
+        const level = calculateLevelFromExpCorrected(storedProfile.totalExp); // Use corrected function
         const maxHp = 100 + (level - 1) * HERO_STAT_GROWTH.hp;
         const maxMp = 50 + (level - 1) * HERO_STAT_GROWTH.mp;
         const attack = 10 + (level - 1) * HERO_STAT_GROWTH.attack;
