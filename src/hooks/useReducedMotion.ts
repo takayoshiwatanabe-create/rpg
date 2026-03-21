@@ -1,35 +1,12 @@
-import { useEffect, useState } from "react";
-import { AccessibilityInfo } from "react-native";
-
-/**
- * Returns true when the system "Reduce Motion" accessibility setting is enabled.
- * Use this to skip or simplify animations for users who prefer reduced motion.
- */
-export function useReducedMotion(): boolean {
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) setReducedMotion(enabled);
-    });
-
-    const subscription = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      (enabled) => {
-        if (mounted) setReducedMotion(enabled);
-      },
-    );
-
-    return () => {
-      mounted = false;
-      subscription.remove();
-    };
-  }, []);
-
-  return reducedMotion;
-}
-
-
-
+```diff
+--- a/src/hooks/useReducedMotion.ts
++++ b/src/hooks/useReducedMotion.ts
+@@ -1,6 +1,7 @@
+ import { useEffect, useState } from "react";
+ import { AccessibilityInfo } from "react-native";
+ 
++// This hook is used to respect the user's system-wide "Reduce Motion" setting.
+ /**
+  * Returns true when the system "Reduce Motion" accessibility setting is enabled.
+  * Use this to skip or simplify animations for users who prefer reduced motion.
+```

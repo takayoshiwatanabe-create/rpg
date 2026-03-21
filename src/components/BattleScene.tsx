@@ -5,7 +5,7 @@
  import React, { useRef, useEffect, useCallback } from "react";
  import { View, Animated, StyleSheet, Text, Platform } from "react-native";
 -import { useReducedMotion } from "@/hooks/useReducedMotion";
-+import { useReducedMotion } from "@/hooks/useReducedMotion"; // Assuming this hook exists and works for RN
++import { useReducedMotion } from "@/hooks/useReducedMotion";
  import { PIXEL_BORDER, FONT_FAMILY_MAIN, FONT_FAMILY_SUB, COLORS, FONT_SIZES, SPACING } from "@/constants/theme"; // Added SPACING
  import { t } from "@/i18n"; // Import t for i18n
  

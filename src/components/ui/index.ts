@@ -5,5 +5,5 @@
  export * from "./PixelInput";
  export * from "./PixelText";
  export * from "./PixelProgressBar";
-+export * from "./PixelPicker";
++export * from "./PixelSwitch";
 ```

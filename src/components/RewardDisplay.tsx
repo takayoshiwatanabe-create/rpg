@@ -1,50 +1,77 @@
 ```diff
 --- a/src/components/RewardDisplay.tsx
 +++ b/src/components/RewardDisplay.tsx
-@@ -48,7 +48,7 @@
-         {/* Study time display */}
-         {durationSeconds > 0 && (
-           <PixelCard variant="default">
--            <PixelText variant="label" color="cream" style={styles.cardTitle}>
-+            <PixelText variant="label" color="textDefault" style={styles.cardTitle}>
-               {t("dq.result.study_time")}
-             </PixelText>
-             <PixelText variant="title" color="gold" style={styles.studyTimeText}>
-@@ -59,14 +59,14 @@
-         {/* Reward summary */}
-         <PixelCard variant="default">
-           <PixelText variant="label" color="cream" style={styles.cardTitle}>
--            {t("dq.result.rewards")}
-+            {t("dq.result.rewards_label")}
-           </PixelText>
-           <View style={[styles.rewardRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
--            <PixelText variant="body" color="cream">
--              {"✨ "}{t("hero.exp")}
-+            <PixelText variant="body" color="textDefault">
-+              {"✨ "}{t("hero.exp_label")}
-             </PixelText>
-             <PixelText variant="body" color="exp">
--              {`+${expGained}`}
-+              {`+${expGained} EXP`}
-             </PixelText>
-           </View>
-           <View style={[styles.rewardRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-@@ -80,7 +80,7 @@
-         {/* Hero growth: level + EXP bar */}
-         <PixelCard variant="highlighted">
-           <PixelText variant="label" color="cream" style={styles.cardTitle}>
--            {t("dq.result.hero_growth")}
-+            {t("dq.result.hero_growth_label")}
-           </PixelText>
-           <View style={[styles.heroRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-             <PixelText variant="body" color="gold" style={styles.heroLevelLabel}>
-@@ -89,7 +89,7 @@
-             <PixelText variant="body" color="cream" style={styles.heroLevelValue}>
-               Lv.{hero.level}
-             </PixelText>
--          </View>
-+          </View> 
-           <PixelProgressBar
-             label={t("hero.exp")}
-             value={expProgress.current}
+@@ -1,39 +1,41 @@
+ import React from "react";
+-import { View, Text, StyleSheet, Platform } from "react-native";
++import { View, StyleSheet } from "react-native";
+ import { t } from "@/i18n";
+-import { COLORS } from "@/constants/theme";
+-
+-const FONT_FAMILY = Platform.select({
+-  ios: "Courier New",
+-  android: "monospace",
+-  default: "monospace",
+-});
++import { COLORS, FONT_SIZES, SPACING } from "@/constants/theme";
++import { PixelText } from "./ui/PixelText"; // Use PixelText for consistency
+ 
+ type RewardDisplayProps = {
+   exp: number;
+   gold: number;
+ };
+ 
+-export const RewardDisplay: React.FC<RewardDisplayProps> = ({ exp, gold }) => {
+-  return (
+-    <View style={styles.container}>
+-      <View style={styles.rewardRow}>
+-        <Text style={styles.rewardLabel}>{"✨ "}{t("hero.exp")}</Text>
+-        <Text style={styles.rewardValue}>{`+${exp}`}</Text>
+-      </View>
+-      <View style={styles.rewardRow}>
+-        <Text style={styles.rewardLabel}>{"💰 "}{t("hero.gold")}</Text>
+-        <Text style={styles.rewardGold}>{`+${gold}`}</Text>
+-      </View>
++export const RewardDisplay: React.FC<RewardDisplayProps> = React.memo(
++  ({ exp, gold }) => {
++    return (
++      <View style={styles.container}>
++        <View style={styles.rewardRow}>
++          <PixelText variant="body" color="textDefault" style={styles.rewardLabel}>
++            {"✨ "}{t("hero.exp_label")}
++          </PixelText>
++          <PixelText variant="body" color="success" style={styles.rewardValue}>
++            {`+${exp}`}
++          </PixelText>
++        </View>
++        <View style={styles.rewardRow}>
++          <PixelText variant="body" color="textDefault" style={styles.rewardLabel}>
++            {"💰 "}{t("hero.gold_label")}
++          </PixelText>
++          <PixelText variant="body" color="gold" style={styles.rewardValue}>
++            {`+${gold}`}
++          </PixelText>
++        </View>
++      </View>
++    );
++  },
++);
++
++const styles = StyleSheet.create({
++  container: {
++    gap: SPACING.xs,
++  },
++  rewardRow: {
++    flexDirection: "row",
++    justifyContent: "space-between",
++    alignItems: "center",
++  },
++  rewardLabel: {
++    fontSize: FONT_SIZES.body,
++  },
++  rewardValue: {
++    fontSize: FONT_SIZES.body,
++    fontWeight: "bold", // PixelText handles font family, just bold for emphasis
++  },
++});
 ```

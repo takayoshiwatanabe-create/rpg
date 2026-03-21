@@ -10,7 +10,7 @@
              Lv.{hero.level}
            </PixelText>
          </View>
-@@ -52,7 +52,7 @@
+@@ -52,21 +52,21 @@
          {/* Gold */}
          <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
            <PixelText variant="body" color="cream" style={styles.statusLabel}>
@@ -19,7 +19,8 @@
            </PixelText>
            <PixelText variant="body" color="gold" style={styles.goldValue}>
              {hero.gold.toLocaleString()} G
-@@ -62,21 +62,21 @@
+           </PixelText>
+         </View>
          {showExtendedStats && (
            <>
              <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
