@@ -86,9 +86,10 @@ export function PixelProgressBar({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
+    marginBottom: SPACING.xs, // Added margin for spacing between progress bars
   },
   label: {
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.xxs, // Adjusted label spacing
   },
   progressBar: {
     height: 16,
@@ -112,4 +113,3 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
   },
 });
-

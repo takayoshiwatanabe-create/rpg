@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { PixelText, PixelCard } from "@/components/ui";
+import { PixelText, PixelCard, PixelProgressBar } from "@/components/ui"; // Added PixelProgressBar
 import { t } from "@/i18n";
 import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
 import { expProgressInCurrentLevel } from "@/lib/expCalculator";
@@ -35,7 +35,7 @@ export const RewardDisplay = React.memo(
     durationSeconds,
   }: RewardDisplayProps) => {
     const expProgress = expProgressInCurrentLevel(hero.totalExp);
-    const expRatio = expProgress.required > 0 ? expProgress.current / expProgress.required : 0;
+    // const expRatio = expProgress.required > 0 ? expProgress.current / expProgress.required : 0; // No longer needed directly
 
     return (
       <View style={[styles.container, { direction: isRTL ? "rtl" : "ltr" }]}>
@@ -94,18 +94,13 @@ export const RewardDisplay = React.memo(
               Lv.{hero.level}
             </PixelText>
           </View>
-          <View style={[styles.expBarRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-            <PixelText variant="label" color="exp" style={styles.expBarLabel}>
-              EXP
-            </PixelText>
-            <View style={styles.expBarContainer}>
-              <View style={[styles.expBarFill, { flex: expRatio || 0.01 }]} />
-              <View style={{ flex: 1 - (expRatio || 0.01) }} />
-            </View>
-            <PixelText variant="caption" color="gray" style={styles.expBarValue}>
-              {expProgress.current}/{expProgress.required}
-            </PixelText>
-          </View>
+          <PixelProgressBar
+            label="EXP"
+            value={expProgress.current}
+            max={expProgress.required}
+            color="exp"
+            showValues={true}
+          />
         </PixelCard>
       </View>
     );
@@ -152,15 +147,15 @@ const styles = StyleSheet.create({
   heroLevelValue: {
     fontSize: FONT_SIZES.lg,
   },
-  expBarRow: {
+  expBarRow: { // This style is no longer directly used for progress bars, but kept for other potential rows
     alignItems: "center",
     gap: SPACING.xs,
   },
-  expBarLabel: {
+  expBarLabel: { // This style is no longer directly used for progress bars, but kept for other potential rows
     fontSize: FONT_SIZES.sm,
     width: 32,
   },
-  expBarContainer: {
+  expBarContainer: { // This style is no longer directly used for progress bars, but kept for other potential rows
     flex: 1,
     height: 12,
     backgroundColor: COLORS.bgMid,
@@ -170,15 +165,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.windowBorder,
   },
-  expBarFill: {
+  expBarFill: { // This style is no longer directly used for progress bars, but kept for other potential rows
     height: "100%",
     backgroundColor: COLORS.exp,
     borderRadius: PIXEL_BORDER.borderRadius,
   },
-  expBarValue: {
+  expBarValue: { // This style is no longer directly used for progress bars, but kept for other potential rows
     fontSize: FONT_SIZES.xs,
     width: 80,
     textAlign: "right",
   },
 });
-

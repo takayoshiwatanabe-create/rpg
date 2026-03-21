@@ -180,13 +180,12 @@ export default function CampScreen() {
       )}
 
       {/* Command Menu */}
-      <DQCommandMenu items={menuItems} accessibilityLabel={t("dq.camp.accessibility.command_menu")} />
+      <DQCommandMenu items={menuItems} />
 
       {/* NPC Message */}
       <DQMessageBox
         text={t("dq.camp.greeting", { name: heroName })}
         speed={40}
-        accessibilityLabel={t("dq.camp.accessibility.npc_message")}
       />
     </ScrollView>
   );

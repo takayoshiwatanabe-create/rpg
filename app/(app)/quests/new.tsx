@@ -1,141 +1,86 @@
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
-  Alert,
-  Platform,
   ActivityIndicator,
+  Alert,
+  TextInput,
+  Platform,
 } from "react-native";
 import { router, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
 import { createQuest } from "@/lib/firestore";
-import {
-  PixelText,
-  PixelButton,
-  PixelCard,
-  DQMessageBox,
-  DQInput,
-  DQPicker,
-} from "@/components/ui";
+import { PixelText, PixelButton, PixelCard, PixelPicker } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme";
+import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
 import type { Subject, Difficulty } from "@/types";
-import * as Haptics from "expo-haptics";
+import { QUEST_SUBJECTS, QUEST_DIFFICULTIES } from "@/constants/quests";
 
+const DQ_BG = "#000011";
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
   default: "monospace",
 });
 
-const SUBJECT_OPTIONS: { label: string; value: Subject }[] = [
-  { label: t("quest.subject.math"), value: "math" },
-  { label: t("quest.subject.japanese"), value: "japanese" },
-  { label: t("quest.subject.english"), value: "english" },
-  { label: t("quest.subject.science"), value: "science" },
-  { label: t("quest.subject.social_studies"), value: "social_studies" },
-  { label: t("quest.subject.other"), value: "other" },
-];
-
-const DIFFICULTY_OPTIONS: { label: string; value: Difficulty }[] = [
-  { label: t("quest.difficulty.easy"), value: "easy" },
-  { label: t("quest.difficulty.normal"), value: "normal" },
-  { label: t("quest.difficulty.hard"), value: "hard" },
-  { label: t("quest.difficulty.very_hard"), value: "very_hard" },
-];
-
 export default function NewQuestScreen() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, userProfile, isLoading: authLoading } = useAuth();
   const isRTL = getIsRTL();
   const insets = useSafeAreaInsets();
 
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState<Subject>("math");
-  const [difficulty, setDifficulty] = useState<Difficulty>("normal");
-  const [deadlineDate, setDeadlineDate] = useState(""); // YYYY-MM-DD format
+  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [estimatedMinutes, setEstimatedMinutes] = useState("30");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [deadlineDate, setDeadlineDate] = useState(""); // YYYY-MM-DD
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace("/(auth)/login"); // Redirect if not authenticated
-    }
-  }, [user, authLoading]);
-
-  const validateForm = useCallback(() => {
-    if (!title.trim()) {
-      setFormError(t("quest.error.title_required"));
-      return false;
-    }
-    if (title.trim().length > 50) {
-      setFormError(t("quest.error.title_too_long"));
-      return false;
-    }
-    const minutes = parseInt(estimatedMinutes, 10);
-    if (isNaN(minutes) || minutes <= 0 || minutes > 999) {
-      setFormError(t("quest.error.invalid_estimated_time"));
-      return false;
-    }
-    if (!deadlineDate) {
-      setFormError(t("quest.error.deadline_required"));
-      return false;
-    }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize to start of day
-    const deadline = new Date(deadlineDate);
-    if (isNaN(deadline.getTime())) {
-      setFormError(t("quest.error.invalid_deadline_format"));
-      return false;
-    }
-    if (deadline < today) {
-      setFormError(t("quest.error.deadline_in_past"));
-      return false;
-    }
-
-    setFormError(null);
-    return true;
-  }, [title, estimatedMinutes, deadlineDate]);
+    // Pre-fill deadline with tomorrow's date
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setDeadlineDate(tomorrow.toISOString().split("T")[0]!);
+  }, []);
 
   const handleCreateQuest = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (!user || isSubmitting) return;
+    if (!user || !userProfile || isSaving) return;
 
-    if (!validateForm()) {
-      Alert.alert(t("common.error"), formError ?? t("quest.error.validation_failed"));
+    if (!title.trim()) {
+      Alert.alert(t("common.error"), t("quest.error.titleRequired"));
+      return;
+    }
+    const minutes = parseInt(estimatedMinutes, 10);
+    if (isNaN(minutes) || minutes <= 0) {
+      Alert.alert(t("common.error"), t("quest.error.minutesInvalid"));
+      return;
+    }
+    if (!deadlineDate) {
+      Alert.alert(t("common.error"), t("quest.error.deadlineRequired"));
       return;
     }
 
-    setIsSubmitting(true);
+    setIsSaving(true);
     try {
-      const newQuest = {
-        userId: user.uid,
-        heroId: user.uid, // Assuming heroId is same as userId for now
-        title: title.trim(),
+      await createQuest(user.uid, user.uid, {
+        title,
         subject,
         difficulty,
+        estimatedMinutes: minutes,
         deadlineDate,
-        estimatedMinutes: parseInt(estimatedMinutes, 10),
-        expReward: 0, // Will be calculated on server/game logic
-        goldReward: 0, // Will be calculated on server/game logic
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        deletedAt: null,
-      };
-      await createQuest(newQuest);
-      Alert.alert(t("common.success"), t("quest.created_successfully"));
-      router.replace("/(app)/quests"); // Go back to quest list
+      });
+      Alert.alert(t("common.success"), t("quest.created"));
+      router.replace("/(app)/quests");
     } catch (error) {
       console.error("Failed to create quest:", error);
       Alert.alert(t("common.error"), t("error.unknown"));
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
-  }, [user, isSubmitting, title, subject, difficulty, deadlineDate, estimatedMinutes, validateForm, formError]);
+  }, [user, userProfile, title, subject, difficulty, estimatedMinutes, deadlineDate, isSaving]);
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return (
       <View style={styles.center} testID="activity-indicator">
         <ActivityIndicator color={COLORS.gold} size="large" />
@@ -145,7 +90,7 @@ export default function NewQuestScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t("nav.create_quest") }} />
+      <Stack.Screen options={{ title: t("quest.create_new") }} />
       <ScrollView
         style={styles.root}
         contentContainerStyle={[
@@ -153,77 +98,100 @@ export default function NewQuestScreen() {
           { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 },
         ]}
         showsVerticalScrollIndicator={false}
-        accessibilityLabel={t("quest.accessibility.create_quest_screen")}
       >
-        <DQMessageBox
-          text={t("quest.create_quest_message")}
-          speed={40}
-          accessibilityLabel={t("quest.accessibility.npc_message")}
-        />
+        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
+          {t("quest.new_quest_details")}
+        </PixelText>
 
         <PixelCard variant="default">
-          <DQInput
-            label={t("quest.form.title_label")}
-            placeholder={t("quest.form.title_placeholder")}
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("quest.title")}
+          </PixelText>
+          <TextInput
+            style={styles.textInput}
             value={title}
             onChangeText={setTitle}
-            maxLength={50}
-            accessibilityLabel={t("quest.form.title_label")}
-            autoCapitalize="sentences"
-            returnKeyType="next"
-            error={formError && formError.includes("タイトル") ? formError : undefined}
+            placeholder={t("quest.placeholder.title")}
+            placeholderTextColor={COLORS.gray}
+            accessibilityLabel={t("quest.title")}
           />
 
-          <DQPicker
-            label={t("quest.form.subject_label")}
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("quest.subject")}
+          </PixelText>
+          <PixelPicker
             selectedValue={subject}
-            onValueChange={(itemValue) => setSubject(itemValue as Subject)}
-            options={SUBJECT_OPTIONS}
-            accessibilityLabel={t("quest.form.subject_label")}
+            onValueChange={(itemValue: Subject) => setSubject(itemValue)}
+            items={QUEST_SUBJECTS.map((s) => ({
+              label: t(`quest.subject.${s}`),
+              value: s,
+            }))}
+            accessibilityLabel={t("quest.subject")}
           />
 
-          <DQPicker
-            label={t("quest.form.difficulty_label")}
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("quest.difficulty")}
+          </PixelText>
+          <PixelPicker
             selectedValue={difficulty}
-            onValueChange={(itemValue) => setDifficulty(itemValue as Difficulty)}
-            options={DIFFICULTY_OPTIONS}
-            accessibilityLabel={t("quest.form.difficulty_label")}
+            onValueChange={(itemValue: Difficulty) => setDifficulty(itemValue)}
+            items={QUEST_DIFFICULTIES.map((d) => ({
+              label: t(`quest.difficulty.${d}`),
+              value: d,
+            }))}
+            accessibilityLabel={t("quest.difficulty")}
           />
 
-          <DQInput
-            label={t("quest.form.deadline_label")}
-            placeholder={t("quest.form.deadline_placeholder")}
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("quest.estimated_minutes")}
+          </PixelText>
+          <TextInput
+            style={styles.textInput}
+            value={estimatedMinutes}
+            onChangeText={(text) => setEstimatedMinutes(text.replace(/[^0-9]/g, ""))}
+            keyboardType="numeric"
+            placeholder="30"
+            placeholderTextColor={COLORS.gray}
+            accessibilityLabel={t("quest.estimated_minutes")}
+          />
+
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("quest.deadline_date")}
+          </PixelText>
+          <TextInput
+            style={styles.textInput}
             value={deadlineDate}
             onChangeText={setDeadlineDate}
-            keyboardType="numeric"
-            maxLength={10}
-            accessibilityLabel={t("quest.form.deadline_label")}
-            hint={t("quest.form.deadline_hint")}
-            error={formError && formError.includes("期限") ? formError : undefined}
-          />
-
-          <DQInput
-            label={t("quest.form.estimated_time_label")}
-            placeholder={t("quest.form.estimated_time_placeholder")}
-            value={estimatedMinutes}
-            onChangeText={setEstimatedMinutes}
-            keyboardType="numeric"
-            maxLength={3}
-            accessibilityLabel={t("quest.form.estimated_time_label")}
-            hint={t("quest.form.estimated_time_hint")}
-            error={formError && formError.includes("所要時間") ? formError : undefined}
-          />
-
-          <PixelButton
-            label={isSubmitting ? t("common.creating") : t("quest.form.create_button")}
-            variant="primary"
-            size="lg"
-            onPress={handleCreateQuest}
-            disabled={isSubmitting}
-            style={styles.createButton}
-            accessibilityLabel={t("quest.form.create_button_accessibility")}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={COLORS.gray}
+            accessibilityLabel={t("quest.deadline_date")}
           />
         </PixelCard>
+
+        <View style={styles.buttonGroup}>
+          <PixelButton
+            label={t("quest.create_quest")}
+            variant="primary"
+            onPress={handleCreateQuest}
+            disabled={isSaving}
+            style={styles.actionButton}
+            accessibilityLabel={t("quest.create_quest")}
+          />
+          <PixelButton
+            label={t("common.cancel")}
+            variant="secondary"
+            onPress={() => router.back()}
+            disabled={isSaving}
+            style={styles.actionButton}
+            accessibilityLabel={t("common.cancel")}
+          />
+        </View>
+
+        {isSaving && (
+          <PixelText variant="body" color="gold" style={styles.savingText}>
+            {t("common.saving")}...
+          </PixelText>
+        )}
       </ScrollView>
     </>
   );
@@ -232,7 +200,7 @@ export default function NewQuestScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   content: {
     padding: SPACING.md,
@@ -242,9 +210,35 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
-  createButton: {
+  sectionTitle: {
+    marginBottom: SPACING.xs,
+    textAlign: "center",
+  },
+  inputLabel: {
+    marginBottom: SPACING.xs,
+    marginTop: SPACING.md,
+  },
+  textInput: {
+    backgroundColor: COLORS.bgLight,
+    color: COLORS.cream,
+    fontFamily: FONT_FAMILY,
+    fontSize: FONT_SIZES.body,
+    padding: SPACING.sm,
+    borderWidth: PIXEL_BORDER.borderWidth,
+    borderColor: COLORS.darkGray,
+    borderRadius: PIXEL_BORDER.borderRadius,
+  },
+  buttonGroup: {
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+  },
+  actionButton: {
+    width: "100%",
+  },
+  savingText: {
+    textAlign: "center",
     marginTop: SPACING.md,
   },
 });

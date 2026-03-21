@@ -5,28 +5,22 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  TextInput,
   Platform,
-  Text,
-  TouchableOpacity,
 } from "react-native";
-import { useLocalSearchParams, router, Stack } from "expo-router";
+import { router, useLocalSearchParams, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
 import {
   subscribeToQuest,
-  updateQuest, // Corrected import
-  deleteQuest, // Corrected import
+  updateQuest,
+  deleteQuest,
 } from "@/lib/firestore";
-import { DQWindow, DQCommandMenu, DQMessageBox, PixelButton } from "@/components/ui";
-import { t, getLang, getIsRTL } from "@/i18n";
-import {
-  COLORS,
-  SPACING,
-  FONT_SIZES,
-  PIXEL_BORDER,
-} from "@/constants/theme";
-import type { Quest, Subject, Difficulty, QuestStatus } from "@/types";
-import { getMonster } from "@/constants/monsters";
+import { PixelText, PixelButton, PixelCard, PixelPicker } from "@/components/ui";
+import { t, getIsRTL } from "@/i18n";
+import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
+import type { Quest, Subject, Difficulty } from "@/types";
+import { QUEST_SUBJECTS, QUEST_DIFFICULTIES } from "@/constants/quests";
 
 const DQ_BG = "#000011";
 const FONT_FAMILY = Platform.select({
@@ -35,107 +29,117 @@ const FONT_FAMILY = Platform.select({
   default: "monospace",
 });
 
-function formatDeadline(dateStr: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(dateStr));
-}
-
 export default function QuestDetailScreen() {
   const { questId: questIdParam } = useLocalSearchParams();
   const questId = typeof questIdParam === "string" ? questIdParam : undefined;
 
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
   const isRTL = getIsRTL();
   const insets = useSafeAreaInsets();
 
   const [quest, setQuest] = useState<Quest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedTitle, setEditedTitle] = useState("");
-  const [editedDeadline, setEditedDeadline] = useState("");
-  const [editedEstimatedMinutes, setEditedEstimatedMinutes] = useState("");
-  const [editedSubject, setEditedSubject] = useState<Subject>("math");
-  const [editedDifficulty, setEditedDifficulty] = useState<Difficulty>("easy");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const isParent = userProfile?.role === "parent";
+  const [title, setTitle] = useState("");
+  const [subject, setSubject] = useState<Subject>("math");
+  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [estimatedMinutes, setEstimatedMinutes] = useState("30");
+  const [deadlineDate, setDeadlineDate] = useState(""); // YYYY-MM-DD
 
   useEffect(() => {
     if (!questId) {
       setIsLoading(false);
       return;
     }
+
     const unsub = subscribeToQuest(questId, (q: Quest | null) => {
-      setQuest(q);
       if (q) {
-        setEditedTitle(q.title);
-        setEditedDeadline(q.deadlineDate);
-        setEditedEstimatedMinutes(q.estimatedMinutes.toString());
-        setEditedSubject(q.subject);
-        setEditedDifficulty(q.difficulty);
+        setQuest(q);
+        setTitle(q.title);
+        setSubject(q.subject);
+        setDifficulty(q.difficulty);
+        setEstimatedMinutes(String(q.estimatedMinutes));
+        setDeadlineDate(q.deadlineDate);
+      } else {
+        Alert.alert(t("common.error"), t("quest.error.notFound"));
+        router.replace("/(app)/quests");
       }
       setIsLoading(false);
     });
     return unsub;
   }, [questId]);
 
-  const handleEdit = useCallback(() => {
-    setIsEditing(true);
-  }, []);
+  const handleSaveQuest = useCallback(async () => {
+    if (!quest || !user || isSaving) return;
 
-  const handleSave = useCallback(async () => {
-    if (!quest || !user) return;
+    if (!title.trim()) {
+      Alert.alert(t("common.error"), t("quest.error.titleRequired"));
+      return;
+    }
+    const minutes = parseInt(estimatedMinutes, 10);
+    if (isNaN(minutes) || minutes <= 0) {
+      Alert.alert(t("common.error"), t("quest.error.minutesInvalid"));
+      return;
+    }
+    if (!deadlineDate) {
+      Alert.alert(t("common.error"), t("quest.error.deadlineRequired"));
+      return;
+    }
 
-    const updatedQuest: Partial<Quest> = {
-      title: editedTitle,
-      deadlineDate: editedDeadline,
-      estimatedMinutes: parseInt(editedEstimatedMinutes, 10),
-      subject: editedSubject,
-      difficulty: editedDifficulty,
-    };
-
+    setIsSaving(true);
     try {
-      await updateQuest(quest.id, updatedQuest);
-      setIsEditing(false);
-      Alert.alert(t("common.success"), t("quest.detail.updated"));
+      await updateQuest(quest.id, {
+        title,
+        subject,
+        difficulty,
+        estimatedMinutes: minutes,
+        deadlineDate,
+      });
+      Alert.alert(t("common.success"), t("quest.updated"));
+      router.back();
     } catch (error) {
       console.error("Failed to update quest:", error);
       Alert.alert(t("common.error"), t("error.unknown"));
+    } finally {
+      setIsSaving(false);
     }
-  }, [quest, user, editedTitle, editedDeadline, editedEstimatedMinutes, editedSubject, editedDifficulty]);
+  }, [quest, user, title, subject, difficulty, estimatedMinutes, deadlineDate, isSaving]);
 
-  const handleDelete = useCallback(() => {
-    if (!quest || !user) return;
+  const handleDeleteQuest = useCallback(() => {
+    if (!quest || isDeleting) return;
 
     Alert.alert(
-      t("quest.detail.delete_confirm_title"),
-      t("quest.detail.delete_confirm_message"),
+      t("quest.delete.title"),
+      t("quest.delete.confirm"),
       [
         { text: t("common.cancel"), style: "cancel" },
         {
-          text: t("common.delete"),
+          text: t("quest.delete.button"),
           style: "destructive",
           onPress: async () => {
+            setIsDeleting(true);
             try {
               await deleteQuest(quest.id);
-              Alert.alert(t("common.success"), t("quest.detail.deleted"));
-              router.back();
+              Alert.alert(t("common.success"), t("quest.deleted"));
+              router.replace("/(app)/quests");
             } catch (error) {
               console.error("Failed to delete quest:", error);
               Alert.alert(t("common.error"), t("error.unknown"));
+            } finally {
+              setIsDeleting(false);
             }
           },
         },
       ],
     );
-  }, [quest, user]);
+  }, [quest, isDeleting]);
 
   if (isLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#FFD700" size="large" />
+      <View style={styles.center} testID="activity-indicator">
+        <ActivityIndicator color={COLORS.gold} size="large" />
       </View>
     );
   }
@@ -143,33 +147,22 @@ export default function QuestDetailScreen() {
   if (!quest) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
-        <DQMessageBox text={t("quest.detail.notFound")} />
-        <DQCommandMenu
-          items={[{ label: t("common.back"), onPress: () => router.back() }]}
-          style={{ marginTop: 16 }}
+        <PixelText variant="body" color="danger">
+          {t("quest.error.notFound")}
+        </PixelText>
+        <PixelButton
+          label={t("common.back")}
+          variant="secondary"
+          onPress={() => router.back()}
+          style={styles.backButton}
         />
       </View>
     );
   }
 
-  const monster = getMonster(quest.subject, quest.difficulty);
-
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: t("quest.detail.title"),
-          headerRight: () =>
-            isParent && !isEditing ? (
-              <PixelButton
-                label={t("common.edit")}
-                variant="ghost"
-                size="sm"
-                onPress={handleEdit}
-              />
-            ) : null,
-        }}
-      />
+      <Stack.Screen options={{ title: t("quest.edit_quest") }} />
       <ScrollView
         style={styles.root}
         contentContainerStyle={[
@@ -178,137 +171,112 @@ export default function QuestDetailScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <DQWindow title={t("quest.detail.quest_info")}>
-          <View style={styles.monsterDisplay}>
-            <Text style={styles.monsterEmoji}>{monster.emoji}</Text>
-            <Text style={styles.monsterName}>{t(monster.nameKey)}</Text>
-          </View>
+        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
+          {t("quest.edit_details")}
+        </PixelText>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t("quest.title")}:</Text>
-            {isEditing ? (
-              <TextInput
-                style={styles.input}
-                value={editedTitle}
-                onChangeText={setEditedTitle}
-              />
-            ) : (
-              <Text style={styles.infoValue}>{quest.title}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t("quest.subject")}:</Text>
-            {isEditing ? (
-              <Picker
-                selectedValue={editedSubject}
-                onValueChange={(itemValue) => setEditedSubject(itemValue as Subject)}
-                style={styles.picker}
-                itemStyle={styles.pickerItem}
-              >
-                {Object.keys(COLORS.subjects).map((s) => (
-                  <Picker.Item key={s} label={t(`quest.subject.${s}`)} value={s} />
-                ))}
-              </Picker>
-            ) : (
-              <Text style={styles.infoValue}>{t(`quest.subject.${quest.subject}`)}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t("quest.difficulty")}:</Text>
-            {isEditing ? (
-              <Picker
-                selectedValue={editedDifficulty}
-                onValueChange={(itemValue) => setEditedDifficulty(itemValue as Difficulty)}
-                style={styles.picker}
-                itemStyle={styles.pickerItem}
-              >
-                {Object.keys(COLORS.difficulties).map((d) => (
-                  <Picker.Item key={d} label={t(`quest.difficulty.${d}`)} value={d} />
-                ))}
-              </Picker>
-            ) : (
-              <Text style={styles.infoValue}>{t(`quest.difficulty.${quest.difficulty}`)}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t("quest.deadline")}:</Text>
-            {isEditing ? (
-              <TextInput
-                style={styles.input}
-                value={editedDeadline}
-                onChangeText={setEditedDeadline}
-                placeholder="YYYY-MM-DD"
-              />
-            ) : (
-              <Text style={styles.infoValue}>{formatDeadline(quest.deadlineDate, getLang())}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t("quest.estimated_minutes")}:</Text>
-            {isEditing ? (
-              <TextInput
-                style={styles.input}
-                value={editedEstimatedMinutes}
-                onChangeText={setEditedEstimatedMinutes}
-                keyboardType="numeric"
-              />
-            ) : (
-              <Text style={styles.infoValue}>{quest.estimatedMinutes} {t("common.minutes")}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t("quest.status")}:</Text>
-            <Text style={styles.infoValue}>{t(`quest.status.${quest.status}`)}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t("quest.reward_exp")}:</Text>
-            <Text style={styles.infoValue}>{quest.expReward} EXP</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t("quest.reward_gold")}:</Text>
-            <Text style={styles.infoValue}>{quest.goldReward} G</Text>
-          </View>
-        </DQWindow>
-
-        {isEditing && (
-          <DQCommandMenu
-            items={[
-              { label: t("common.save"), onPress: handleSave },
-              { label: t("common.cancel"), onPress: () => setIsEditing(false) },
-              { label: t("common.delete"), onPress: handleDelete, isDestructive: true },
-            ]}
+        <PixelCard variant="default">
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("quest.title")}
+          </PixelText>
+          <TextInput
+            style={styles.textInput}
+            value={title}
+            onChangeText={setTitle}
+            placeholder={t("quest.placeholder.title")}
+            placeholderTextColor={COLORS.gray}
+            accessibilityLabel={t("quest.title")}
           />
-        )}
 
-        {!isEditing && quest.status === "pending" && (
-          <DQCommandMenu
-            items={[
-              {
-                label: t("dq.battle.fight"),
-                onPress: () => router.push({ pathname: "/(app)/battle/[questId]", params: { questId: quest.id } }),
-              },
-              { label: t("common.back"), onPress: () => router.back() },
-            ]}
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("quest.subject")}
+          </PixelText>
+          <PixelPicker
+            selectedValue={subject}
+            onValueChange={(itemValue: Subject) => setSubject(itemValue)}
+            items={QUEST_SUBJECTS.map((s) => ({
+              label: t(`quest.subject.${s}`),
+              value: s,
+            }))}
+            accessibilityLabel={t("quest.subject")}
           />
-        )}
 
-        {!isEditing && quest.status !== "pending" && (
-          <DQCommandMenu
-            items={[{ label: t("common.back"), onPress: () => router.back() }]}
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("quest.difficulty")}
+          </PixelText>
+          <PixelPicker
+            selectedValue={difficulty}
+            onValueChange={(itemValue: Difficulty) => setDifficulty(itemValue)}
+            items={QUEST_DIFFICULTIES.map((d) => ({
+              label: t(`quest.difficulty.${d}`),
+              value: d,
+            }))}
+            accessibilityLabel={t("quest.difficulty")}
           />
-        )}
 
-        <DQMessageBox
-          text={isEditing ? t("quest.detail.edit_message") : t("quest.detail.view_message")}
-          speed={40}
-        />
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("quest.estimated_minutes")}
+          </PixelText>
+          <TextInput
+            style={styles.textInput}
+            value={estimatedMinutes}
+            onChangeText={(text) => setEstimatedMinutes(text.replace(/[^0-9]/g, ""))}
+            keyboardType="numeric"
+            placeholder="30"
+            placeholderTextColor={COLORS.gray}
+            accessibilityLabel={t("quest.estimated_minutes")}
+          />
+
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("quest.deadline_date")}
+          </PixelText>
+          <TextInput
+            style={styles.textInput}
+            value={deadlineDate}
+            onChangeText={setDeadlineDate}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={COLORS.gray}
+            accessibilityLabel={t("quest.deadline_date")}
+          />
+        </PixelCard>
+
+        <View style={styles.buttonGroup}>
+          <PixelButton
+            label={t("common.save")}
+            variant="primary"
+            onPress={handleSaveQuest}
+            disabled={isSaving || isDeleting}
+            style={styles.actionButton}
+            accessibilityLabel={t("common.save")}
+          />
+          <PixelButton
+            label={t("quest.delete.button")}
+            variant="danger"
+            onPress={handleDeleteQuest}
+            disabled={isSaving || isDeleting}
+            style={styles.actionButton}
+            accessibilityLabel={t("quest.delete.button")}
+          />
+          <PixelButton
+            label={t("common.cancel")}
+            variant="secondary"
+            onPress={() => router.back()}
+            disabled={isSaving || isDeleting}
+            style={styles.actionButton}
+            accessibilityLabel={t("common.cancel")}
+          />
+        </View>
+
+        {isSaving && (
+          <PixelText variant="body" color="gold" style={styles.savingText}>
+            {t("common.saving")}...
+          </PixelText>
+        )}
+        {isDeleting && (
+          <PixelText variant="body" color="danger" style={styles.savingText}>
+            {t("quest.delete.deleting")}...
+          </PixelText>
+        )}
       </ScrollView>
     </>
   );
@@ -321,7 +289,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
-    gap: SPACING.md,
+    gap: SPACING.lg,
   },
   center: {
     flex: 1,
@@ -329,69 +297,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: DQ_BG,
   },
-  monsterDisplay: {
-    alignItems: "center",
-    marginBottom: SPACING.md,
+  backButton: {
+    marginTop: SPACING.md,
   },
-  monsterEmoji: {
-    fontSize: FONT_SIZES.xxxl,
+  sectionTitle: {
     marginBottom: SPACING.xs,
+    textAlign: "center",
   },
-  monsterName: {
-    color: COLORS.gold,
-    fontSize: FONT_SIZES.lg,
-    fontFamily: FONT_FAMILY,
-    fontWeight: "bold",
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  inputLabel: {
     marginBottom: SPACING.xs,
+    marginTop: SPACING.md,
   },
-  infoLabel: {
+  textInput: {
+    backgroundColor: COLORS.bgLight,
     color: COLORS.cream,
-    fontSize: FONT_SIZES.md,
     fontFamily: FONT_FAMILY,
-  },
-  infoValue: {
-    color: COLORS.white,
-    fontSize: FONT_SIZES.md,
-    fontFamily: FONT_FAMILY,
-    fontWeight: "bold",
-    flexShrink: 1,
-    textAlign: "right",
-  },
-  input: {
-    backgroundColor: COLORS.bgLight,
-    color: COLORS.white,
-    fontFamily: FONT_FAMILY,
-    fontSize: FONT_SIZES.md,
-    paddingHorizontal: SPACING.xs,
-    paddingVertical: SPACING.xxs,
-    borderRadius: PIXEL_BORDER.borderRadius,
+    fontSize: FONT_SIZES.body,
+    padding: SPACING.sm,
     borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.blue,
-    flex: 1,
-    marginLeft: SPACING.sm,
+    borderColor: COLORS.darkGray,
+    borderRadius: PIXEL_BORDER.borderRadius,
   },
-  picker: {
-    flex: 1,
-    height: 40,
-    color: COLORS.white,
-    backgroundColor: COLORS.bgLight,
-    marginLeft: SPACING.sm,
+  buttonGroup: {
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
   },
-  pickerItem: {
-    color: COLORS.white,
-    fontFamily: FONT_FAMILY,
-    fontSize: FONT_SIZES.md,
+  actionButton: {
+    width: "100%",
+  },
+  savingText: {
+    textAlign: "center",
+    marginTop: SPACING.md,
   },
 });
-
-// Dummy Picker and TextInput for compilation.
-// In a real app, these would be imported from react-native or a custom UI library.
-const TextInput = (props: any) => <Text {...props} />;
-const Picker = (props: any) => <Text {...props} />;
-Picker.Item = (props: any) => <Text {...props} />;
 

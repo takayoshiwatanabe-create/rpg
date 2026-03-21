@@ -156,4 +156,7 @@ export const INVENTORY_EXPANSION_COST: number = 50;
  */
 export const DEFAULT_LOCALE: string = "ja";
 
-
+/**
+ * Time in milliseconds for a message to display per character in DQMessageBox.
+ */
+export const MESSAGE_TYPING_SPEED_MS: number = 50;

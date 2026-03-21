@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { PixelText, PixelCard } from "@/components/ui";
+import { PixelText, PixelCard, PixelProgressBar } from "@/components/ui"; // Added PixelProgressBar
 import { t } from "@/i18n";
 import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
 import { expProgressInCurrentLevel } from "@/lib/expCalculator";
@@ -15,7 +15,7 @@ type HeroStatusProps = {
 export const HeroStatus = React.memo(
   ({ hero, isRTL, showExtendedStats = false }: HeroStatusProps) => {
     const expProgress = expProgressInCurrentLevel(hero.totalExp);
-    const expRatio = expProgress.required > 0 ? expProgress.current / expProgress.required : 0;
+    // const expRatio = expProgress.required > 0 ? expProgress.current / expProgress.required : 0; // No longer needed directly
 
     return (
       <PixelCard variant="default">
@@ -30,46 +30,31 @@ export const HeroStatus = React.memo(
         </View>
 
         {/* EXP bar */}
-        <View style={[styles.barRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <PixelText variant="label" color="exp" style={styles.barLabel}>
-            EXP
-          </PixelText>
-          <View style={styles.barContainer}>
-            <View style={[styles.bar, styles.barExp, { flex: expRatio || 0.01 }]} />
-            <View style={{ flex: 1 - (expRatio || 0.01) }} />
-          </View>
-          <PixelText variant="caption" color="gray" style={styles.barValue}>
-            {expProgress.current}/{expProgress.required}
-          </PixelText>
-        </View>
+        <PixelProgressBar
+          label="EXP"
+          value={expProgress.current}
+          max={expProgress.required}
+          color="exp"
+          showValues={true}
+        />
 
         {/* HP bar */}
-        <View style={[styles.barRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <PixelText variant="label" color="danger" style={styles.barLabel}>
-            HP
-          </PixelText>
-          <View style={styles.barContainer}>
-            <View style={[styles.bar, styles.barHp, { flex: hero.hp / hero.maxHp }]} />
-            <View style={{ flex: 1 - hero.hp / hero.maxHp }} />
-          </View>
-          <PixelText variant="caption" color="gray" style={styles.barValue}>
-            {hero.hp}/{hero.maxHp}
-          </PixelText>
-        </View>
+        <PixelProgressBar
+          label="HP"
+          value={hero.hp}
+          max={hero.maxHp}
+          color="danger"
+          showValues={true}
+        />
 
         {/* MP bar */}
-        <View style={[styles.barRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <PixelText variant="label" color="info" style={styles.barLabel}>
-            MP
-          </PixelText>
-          <View style={styles.barContainer}>
-            <View style={[styles.bar, styles.barMp, { flex: hero.mp / hero.maxMp }]} />
-            <View style={{ flex: 1 - hero.mp / hero.maxMp }} />
-          </View>
-          <PixelText variant="caption" color="gray" style={styles.barValue}>
-            {hero.mp}/{hero.maxMp}
-          </PixelText>
-        </View>
+        <PixelProgressBar
+          label="MP"
+          value={hero.mp}
+          max={hero.maxMp}
+          color="info"
+          showValues={true}
+        />
 
         {/* Gold */}
         <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
@@ -135,16 +120,16 @@ const styles = StyleSheet.create({
   goldValue: {
     fontSize: FONT_SIZES.lg,
   },
-  barRow: {
+  barRow: { // This style is no longer directly used for progress bars, but kept for other potential rows
     alignItems: "center",
     marginBottom: SPACING.xs,
     gap: SPACING.xs,
   },
-  barLabel: {
+  barLabel: { // This style is no longer directly used for progress bars, but kept for other potential rows
     fontSize: FONT_SIZES.sm,
     width: 32,
   },
-  barContainer: {
+  barContainer: { // This style is no longer directly used for progress bars, but kept for other potential rows
     flex: 1,
     height: 12,
     backgroundColor: COLORS.bgMid,
@@ -154,23 +139,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.windowBorder,
   },
-  bar: {
+  bar: { // This style is no longer directly used for progress bars, but kept for other potential rows
     height: "100%",
     borderRadius: PIXEL_BORDER.borderRadius,
   },
-  barHp: {
+  barHp: { // This style is no longer directly used for progress bars, but kept for other potential rows
     backgroundColor: COLORS.danger,
   },
-  barMp: {
+  barMp: { // This style is no longer directly used for progress bars, but kept for other potential rows
     backgroundColor: COLORS.info,
   },
-  barExp: {
+  barExp: { // This style is no longer directly used for progress bars, but kept for other potential rows
     backgroundColor: COLORS.exp,
   },
-  barValue: {
+  barValue: { // This style is no longer directly used for progress bars, but kept for other potential rows
     fontSize: FONT_SIZES.xs,
     width: 80,
     textAlign: "right",
   },
 });
-

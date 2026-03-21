@@ -20,7 +20,7 @@ interface BattleSceneProps {
   monsterMaxHp: number;
   message: string;
   showAttackFlash?: boolean;
-  onMessageComplete?: () => void; // This prop is not used in the component
+  // onMessageComplete?: () => void; // This prop is not used in the component
 }
 
 const BattleScene: React.FC<BattleSceneProps> = ({
@@ -265,4 +265,3 @@ const styles = StyleSheet.create({
 });
 
 export default BattleScene;
-

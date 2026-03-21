@@ -2,51 +2,53 @@ import { Platform } from "react-native";
 
 export const COLORS = {
   // Backgrounds
-  bgDark: "#0D0D1A",
-  bgMid: "#1A1A2E",
-  bgLight: "#2D2D4A",
-  bgCard: "#16213E",
-
-  // Primary/Accent
-  gold: "#FFD700", // Main accent color (e.g., hero name, important text)
-  goldDark: "#B8860B", // Shadow for gold
-  goldLight: "#FFF176", // Lighter gold for highlights
+  bgDark: "#000011",
+  bgMid: "#000033",
+  bgLight: "#000055",
+  bgCard: "#000077",
 
   // Text colors
-  cream: "#F0E6D2", // Default text color
-  gray: "#AAAACC", // Secondary text, hints
-  darkGray: "#333333", // Used in some UI elements like HP bar background
+  gold: "#FFD700", // Main accent, hero name, important info
+  goldDark: "#B8860B", // Darker gold for shadows
+  goldLight: "#FFEB3B", // Lighter gold for highlights
+  cream: "#FFFDD0", // General text, default
+  gray: "#AAAAAA", // Secondary text, placeholders
+  darkGray: "#666666", // Borders, disabled elements
+  white: "#FFFFFF", // For specific UI elements
 
-  // Status/Semantic colors
-  primary: "#228B22", // Green for positive actions, main buttons
-  primaryDark: "#1A6B1A", // Darker green for primary button border/shadow
-  secondary: "#4682B4", // Steel blue for secondary actions
-  secondaryDark: "#356287", // Darker steel blue for secondary button border/shadow
-  danger: "#FF4500", // Red-orange for warnings, HP, destructive actions
-  dangerDark: "#CC3700", // Darker red-orange for danger button border/shadow
-  info: "#1E90FF", // Dodger blue for informational, MP
-  exp: "#32CD32", // Lime green for EXP
-  success: "#3CB371", // Medium sea green for success messages
-  warning: "#FFD700", // Gold for warnings (can overlap with primary accent)
+  // Status/semantic colors
+  primary: "#00BFFF", // Info, active elements (e.g., inProgress quest)
+  primaryDark: "#008ECC", // Darker primary
+  secondary: "#6A5ACD", // Less important actions
+  success: "#32CD32", // Green for success (e.g., EXP gain)
+  danger: "#FF4500", // Red for errors, destructive actions (e.g., HP, delete)
+  warning: "#FF8C00", // Orange for warnings
+  info: "#1E90FF", // Blue for informational messages
+  exp: "#32CD32", // Specific for EXP
+  hp: "#FF4500", // Specific for HP
+  mp: "#1E90FF", // Specific for MP
 
-  // Specific UI elements
-  windowBorder: "#5C5C5C", // Border for DQ-style windows/cards
-  shadow: "#000000", // General shadow color
-
-  // Subject colors (for quests)
+  // Subject colors
   math: "#FF6347", // Tomato
-  japanese: "#FFD700", // Gold for Japanese
-  english: "#4682B4", // SteelBlue
+  japanese: "#4682B4", // SteelBlue
+  english: "#DAA520", // Goldenrod
   science: "#3CB371", // MediumSeaGreen
-  social: "#D2B48C", // Tan for Social
-  other: "#6A5ACD", // SlateBlue
-  normal: "#808080", // Gray for normal difficulty
-  easy: "#90EE90", // LightGreen for easy difficulty
-  hard: "#FF6347", // Tomato for hard difficulty
-  boss: "#8B0000" // DarkRed for boss difficulty
+  social: "#8A2BE2", // BlueViolet (Changed from social_studies to social)
+  art: "#FF69B4", // HotPink
+  music: "#BA55D3", // MediumOrchid
+  pe: "#20B2AA", // LightSeaGreen
+  other: "#696969", // DimGray
+
+  // Difficulty colors
+  easy: "#32CD32", // LimeGreen
+  normal: "#1E90FF", // DodgerBlue
+  hard: "#FF8C00", // DarkOrange
+  very_hard: "#FF4500", // OrangeRed
+  boss: "#DC143C", // Crimson
 };
 
 export const SPACING = {
+  xxs: 2,
   xs: 4,
   sm: 8,
   md: 16,
@@ -56,17 +58,20 @@ export const SPACING = {
 };
 
 export const FONT_SIZES = {
-  xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 18,
-  xl: 22,
-  xxl: 26,
-  title: 32, // For main screen titles
-  heading: 24, // For section headings
-  body: 18, // Default text size
-  label: 16, // For labels, smaller text
-  caption: 14, // Smallest text for details
+  caption: 12,
+  label: 14,
+  body: 16,
+  button: 18,
+  title: 20,
+  heading: 24,
+  xl: 20, // Added explicit xl for consistency with design spec's usage in HeroStatus
+  lg: 18, // Added explicit lg for consistency
+  md: 16, // Added explicit md for consistency
+  sm: 14, // Added explicit sm for consistency
+  xs: 12, // Added explicit xs for consistency
+  heroName: 28, // This is already defined, but ensuring it's clear
+  level: 32, // This is already defined, but ensuring it's clear
+  gold: 28, // This is already defined, but ensuring it's clear
 };
 
 export const PIXEL_BORDER = {
@@ -74,15 +79,29 @@ export const PIXEL_BORDER = {
   borderRadius: 4,
 };
 
+export const SHADOWS = {
+  text: {
+    textShadowColor: COLORS.goldDark,
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 0,
+  },
+  box: {
+    shadowColor: COLORS.darkGray,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+};
+
 export const FONT_FAMILY_MAIN = Platform.select({
-  ios: "PressStart2P",
-  android: "PressStart2P",
-  default: "PressStart2P",
+  ios: "Press Start 2P", // Placeholder, actual pixel font needs to be loaded
+  android: "PressStart2P", // Placeholder
+  default: "Press Start 2P", // Placeholder
 });
 
 export const FONT_FAMILY_SUB = Platform.select({
-  ios: "DotGothic16",
-  android: "DotGothic16",
-  default: "DotGothic16",
+  ios: "DotGothic16", // Placeholder, actual pixel font needs to be loaded
+  android: "DotGothic16", // Placeholder
+  default: "DotGothic16", // Placeholder
 });
-

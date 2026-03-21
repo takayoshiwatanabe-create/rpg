@@ -41,4 +41,3 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.goldDark,
   },
 });
-

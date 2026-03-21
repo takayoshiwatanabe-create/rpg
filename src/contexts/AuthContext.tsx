@@ -3,6 +3,7 @@ import { onAuthStateChange, type LocalUser } from "@/lib/firebase";
 import { getUserProfile } from "@/lib/firestore";
 import type { UserProfile } from "@/types";
 import { useQuery } from "@tanstack/react-query";
+import { calculateLevelFromExp, HERO_STAT_GROWTH } from "@/constants/game"; // Import calculateLevelFromExp and HERO_STAT_GROWTH
 
 export type AuthState = {
   user: (LocalUser & UserProfile) | null;
@@ -34,13 +35,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["userProfile", localUser?.uid],
     queryFn: async () => {
       if (!localUser) return null;
-      // Check if user profile already exists in local storage (mock Firestore)
-      const storedProfile = await getUserProfile(localUser.uid);
+      let storedProfile = await getUserProfile(localUser.uid);
+
       if (storedProfile) {
-        return storedProfile;
+        // Recalculate derived stats like level, maxHp, maxMp, attack, defense
+        const level = calculateLevelFromExp(storedProfile.totalExp);
+        const maxHp = 100 + (level - 1) * HERO_STAT_GROWTH.hp;
+        const maxMp = 50 + (level - 1) * HERO_STAT_GROWTH.mp;
+        const attack = 10 + (level - 1) * HERO_STAT_GROWTH.attack;
+        const defense = 5 + (level - 1) * HERO_STAT_GROWTH.defense;
+
+        // Ensure current HP/MP don't exceed new max values
+        const currentHp = Math.min(storedProfile.hp, maxHp);
+        const currentMp = Math.min(storedProfile.mp, maxMp);
+
+        return {
+          ...storedProfile,
+          level,
+          maxHp,
+          maxMp,
+          attack,
+          defense,
+          hp: currentHp,
+          mp: currentMp,
+        };
       }
-      // If not, create a default profile (this logic should ideally be in a separate setup function)
-      // For now, we'll return null and expect the app to handle missing profiles
+      // If not, return null and expect the app to handle missing profiles
       return null;
     },
     enabled: !!localUser,
@@ -57,4 +77,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={authState}>{children}</AuthContext.Provider>
   );
 }
-
