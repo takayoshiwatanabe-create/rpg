@@ -28,9 +28,16 @@ export function expProgressInCurrentLevel(
     return { current: 0, required: 0 }; // At max level, no more EXP needed
   }
 
-  const expToReachCurrentLevel =
-    currentLevel > 1 ? HERO_EXP_CURVE[currentLevel - 2] : 0;
-  const expToReachNextLevel = HERO_EXP_CURVE[currentLevel - 1];
+  // HERO_EXP_CURVE stores the *total* EXP needed to *reach* a level.
+  // Index 0: EXP to reach Level 1 (0)
+  // Index 1: EXP to reach Level 2 (100)
+  // Index 2: EXP to reach Level 3 (250)
+  // ...
+  // So, expToReachCurrentLevel is HERO_EXP_CURVE[currentLevel - 1]
+  // And expToReachNextLevel is HERO_EXP_CURVE[currentLevel]
+
+  const expToReachCurrentLevel = HERO_EXP_CURVE[currentLevel - 1];
+  const expToReachNextLevel = HERO_EXP_CURVE[currentLevel];
 
   const currentLevelExp = totalExp - expToReachCurrentLevel;
   const requiredForNextLevel = expToReachNextLevel - expToReachCurrentLevel;
@@ -49,3 +56,4 @@ export function expProgressInCurrentLevel(
 export function isAtMaxLevel(level: number): boolean {
   return level >= MAX_LEVEL;
 }
+

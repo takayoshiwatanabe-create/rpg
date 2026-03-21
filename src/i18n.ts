@@ -80,6 +80,9 @@ export function setLang(locale: Locale) {
   const isRTL = getIsRTL();
   if (I18nManager.isRTL !== isRTL) {
     I18nManager.forceRTL(isRTL);
+    // On web, I18nManager.forceRTL doesn't trigger re-render.
+    // A full page reload might be needed for web, or manual style adjustments.
+    // For React Native, this is usually sufficient.
   }
 }
 
@@ -112,3 +115,4 @@ export function t(key: string, params?: Record<string, string | number>): string
 
   return result;
 }
+

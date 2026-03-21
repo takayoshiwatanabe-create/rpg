@@ -10,3 +10,4 @@ export type { AuthState };
 export function useAuth(): AuthState {
   return useContext(AuthContext);
 }
+

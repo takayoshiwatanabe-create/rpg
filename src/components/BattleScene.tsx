@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useCallback } from "react";
 import { View, Animated, StyleSheet, Text, Platform } from "react-native";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { PIXEL_BORDER, FONT_FAMILY_MAIN, FONT_FAMILY_SUB, COLORS } from "@/constants/theme";
+import { t } from "@/i18n"; // Import t for i18n
 
 const FONT_FAMILY = Platform.select({
   ios: FONT_FAMILY_SUB,
@@ -131,7 +132,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
         <View style={styles.heroStatusBox}>
           <Text style={styles.heroNameText}>{heroName}</Text>
           <View style={styles.hpBarContainer}>
-            <Text style={styles.hpBarLabel}>HP</Text>
+            <Text style={styles.hpBarLabel}>{t("hero.hp")}</Text>
             <View style={styles.hpBar}>
               <View style={[styles.hpFill, styles.heroHpFill, { width: `${heroHpRatio * 100}%` }]} />
             </View>
@@ -264,3 +265,4 @@ const styles = StyleSheet.create({
 });
 
 export default BattleScene;
+

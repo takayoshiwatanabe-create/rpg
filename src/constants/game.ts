@@ -156,3 +156,4 @@ export const INVENTORY_EXPANSION_COST: number = 50;
  */
 export const DEFAULT_LOCALE: string = "ja";
 
+

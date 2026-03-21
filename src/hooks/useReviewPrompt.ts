@@ -11,6 +11,11 @@ export function useReviewPrompt() {
   }, []);
 
   async function checkAndPrompt() {
+    // Only prompt on native platforms
+    if (!StoreReview.isSupported()) {
+      return;
+    }
+
     const reviewed = await AsyncStorage.getItem(REVIEWED_KEY);
     if (reviewed) return;
 
@@ -27,3 +32,4 @@ export function useReviewPrompt() {
     }
   }
 }
+

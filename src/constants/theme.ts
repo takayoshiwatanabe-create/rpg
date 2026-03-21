@@ -35,14 +35,15 @@ export const COLORS = {
 
   // Subject colors (for quests)
   math: "#FF6347", // Tomato
+  japanese: "#FFD700", // Gold for Japanese
   english: "#4682B4", // SteelBlue
   science: "#3CB371", // MediumSeaGreen
-  history: "#D2B48C", // Tan
-  art: "#DA70D6", // Orchid
+  social: "#D2B48C", // Tan for Social
   other: "#6A5ACD", // SlateBlue
   normal: "#808080", // Gray for normal difficulty
   easy: "#90EE90", // LightGreen for easy difficulty
   hard: "#FF6347", // Tomato for hard difficulty
+  boss: "#8B0000" // DarkRed for boss difficulty
 };
 
 export const SPACING = {
@@ -84,3 +85,4 @@ export const FONT_FAMILY_SUB = Platform.select({
   android: "DotGothic16",
   default: "DotGothic16",
 });
+

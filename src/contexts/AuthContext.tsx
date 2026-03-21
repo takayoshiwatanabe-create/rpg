@@ -32,7 +32,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const { data: userProfile, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["userProfile", localUser?.uid],
-    queryFn: () => (localUser ? getUserProfile(localUser.uid) : Promise.resolve(null)),
+    queryFn: async () => {
+      if (!localUser) return null;
+      // Check if user profile already exists in local storage (mock Firestore)
+      const storedProfile = await getUserProfile(localUser.uid);
+      if (storedProfile) {
+        return storedProfile;
+      }
+      // If not, create a default profile (this logic should ideally be in a separate setup function)
+      // For now, we'll return null and expect the app to handle missing profiles
+      return null;
+    },
     enabled: !!localUser,
     staleTime: Infinity, // User profile data is relatively static or updated via other means
   });
@@ -47,3 +57,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={authState}>{children}</AuthContext.Provider>
   );
 }
+

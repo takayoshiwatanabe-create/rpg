@@ -68,6 +68,8 @@ export function PixelProgressBar({
             {
               backgroundColor: (COLORS as Record<string, string>)[color] ?? COLORS.gold,
               width: barWidth,
+              left: isRTL ? undefined : 0, // Ensure fill starts from left for LTR
+              right: isRTL ? 0 : undefined, // Ensure fill starts from right for RTL
             },
           ]}
         />
@@ -100,7 +102,7 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: "100%",
     position: "absolute",
-    left: 0,
+    // left and right are handled dynamically based on RTL
   },
   valueText: {
     position: "absolute",
@@ -110,3 +112,4 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
   },
 });
+

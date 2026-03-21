@@ -50,3 +50,4 @@ export const MONSTERS: Record<Subject, Record<Difficulty, MonsterInfo>> = {
 export function getMonster(subject: Subject, difficulty: Difficulty): MonsterInfo {
   return MONSTERS[subject][difficulty];
 }
+

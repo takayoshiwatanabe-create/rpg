@@ -58,3 +58,4 @@ const styles = StyleSheet.create({
     // Content padding is handled by the window itself
   },
 });
+

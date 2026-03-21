@@ -101,7 +101,7 @@ export const HeroStatus = React.memo(
             </View>
             <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
               <PixelText variant="body" color="cream" style={styles.statusLabel}>
-                {"✨ "}{t("hero.exp")}
+                {"✨ "}{t("hero.total_exp")}
               </PixelText>
               <PixelText variant="body" color="cream" style={styles.statusValue}>
                 {hero.totalExp}
@@ -173,3 +173,4 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 });
+

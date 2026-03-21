@@ -4,34 +4,43 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Alert,
   Platform,
-  Text,
-  TouchableOpacity, // Corrected import
+  TouchableOpacity,
 } from "react-native";
 import { router, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
-import { subscribeToActiveQuests } from "@/lib/firestore";
-import { DQWindow, DQCommandMenu, DQMessageBox, PixelButton } from "@/components/ui";
-import { t, getLang, getIsRTL } from "@/i18n";
+import { subscribeToQuests, updateQuestStatus } from "@/lib/firestore";
 import {
-  COLORS,
-  SPACING,
-  FONT_SIZES,
-  PIXEL_BORDER,
-} from "@/constants/theme";
-import type { Quest, Subject, Difficulty, QuestStatus } from "@/types";
+  PixelText,
+  PixelButton,
+  PixelCard,
+  DQMessageBox,
+  DQWindow,
+} from "@/components/ui";
+import { t, getLang, getIsRTL } from "@/i18n";
+import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
+import type { Quest, QuestStatus, Subject, Difficulty } from "@/types";
+import * as Haptics from "expo-haptics";
 
-const DQ_BG = "#000011";
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+type FilterKey = "all" | "pending" | "inProgress" | "completed";
+
+const FILTERS: FilterKey[] = ["all", "pending", "inProgress", "completed"];
+
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
   default: "monospace",
 });
 
-type FilterKey = "all" | "pending" | "inProgress" | "completed";
-
-const FILTERS: FilterKey[] = ["all", "pending", "inProgress", "completed"];
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function filterQuests(quests: Quest[], filter: FilterKey): Quest[] {
   switch (filter) {
@@ -47,12 +56,17 @@ function filterQuests(quests: Quest[], filter: FilterKey): Quest[] {
 }
 
 function formatDeadline(dateStr: string, locale: string): string {
+  if (!dateStr) return t("common.no_deadline");
   return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
   }).format(new Date(dateStr));
 }
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
 
 type FilterTabsProps = {
   current: FilterKey;
@@ -64,7 +78,7 @@ function FilterTabs({ current, onChange }: FilterTabsProps) {
     if (f === "all") return t("quest.filter.all");
     if (f === "pending") return t("quest.status.pending");
     if (f === "inProgress") return t("quest.status.inProgress");
-    return t("quest.completed");
+    return t("quest.status.completed");
   };
 
   return (
@@ -75,7 +89,10 @@ function FilterTabs({ current, onChange }: FilterTabsProps) {
           label={filterLabel(f)}
           variant={current === f ? "primary" : "secondary"}
           size="sm"
-          onPress={() => onChange(f)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onChange(f);
+          }}
           style={tabStyles.tabButton}
           accessibilityRole="tab"
           accessibilityState={{ selected: current === f }}
@@ -98,74 +115,110 @@ const tabStyles = StyleSheet.create({
 
 type QuestCardProps = {
   quest: Quest;
-  onPress: (questId: string) => void;
+  onStartBattle: (questId: string) => void;
+  onMarkComplete: (questId: string) => void;
   isRTL: boolean;
 };
 
-function QuestCard({ quest, onPress, isRTL }: QuestCardProps) {
+function QuestCard({ quest, onStartBattle, onMarkComplete, isRTL }: QuestCardProps) {
   const subjectColor = COLORS[quest.subject as keyof typeof COLORS] ?? COLORS.other;
   const difficultyColor = COLORS[quest.difficulty as keyof typeof COLORS] ?? COLORS.normal;
-  const statusColor =
-    quest.status === "pending"
-      ? COLORS.gold
-      : quest.status === "inProgress"
-      ? COLORS.blue
-      : COLORS.exp;
+
+  const handleStartPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onStartBattle(quest.id);
+  }, [quest.id, onStartBattle]);
+
+  const handleMarkCompletePress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onMarkComplete(quest.id);
+  }, [quest.id, onMarkComplete]);
 
   return (
-    <TouchableOpacity // Corrected component name
-      style={questCardStyles.card}
-      onPress={() => onPress(quest.id)}
-      activeOpacity={0.7}
-      accessibilityLabel={t("quest.detail.view_quest", { title: quest.title })}
-    >
+    <PixelCard variant="default" style={questCardStyles.card}>
       <View style={[questCardStyles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <View style={[questCardStyles.badge, { borderColor: subjectColor }]}>
-          <Text style={[questCardStyles.badgeText, { color: subjectColor }]}>
+          <PixelText variant="caption" style={{ color: subjectColor }}>
             {t(`quest.subject.${quest.subject}`)}
-          </Text>
+          </PixelText>
         </View>
         <View style={[questCardStyles.badge, { borderColor: difficultyColor }]}>
-          <Text style={[questCardStyles.badgeText, { color: difficultyColor }]}>
+          <PixelText variant="caption" style={{ color: difficultyColor }}>
             {t(`quest.difficulty.${quest.difficulty}`)}
-          </Text>
+          </PixelText>
         </View>
         <View style={questCardStyles.spacer} />
-        <Text style={questCardStyles.deadlineText}>
+        <PixelText variant="caption" color="gray">
           {formatDeadline(quest.deadlineDate, getLang())}
-        </Text>
+        </PixelText>
       </View>
 
-      <Text style={questCardStyles.title}>{quest.title}</Text>
+      <PixelText variant="body" color="cream" style={questCardStyles.title}>
+        {quest.title}
+      </PixelText>
 
       <View style={[questCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <Text style={questCardStyles.detailLabel}>
-          {t("quest.estimated_minutes")}:
-        </Text>
-        <Text style={questCardStyles.detailValue}>
-          {quest.estimatedMinutes} {t("common.minutes")}
-        </Text>
+        <PixelText variant="label" color="cream">
+          {t("quest.estimated_time")}:
+        </PixelText>
+        <PixelText variant="body" color="gold">
+          {t("quest.minutes", { minutes: quest.estimatedMinutes })}
+        </PixelText>
       </View>
 
       <View style={[questCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <Text style={questCardStyles.detailLabel}>
-          {t("quest.status")}:
-        </Text>
-        <Text style={[questCardStyles.detailValue, { color: statusColor }]}>
+        <PixelText variant="label" color="cream">
+          {t("quest.rewards")}:
+        </PixelText>
+        <PixelText variant="body" color="exp">
+          {quest.expReward} EXP, {quest.goldReward} G
+        </PixelText>
+      </View>
+
+      <View style={[questCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <PixelText variant="label" color="cream">
+          {t("quest.status.label")}:
+        </PixelText>
+        <PixelText
+          variant="body"
+          color={
+            quest.status === "pending"
+              ? "gold"
+              : quest.status === "inProgress"
+                ? "blue"
+                : "exp"
+          }
+        >
           {t(`quest.status.${quest.status}`)}
-        </Text>
+        </PixelText>
       </View>
-    </TouchableOpacity>
+
+      {quest.status === "pending" && (
+        <PixelButton
+          label={t("quest.start_battle")}
+          variant="primary"
+          size="md"
+          onPress={handleStartPress}
+          style={questCardStyles.actionButton}
+          accessibilityLabel={t("quest.start_battle_accessibility", { title: quest.title })}
+        />
+      )}
+      {quest.status === "inProgress" && (
+        <PixelButton
+          label={t("quest.mark_complete")}
+          variant="blue"
+          size="md"
+          onPress={handleMarkCompletePress}
+          style={questCardStyles.actionButton}
+          accessibilityLabel={t("quest.mark_complete_accessibility", { title: quest.title })}
+        />
+      )}
+    </PixelCard>
   );
 }
 
 const questCardStyles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.bgLight,
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.blue,
-    borderRadius: PIXEL_BORDER.borderRadius,
-    padding: SPACING.md,
     marginBottom: SPACING.xs,
   },
   header: {
@@ -179,42 +232,25 @@ const questCardStyles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
   },
-  badgeText: {
-    fontFamily: FONT_FAMILY,
-    fontSize: FONT_SIZES.sm,
-  },
   spacer: {
     flex: 1,
   },
-  deadlineText: {
-    color: COLORS.gray,
-    fontFamily: FONT_FAMILY,
-    fontSize: FONT_SIZES.sm,
-  },
   title: {
-    color: COLORS.cream,
-    fontSize: FONT_SIZES.lg,
-    fontFamily: FONT_FAMILY,
-    fontWeight: "bold",
     marginBottom: SPACING.sm,
   },
   detailRow: {
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.xxs,
+    marginBottom: SPACING.xs,
   },
-  detailLabel: {
-    color: COLORS.cream,
-    fontSize: FONT_SIZES.md,
-    fontFamily: FONT_FAMILY,
-  },
-  detailValue: {
-    color: COLORS.white,
-    fontSize: FONT_SIZES.md,
-    fontFamily: FONT_FAMILY,
-    fontWeight: "bold",
+  actionButton: {
+    marginTop: SPACING.md,
   },
 });
+
+// ---------------------------------------------------------------------------
+// Main screen
+// ---------------------------------------------------------------------------
 
 export default function QuestsScreen() {
   const { user } = useAuth();
@@ -223,27 +259,58 @@ export default function QuestsScreen() {
 
   const [quests, setQuests] = useState<Quest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("pending");
-
-  const heroId = user?.uid ?? "";
 
   useEffect(() => {
     if (!user) {
       setIsLoading(false);
       return;
     }
-    const unsub = subscribeToActiveQuests(heroId, (q: Quest[]) => {
-      setQuests(q);
+
+    setIsLoading(true);
+    setError(null);
+
+    const unsub = subscribeToQuests(user.uid, (fetchedQuests: Quest[]) => {
+      setQuests(fetchedQuests);
+      setIsLoading(false);
+    }, (err) => {
+      console.error("Failed to fetch quests:", err);
+      setError(t("error.failed_to_load_quests"));
       setIsLoading(false);
     });
-    return unsub;
-  }, [user, heroId]);
 
-  const handleViewQuestDetail = useCallback((questId: string) => {
-    router.push({ pathname: "/(app)/quests/[id]", params: { questId } });
+    return unsub;
+  }, [user]);
+
+  const handleStartBattle = useCallback((questId: string) => {
+    router.push(`/(app)/battle/${questId}`);
   }, []);
 
-  const handleCreateQuest = useCallback(() => {
+  const handleMarkComplete = useCallback(async (questId: string) => {
+    Alert.alert(
+      t("quest.mark_complete_confirm_title"),
+      t("quest.mark_complete_confirm_message"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("quest.mark_complete"),
+          onPress: async () => {
+            try {
+              await updateQuestStatus(questId, "completed");
+              Alert.alert(t("common.success"), t("quest.marked_complete"));
+            } catch (err) {
+              console.error("Failed to mark quest complete:", err);
+              Alert.alert(t("common.error"), t("error.unknown"));
+            }
+          },
+        },
+      ],
+    );
+  }, []);
+
+  const handleCreateNewQuest = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push("/(app)/quests/new");
   }, []);
 
@@ -251,8 +318,27 @@ export default function QuestsScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#FFD700" size="large" />
+      <View style={styles.center} testID="activity-indicator">
+        <ActivityIndicator color={COLORS.gold} size="large" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.center, { paddingTop: insets.top }]}>
+        <DQMessageBox text={error} />
+        <PixelButton
+          label={t("common.retry")}
+          variant="primary"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            // Re-trigger useEffect by changing a state or re-mounting
+            setIsLoading(true);
+            setError(null);
+          }}
+          style={styles.retryButton}
+        />
       </View>
     );
   }
@@ -264,10 +350,11 @@ export default function QuestsScreen() {
           title: t("nav.quests"),
           headerRight: () => (
             <PixelButton
-              label={t("quest.new_quest")}
+              label={t("quest.create_new")}
               variant="ghost"
               size="sm"
-              onPress={handleCreateQuest}
+              onPress={handleCreateNewQuest}
+              accessibilityLabel={t("quest.create_new_accessibility")}
             />
           ),
         }}
@@ -279,36 +366,50 @@ export default function QuestsScreen() {
           { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 },
         ]}
         showsVerticalScrollIndicator={false}
+        accessibilityLabel={t("quest.accessibility.quests_screen")}
       >
-        <DQWindow title={t("quest.list.title")}>
-          <View style={styles.filterRow}>
-            <FilterTabs current={filter} onChange={setFilter} />
-          </View>
+        <DQMessageBox
+          text={t("quest.welcome_message")}
+          speed={40}
+          accessibilityLabel={t("quest.accessibility.npc_message")}
+        />
 
-          {visibleQuests.length === 0 ? (
-            <DQMessageBox
-              text={
-                filter === "pending"
-                  ? t("quest.list.no_pending")
-                  : t("quest.list.no_quests_found")
-              }
-              speed={40}
-            />
-          ) : (
-            visibleQuests.map((q) => (
-              <QuestCard key={q.id} quest={q} onPress={handleViewQuestDetail} isRTL={isRTL} />
-            ))
-          )}
+        <DQWindow title={t("quest.filter.title")}>
+          <FilterTabs current={filter} onChange={setFilter} />
         </DQWindow>
 
-        <DQCommandMenu
-          items={[{ label: t("common.back"), onPress: () => router.back() }]}
-        />
-
-        <DQMessageBox
-          text={t("quest.list.message")}
-          speed={40}
-        />
+        {visibleQuests.length === 0 ? (
+          <PixelCard variant="default">
+            <PixelText variant="body" color="gray" style={styles.emptyText}>
+              {filter === "pending"
+                ? t("quest.empty.no_pending")
+                : filter === "inProgress"
+                  ? t("quest.empty.no_in_progress")
+                  : filter === "completed"
+                    ? t("quest.empty.no_completed")
+                    : t("quest.empty.no_quests")}
+            </PixelText>
+            {filter === "pending" && (
+              <PixelButton
+                label={t("quest.create_new")}
+                variant="primary"
+                onPress={handleCreateNewQuest}
+                style={styles.createButton}
+                accessibilityLabel={t("quest.create_new_accessibility")}
+              />
+            )}
+          </PixelCard>
+        ) : (
+          visibleQuests.map((q) => (
+            <QuestCard
+              key={q.id}
+              quest={q}
+              onStartBattle={handleStartBattle}
+              onMarkComplete={handleMarkComplete}
+              isRTL={isRTL}
+            />
+          ))
+        )}
       </ScrollView>
     </>
   );
@@ -317,20 +418,27 @@ export default function QuestsScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: DQ_BG,
+    backgroundColor: COLORS.bgDark,
   },
   content: {
     padding: SPACING.md,
-    gap: SPACING.md,
+    gap: SPACING.lg,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: DQ_BG,
+    backgroundColor: COLORS.bgDark,
   },
-  filterRow: {
+  emptyText: {
+    textAlign: "center",
     marginBottom: SPACING.md,
+  },
+  createButton: {
+    marginTop: SPACING.md,
+  },
+  retryButton: {
+    marginTop: SPACING.md,
   },
 });
 

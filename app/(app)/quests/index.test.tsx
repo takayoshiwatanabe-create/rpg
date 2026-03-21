@@ -3,10 +3,11 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react-nativ
 import QuestsScreen from "./index";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
-import { subscribeToQuests, createQuest, softDeleteQuest } from "@/lib/firestore";
+import { subscribeToQuests, updateQuestStatus } from "@/lib/firestore";
 import { t } from "@/i18n";
 import { Quest, Subject, Difficulty, QuestStatus } from "@/types";
 import { Alert } from "react-native";
+import * as Haptics from "expo-haptics";
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -22,20 +23,20 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 vi.mock("@/lib/firestore", () => ({
   subscribeToQuests: vi.fn(),
-  createQuest: vi.fn(),
-  softDeleteQuest: vi.fn(),
+  updateQuestStatus: vi.fn(),
 }));
 vi.mock("@/i18n", () => ({
   t: vi.fn((key, params) => {
     if (key.startsWith("quest.subject.")) return key.split(".").pop();
     if (key.startsWith("quest.difficulty.")) return key.split(".").pop();
-    if (key === "time.minutes") return `${params?.n} minutes`;
-    if (key === "quest.reward_exp") return `${params?.exp} EXP`;
-    if (key === "quest.reward_gold") return `${params?.gold} Gold`;
+    if (key.startsWith("quest.status.")) return key.split(".").pop();
+    if (key === "quest.minutes") return `${params?.minutes}分`;
+    if (key === "quest.start_battle_accessibility") return `${params?.title}のバトルを開始`;
+    if (key === "quest.mark_complete_accessibility") return `${params?.title}を完了にする`;
     return key;
   }),
+  getLang: vi.fn(() => "ja"),
   getIsRTL: vi.fn(() => false),
-  getLang: vi.fn(() => "en"),
 }));
 vi.mock("react-native", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-native")>();
@@ -44,16 +45,18 @@ vi.mock("react-native", async (importOriginal) => {
     Alert: {
       alert: vi.fn(),
     },
-    Modal: actual.Modal, // Use actual Modal for testing form visibility
   };
 });
+vi.mock("expo-haptics", () => ({
+  impactAsync: vi.fn(),
+}));
 
 const mockQuests: Quest[] = [
   {
     id: "quest-1",
     userId: "user-123",
     heroId: "hero-123",
-    title: "Active Math Homework",
+    title: "算数の宿題",
     subject: "math" as Subject,
     difficulty: "easy" as Difficulty,
     status: "pending" as QuestStatus,
@@ -68,11 +71,11 @@ const mockQuests: Quest[] = [
     id: "quest-2",
     userId: "user-123",
     heroId: "hero-123",
-    title: "Completed English Essay",
-    subject: "english" as Subject,
+    title: "国語の作文",
+    subject: "japanese" as Subject,
     difficulty: "normal" as Difficulty,
-    status: "completed" as QuestStatus,
-    deadlineDate: "2024-12-25",
+    status: "inProgress" as QuestStatus,
+    deadlineDate: "2024-12-31",
     estimatedMinutes: 60,
     expReward: 100,
     goldReward: 50,
@@ -83,11 +86,11 @@ const mockQuests: Quest[] = [
     id: "quest-3",
     userId: "user-123",
     heroId: "hero-123",
-    title: "In Progress Science Project",
+    title: "理科の実験レポート",
     subject: "science" as Subject,
     difficulty: "hard" as Difficulty,
-    status: "inProgress" as QuestStatus,
-    deadlineDate: "2024-12-20",
+    status: "completed" as QuestStatus,
+    deadlineDate: "2024-12-31",
     estimatedMinutes: 90,
     expReward: 150,
     goldReward: 75,
@@ -103,18 +106,24 @@ describe("QuestsScreen", () => {
       user: { uid: "user-123" },
       isLoading: false,
     });
-    (subscribeToQuests as vi.Mock).mockImplementation((_heroId, callback) => {
+    (subscribeToQuests as vi.Mock).mockImplementation((_userId, callback) => {
       callback(mockQuests);
       return vi.fn();
     });
   });
 
-  it("renders 'active' quests by default", async () => {
+  it("renders loading state initially", () => {
+    (subscribeToQuests as vi.Mock).mockReturnValueOnce(vi.fn()); // Prevent immediate callback
+    render(<QuestsScreen />);
+    expect(screen.getByTestId("activity-indicator")).toBeVisible();
+  });
+
+  it("renders quests filtered by 'pending' by default", async () => {
     render(<QuestsScreen />);
     await waitFor(() => {
-      expect(screen.getByText("Active Math Homework")).toBeVisible();
-      expect(screen.getByText("In Progress Science Project")).toBeVisible();
-      expect(screen.queryByText("Completed English Essay")).toBeNull();
+      expect(screen.getByText("算数の宿題")).toBeVisible();
+      expect(screen.queryByText("国語の作文")).toBeNull();
+      expect(screen.queryByText("理科の実験レポート")).toBeNull();
     });
   });
 
@@ -124,169 +133,101 @@ describe("QuestsScreen", () => {
 
     fireEvent.press(screen.getByText("quest.filter.all"));
 
-    expect(screen.getByText("Active Math Homework")).toBeVisible();
-    expect(screen.getByText("Completed English Essay")).toBeVisible();
-    expect(screen.getByText("In Progress Science Project")).toBeVisible();
+    expect(screen.getByText("算数の宿題")).toBeVisible();
+    expect(screen.getByText("国語の作文")).toBeVisible();
+    expect(screen.getByText("理科の実験レポート")).toBeVisible();
+  });
+
+  it("filters quests by 'inProgress'", async () => {
+    render(<QuestsScreen />);
+    await waitFor(() => screen.getByText("quest.status.inProgress"));
+
+    fireEvent.press(screen.getByText("quest.status.inProgress"));
+
+    expect(screen.queryByText("算数の宿題")).toBeNull();
+    expect(screen.getByText("国語の作文")).toBeVisible();
+    expect(screen.queryByText("理科の実験レポート")).toBeNull();
   });
 
   it("filters quests by 'completed'", async () => {
     render(<QuestsScreen />);
-    await waitFor(() => screen.getByText("quest.completed"));
+    await waitFor(() => screen.getByText("quest.status.completed"));
 
-    fireEvent.press(screen.getByText("quest.completed"));
+    fireEvent.press(screen.getByText("quest.status.completed"));
 
-    expect(screen.queryByText("Active Math Homework")).toBeNull();
-    expect(screen.getByText("Completed English Essay")).toBeVisible();
-    expect(screen.queryByText("In Progress Science Project")).toBeNull();
+    expect(screen.queryByText("算数の宿題")).toBeNull();
+    expect(screen.queryByText("国語の作文")).toBeNull();
+    expect(screen.getByText("理科の実験レポート")).toBeVisible();
   });
 
-  it("navigates to battle screen when 'Start Battle' is pressed", async () => {
+  it("navigates to battle screen when 'バトル開始' is pressed", async () => {
     render(<QuestsScreen />);
-    await waitFor(() => screen.getByText("Active Math Homework"));
+    await waitFor(() => screen.getByText("算数の宿題"));
 
-    fireEvent.press(screen.getAllByText("camp.startBattle")[0]);
-    expect(router.push).toHaveBeenCalledWith({
-      pathname: "/(app)/battle",
-      params: { questId: "quest-1" },
+    fireEvent.press(screen.getByLabelText("算数の宿題のバトルを開始"));
+    expect(router.push).toHaveBeenCalledWith("/(app)/battle/quest-1");
+    expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Medium);
+  });
+
+  it("shows confirmation and marks quest complete when '完了にする' is pressed", async () => {
+    render(<QuestsScreen />);
+    await waitFor(() => screen.getByText("国語の作文"));
+
+    fireEvent.press(screen.getByLabelText("国語の作文を完了にする"));
+
+    expect(Alert.alert).toHaveBeenCalledWith(
+      "quest.mark_complete_confirm_title",
+      "quest.mark_complete_confirm_message",
+      expect.any(Array),
+    );
+
+    // Simulate pressing the '完了にする' button in the alert
+    const completeAction = (Alert.alert as vi.Mock).mock.calls[0][2].find(
+      (action: any) => action.text === "quest.mark_complete",
+    );
+    await completeAction.onPress();
+
+    expect(updateQuestStatus).toHaveBeenCalledWith("quest-2", "completed");
+    expect(Alert.alert).toHaveBeenCalledWith("common.success", "quest.marked_complete");
+    expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Medium);
+  });
+
+  it("navigates to new quest screen when '新規作成' header button is pressed", async () => {
+    render(<QuestsScreen />);
+    await waitFor(() => screen.getByLabelText("quest.create_new_accessibility"));
+
+    fireEvent.press(screen.getByLabelText("quest.create_new_accessibility"));
+    expect(router.push).toHaveBeenCalledWith("/(app)/quests/new");
+    expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Light);
+  });
+
+  it("renders empty state and create new quest button when no quests match filter", async () => {
+    (subscribeToQuests as vi.Mock).mockImplementation((_userId, callback) => {
+      callback([]); // No quests
+      return vi.fn();
     });
-  });
-
-  it("handles quest deletion", async () => {
     render(<QuestsScreen />);
-    await waitFor(() => screen.getByText("Active Math Homework"));
-
-    fireEvent.press(screen.getAllByLabelText("common.delete")[0]); // First delete button
-
-    expect(softDeleteQuest).toHaveBeenCalledWith("quest-1");
-    expect(Alert.alert).not.toHaveBeenCalled(); // softDeleteQuest does not trigger an alert in this component
-  });
-
-  it("opens the new quest form modal", async () => {
-    render(<QuestsScreen />);
-    await waitFor(() => screen.getByText("quest.new"));
-
-    fireEvent.press(screen.getByText("quest.new"));
-
-    expect(screen.getByText("quest.new")).toBeVisible(); // The modal title
-    expect(screen.getByPlaceholderText("quest.title_hint")).toBeVisible();
-  });
-
-  it("closes the new quest form modal on cancel", async () => {
-    render(<QuestsScreen />);
-    await waitFor(() => screen.getByText("quest.new"));
-
-    fireEvent.press(screen.getByText("quest.new"));
-    await waitFor(() => screen.getByText("common.cancel"));
-
-    fireEvent.press(screen.getByText("common.cancel"));
-    await waitFor(() =>
-      expect(screen.queryByPlaceholderText("quest.title_hint")).toBeNull(),
-    );
-  });
-
-  it("creates a new quest successfully", async () => {
-    render(<QuestsScreen />);
-    await waitFor(() => screen.getByText("quest.new"));
-
-    fireEvent.press(screen.getByText("quest.new"));
-    await waitFor(() => screen.getByPlaceholderText("quest.title_hint"));
-
-    fireEvent.changeText(
-      screen.getByPlaceholderText("quest.title_hint"),
-      "New Quest Title",
-    );
-    fireEvent.press(screen.getByText("quest.register"));
-
     await waitFor(() => {
-      expect(createQuest).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: "user-123",
-          heroId: "user-123",
-          title: "New Quest Title",
-          subject: "math",
-          difficulty: "normal",
-          status: "pending",
-          estimatedMinutes: 60, // Default for 'normal' difficulty
-          expReward: expect.any(Number),
-          goldReward: expect.any(Number),
-          createdAt: expect.any(String),
-          deletedAt: null,
-        }),
-      );
-      expect(screen.queryByPlaceholderText("quest.title_hint")).toBeNull(); // Modal should close
+      expect(screen.getByText("quest.empty.no_pending")).toBeVisible();
+      expect(screen.getByText("quest.create_new")).toBeVisible();
     });
   });
 
-  it("shows error if quest title is empty", async () => {
+  it("renders error state with retry button", async () => {
+    (subscribeToQuests as vi.Mock).mockImplementation((_userId, _callback, errorCallback) => {
+      errorCallback(new Error("Test error"));
+      return vi.fn();
+    });
     render(<QuestsScreen />);
-    await waitFor(() => screen.getByText("quest.new"));
-
-    fireEvent.press(screen.getByText("quest.new"));
-    await waitFor(() => screen.getByPlaceholderText("quest.title_hint"));
-
-    fireEvent.press(screen.getByText("quest.register")); // Submit with empty title
-
-    expect(screen.getByText("quest.error.title_required")).toBeVisible();
-    expect(createQuest).not.toHaveBeenCalled();
-  });
-
-  it("allows changing subject and difficulty in the form", async () => {
-    render(<QuestsScreen />);
-    await waitFor(() => screen.getByText("quest.new"));
-
-    fireEvent.press(screen.getByText("quest.new"));
-    await waitFor(() => screen.getByText("math"));
-
-    fireEvent.press(screen.getByText("english"));
-    fireEvent.press(screen.getByText("hard"));
-
-    fireEvent.changeText(
-      screen.getByPlaceholderText("quest.title_hint"),
-      "Another Quest",
-    );
-    fireEvent.press(screen.getByText("quest.register"));
-
     await waitFor(() => {
-      expect(createQuest).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: "Another Quest",
-          subject: "english",
-          difficulty: "hard",
-          estimatedMinutes: 90, // Default for 'hard' difficulty
-        }),
-      );
+      expect(screen.getByText("error.failed_to_load_quests")).toBeVisible();
+      expect(screen.getByText("common.retry")).toBeVisible();
     });
-  });
 
-  it("allows changing deadline date in the form", async () => {
-    render(<QuestsScreen />);
-    await waitFor(() => screen.getByText("quest.new"));
-
-    fireEvent.press(screen.getByText("quest.new"));
-    await waitFor(() => screen.getByLabelText("quest.deadline.next_day"));
-
-    const initialDate = screen.getByText(
-      new Intl.DateTimeFormat("en", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }).format(new Date(new Date().setDate(new Date().getDate() + 7))),
-    );
-    expect(initialDate).toBeVisible();
-
-    fireEvent.press(screen.getByLabelText("quest.deadline.next_day"));
-    fireEvent.press(screen.getByLabelText("quest.deadline.next_day"));
-    fireEvent.press(screen.getByLabelText("quest.deadline.prev_day"));
-
-    // The date should have shifted by +1 day (7 + 2 - 1 = 8 days from today)
-    const expectedDate = new Date();
-    expectedDate.setDate(expectedDate.getDate() + 8);
-    const expectedDateString = new Intl.DateTimeFormat("en", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(expectedDate);
-
-    expect(screen.getByText(expectedDateString)).toBeVisible();
+    fireEvent.press(screen.getByText("common.retry"));
+    expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Medium);
+    // Expect subscribeToQuests to be called again after retry
+    expect(subscribeToQuests).toHaveBeenCalledTimes(2);
   });
 });
+

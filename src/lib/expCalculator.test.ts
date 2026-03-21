@@ -92,3 +92,4 @@ describe("isAtMaxLevel", () => {
     expect(isAtMaxLevel(MAX_LEVEL + 1)).toBe(true);
   });
 });
+
