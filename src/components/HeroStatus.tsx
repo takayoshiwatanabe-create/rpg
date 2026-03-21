@@ -1,162 +1,177 @@
-import { View, StyleSheet, type ViewProps } from "react-native";
-import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
-import { PixelText } from "@/components/ui/PixelText";
-import { PixelProgressBar } from "@/components/ui/PixelProgressBar";
-import { PixelCard } from "@/components/ui/PixelCard";
-import { expProgressInCurrentLevel, isAtMaxLevel } from "@/lib/expCalculator";
-import { t, getIsRTL } from "@/i18n";
+import React from "react";
+import { View, StyleSheet } from "react-native"; // Removed Platform import as FONT_FAMILY is now from theme
+import { PixelText, PixelCard } from "@/components/ui";
+import { t } from "@/i18n";
+import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme"; // FONT_FAMILY is no longer needed here as PixelText handles it
+import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile } from "@/types";
 
-export type HeroStatusProps = ViewProps & {
+// FONT_FAMILY is now handled by PixelText internally based on theme.ts
+
+type HeroStatusProps = {
   hero: HeroProfile;
+  isRTL: boolean;
+  showExtendedStats?: boolean;
 };
 
-/**
- * Displays a hero's core stats: level, HP, MP, EXP, and gold.
- * Uses real-time data passed from the parent (camp screen).
- * Pixel-art RPG panel; respects RTL layout automatically via PixelText.
- */
-export function HeroStatus({ hero, style, ...rest }: HeroStatusProps) {
-  const expProgress = expProgressInCurrentLevel(hero.totalExp);
-  const atMax = isAtMaxLevel(hero.level);
-  const isRTL = getIsRTL();
+export const HeroStatus = React.memo(
+  ({ hero, isRTL, showExtendedStats = false }: HeroStatusProps) => {
+    const expProgress = expProgressInCurrentLevel(hero.totalExp);
+    const expRatio = expProgress.required > 0 ? expProgress.current / expProgress.required : 0;
 
-  return (
-    <PixelCard
-      variant="elevated"
-      title={t("hero.status")}
-      style={style}
-      accessibilityLabel={t("hero.status")}
-      {...rest}
-    >
-      {/* Hero name + level row */}
-      <View style={[styles.nameRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="heading" color="gold" style={styles.flex}>
-          {hero.displayName}
-        </PixelText>
-        <View style={styles.levelBadge} accessibilityLabel={`${t("hero.level")} ${hero.level}`}>
-          <PixelText variant="caption" color="cream">
-            {t("hero.level")}
+    return (
+      <PixelCard variant="default">
+        {/* Name + Level */}
+        <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+          <PixelText variant="heading" color="gold" style={styles.heroName}>
+            {hero.displayName}
           </PixelText>
-          <PixelText variant="stat" color="gold">
-            {String(hero.level)}
+          <PixelText variant="heading" color="cream" style={styles.levelText}>
+            Lv.{hero.level}
           </PixelText>
         </View>
-      </View>
 
-      {/* HP bar */}
-      <View style={styles.statRow}>
-        <PixelProgressBar
-          value={hero.hp}
-          max={hero.maxHp}
-          color="hp"
-          label={t("hero.hp")}
-          showValues
-        />
-      </View>
+        {/* EXP bar */}
+        <View style={[styles.barRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+          <PixelText variant="label" color="exp" style={styles.barLabel}>
+            EXP
+          </PixelText>
+          <View style={styles.barContainer}>
+            <View style={[styles.bar, styles.barExp, { flex: expRatio || 0.01 }]} />
+            <View style={{ flex: 1 - (expRatio || 0.01) }} />
+          </View>
+          <PixelText variant="caption" color="gray" style={styles.barValue}>
+            {expProgress.current}/{expProgress.required}
+          </PixelText>
+        </View>
 
-      {/* MP bar */}
-      <View style={styles.statRow}>
-        <PixelProgressBar
-          value={hero.mp}
-          max={hero.maxMp}
-          color="mp"
-          label={t("hero.mp")}
-          showValues
-        />
-      </View>
+        {/* HP bar */}
+        <View style={[styles.barRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+          <PixelText variant="label" color="danger" style={styles.barLabel}>
+            HP
+          </PixelText>
+          <View style={styles.barContainer}>
+            <View style={[styles.bar, styles.barHp, { flex: hero.hp / hero.maxHp }]} />
+            <View style={{ flex: 1 - hero.hp / hero.maxHp }} />
+          </View>
+          <PixelText variant="caption" color="gray" style={styles.barValue}>
+            {hero.hp}/{hero.maxHp}
+          </PixelText>
+        </View>
 
-      {/* EXP bar */}
-      <View style={styles.statRow}>
-        <PixelProgressBar
-          value={atMax ? 1 : expProgress.current}
-          max={atMax ? 1 : (expProgress.required || 1)}
-          color="exp"
-          label={t("hero.exp")}
-          showValues={false}
-        />
-        <PixelText variant="caption" color="exp" style={[styles.expCaption, { textAlign: isRTL ? "left" : "right" }]}>
-          {atMax
-            ? t("hero.max_level")
-            : t("hero.exp_to_next", { exp: String(expProgress.required - expProgress.current) })}
-        </PixelText>
-      </View>
+        {/* MP bar */}
+        <View style={[styles.barRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+          <PixelText variant="label" color="info" style={styles.barLabel}>
+            MP
+          </PixelText>
+          <View style={styles.barContainer}>
+            <View style={[styles.bar, styles.barMp, { flex: hero.mp / hero.maxMp }]} />
+            <View style={{ flex: 1 - hero.mp / hero.maxMp }} />
+          </View>
+          <PixelText variant="caption" color="gray" style={styles.barValue}>
+            {hero.mp}/{hero.maxMp}
+          </PixelText>
+        </View>
 
-      {/* Attack / Defense / Gold row */}
-      <View style={[styles.statsFooter, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <StatChip label={t("hero.attack")} value={String(hero.attack)} color="hp" />
-        <StatChip label={t("hero.defense")} value={String(hero.defense)} color="mp" />
-        <StatChip label={t("hero.gold")} value={String(hero.gold)} color="gold" />
-      </View>
-    </PixelCard>
-  );
-}
+        {/* Gold */}
+        <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+          <PixelText variant="body" color="cream" style={styles.statusLabel}>
+            {"💰 "}{t("hero.gold")}
+          </PixelText>
+          <PixelText variant="body" color="gold" style={styles.goldValue}>
+            {hero.gold.toLocaleString()} G
+          </PixelText>
+        </View>
 
-// ---------------------------------------------------------------------------
-// Internal sub-component
-// ---------------------------------------------------------------------------
-
-type StatChipProps = {
-  label: string;
-  value: string;
-  color: keyof typeof COLORS;
-};
-
-function StatChip({ label, value, color }: StatChipProps) {
-  const isRTL = getIsRTL();
-  return (
-    <View
-      style={styles.chip}
-      accessibilityLabel={`${label}: ${value}`}
-      accessible
-    >
-      <PixelText variant="caption" color="cream" style={{ textAlign: "center" }}>
-        {label}
-      </PixelText>
-      <PixelText variant="stat" style={{ color: COLORS[color], textAlign: "center" }}>
-        {value}
-      </PixelText>
-    </View>
-  );
-}
+        {showExtendedStats && (
+          <>
+            <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+              <PixelText variant="body" color="cream" style={styles.statusLabel}>
+                {"⚔️ "}{t("hero.attack")}
+              </PixelText>
+              <PixelText variant="body" color="cream" style={styles.statusValue}>
+                {hero.attack}
+              </PixelText>
+            </View>
+            <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+              <PixelText variant="body" color="cream" style={styles.statusLabel}>
+                {"🛡 "}{t("hero.defense")}
+              </PixelText>
+              <PixelText variant="body" color="cream" style={styles.statusValue}>
+                {hero.defense}
+              </PixelText>
+            </View>
+            <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+              <PixelText variant="body" color="cream" style={styles.statusLabel}>
+                {"✨ "}{t("hero.exp")}
+              </PixelText>
+              <PixelText variant="body" color="cream" style={styles.statusValue}>
+                {hero.totalExp}
+              </PixelText>
+            </View>
+          </>
+        )}
+      </PixelCard>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  nameRow: {
+  statusRow: {
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.sm,
-    gap: SPACING.sm,
-  },
-  levelBadge: {
-    alignItems: "center",
-    backgroundColor: COLORS.bgMid,
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.gold,
-    borderRadius: PIXEL_BORDER.borderRadius,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    minWidth: 52,
-  },
-  statRow: {
     marginBottom: SPACING.xs,
   },
-  expCaption: {
-    marginTop: 2,
-    fontSize: FONT_SIZES.xs,
+  heroName: {
+    fontSize: FONT_SIZES.xl,
   },
-  statsFooter: {
-    marginTop: SPACING.sm,
-    gap: SPACING.sm,
+  levelText: {
+    fontSize: FONT_SIZES.xl,
   },
-  chip: {
-    flex: 1,
+  statusLabel: {
+    fontSize: FONT_SIZES.lg,
+  },
+  statusValue: {
+    fontSize: FONT_SIZES.lg,
+  },
+  goldValue: {
+    fontSize: FONT_SIZES.lg,
+  },
+  barRow: {
     alignItems: "center",
+    marginBottom: SPACING.xs,
+    gap: SPACING.xs,
+  },
+  barLabel: {
+    fontSize: FONT_SIZES.sm,
+    width: 32,
+  },
+  barContainer: {
+    flex: 1,
+    height: 12,
     backgroundColor: COLORS.bgMid,
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: PIXEL_BORDER.borderColor,
     borderRadius: PIXEL_BORDER.borderRadius,
-    paddingVertical: SPACING.xs,
+    flexDirection: "row",
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.windowBorder,
+  },
+  bar: {
+    height: "100%",
+    borderRadius: PIXEL_BORDER.borderRadius,
+  },
+  barHp: {
+    backgroundColor: COLORS.danger,
+  },
+  barMp: {
+    backgroundColor: COLORS.info,
+  },
+  barExp: {
+    backgroundColor: COLORS.exp,
+  },
+  barValue: {
+    fontSize: FONT_SIZES.xs,
+    width: 80,
+    textAlign: "right",
   },
 });

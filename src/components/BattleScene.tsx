@@ -1,394 +1,266 @@
-import React, { useEffect, useRef } from "react";
-import {
-  Animated,
-  StyleSheet,
-  View,
-  Image,
-  TouchableOpacity,
-} from "react-native";
-import { PixelButton, PixelCard, PixelText } from "@/components/ui";
-import { t } from "@/i18n";
-import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
-import type { Quest, QuestReward } from "@/types";
+import React, { useRef, useEffect, useCallback } from "react";
+import { View, Animated, StyleSheet, Text, Platform } from "react-native";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { getMonster } from "@/constants/monsters";
+import { PIXEL_BORDER, FONT_FAMILY_MAIN, FONT_FAMILY_SUB, COLORS } from "@/constants/theme"; // Corrected import
 
-// Define battle states for the UI
-type BattleState =
-  | "loading"
-  | "ready"
-  | "inProgress"
-  | "completed"
-  | "failed"
-  | "error";
+const FONT_FAMILY = Platform.select({
+  ios: FONT_FAMILY_SUB, // Use sub font for general text
+  android: FONT_FAMILY_SUB,
+  default: FONT_FAMILY_SUB,
+});
 
-export type BattleSceneProps = {
-  quest: Quest;
-  battleState: BattleState;
-  timeRemaining: number;
-  isTimerRunning: boolean;
-  isQuestCompleted: boolean;
-  onStartBattle: () => void;
-  onCompleteQuest: () => void;
-  onToggleQuestCompleted: () => void;
-  onExitBattle: () => void;
-  rewards: QuestReward;
-  isRTL: boolean;
-};
+interface BattleSceneProps {
+  monsterEmoji: string;
+  monsterName: string;
+  heroName: string;
+  heroHp: number;
+  heroMaxHp: number;
+  monsterHp: number;
+  monsterMaxHp: number;
+  message: string;
+  showAttackFlash?: boolean;
+  onMessageComplete?: () => void;
+}
 
-/**
- * The main battle scene component, orchestrating animations and UI for quest completion.
- * It displays the quest details, a timer, a monster sprite, and battle actions.
- */
-export function BattleScene({
-  quest,
-  battleState,
-  timeRemaining,
-  isTimerRunning,
-  isQuestCompleted,
-  onStartBattle,
-  onCompleteQuest,
-  onToggleQuestCompleted,
-  onExitBattle,
-  rewards,
-  isRTL,
-}: BattleSceneProps) {
+const BattleScene: React.FC<BattleSceneProps> = ({
+  monsterEmoji,
+  monsterName,
+  heroName,
+  heroHp,
+  heroMaxHp,
+  monsterHp,
+  monsterMaxHp,
+  message,
+  showAttackFlash = false,
+  onMessageComplete,
+}) => {
   const reducedMotion = useReducedMotion();
 
   // Animations
-  const monsterShake = useRef(new Animated.Value(0)).current;
-  const monsterOpacity = useRef(new Animated.Value(1)).current;
-  const rewardTextOpacity = useRef(new Animated.Value(0)).current;
+  const monsterShakeAnim = useRef(new Animated.Value(0)).current;
+  const heroShakeAnim = useRef(new Animated.Value(0)).current;
+  const flashOpacity = useRef(new Animated.Value(0)).current;
+  const damageAnim = useRef(new Animated.Value(0)).current;
 
-  const animateMonsterShake = () => {
-    if (reducedMotion) return;
-    monsterShake.setValue(0);
-    Animated.sequence([
-      Animated.timing(monsterShake, {
-        toValue: 1,
-        duration: 50,
-        useNativeDriver: true,
-      }),
-      Animated.timing(monsterShake, {
-        toValue: -1,
-        duration: 50,
-        useNativeDriver: true,
-      }),
-      Animated.timing(monsterShake, {
-        toValue: 0,
-        duration: 50,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const animateMonsterDefeat = () => {
-    if (reducedMotion) {
-      monsterOpacity.setValue(0);
-      return;
-    }
-    Animated.timing(monsterOpacity, {
-      toValue: 0,
-      duration: 800,
-      useNativeDriver: true,
-    }).start(() => {
-      // After monster disappears, show rewards
-      Animated.timing(rewardTextOpacity, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-    });
-  };
+  const shake = useCallback(
+    (targetAnim: Animated.Value) => {
+      if (reducedMotion) {
+        targetAnim.setValue(0);
+        return;
+      }
+      Animated.sequence([
+        Animated.timing(targetAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+        Animated.timing(targetAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+        Animated.timing(targetAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
+        Animated.timing(targetAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
+        Animated.timing(targetAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+      ]).start();
+    },
+    [reducedMotion],
+  );
 
   useEffect(() => {
-    if (battleState === "inProgress") {
-      // Monster might periodically shake or animate during battle
-      const interval = setInterval(() => {
-        animateMonsterShake();
-      }, 3000);
-      return () => clearInterval(interval);
+    if (showAttackFlash && !reducedMotion) {
+      Animated.sequence([
+        Animated.timing(flashOpacity, { toValue: 0.6, duration: 60, useNativeDriver: true }),
+        Animated.timing(flashOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      ]).start();
+      shake(monsterShakeAnim); // Monster shakes when attacked
+      damageAnim.setValue(1); // Show damage number
+      Animated.timing(damageAnim, { toValue: 0, duration: 1500, useNativeDriver: true }).start();
+    } else if (reducedMotion) {
+      flashOpacity.setValue(0);
+      damageAnim.setValue(0);
     }
-    if (battleState === "completed") {
-      animateMonsterDefeat();
-    }
-  }, [battleState, reducedMotion]);
+  }, [showAttackFlash, flashOpacity, monsterShakeAnim, damageAnim, shake, reducedMotion]);
 
-  const formatTime = (totalSeconds: number) => {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  const monsterTransformStyle = {
-    transform: [
-      {
-        translateX: monsterShake.interpolate({
-          inputRange: [-1, 1],
-          outputRange: [-5, 5],
-        }),
-      },
-    ],
-  };
-
-  const monsterInfo = getMonster(quest.subject, quest.difficulty);
+  const monsterHpRatio = monsterMaxHp > 0 ? monsterHp / monsterMaxHp : 0;
+  const heroHpRatio = heroMaxHp > 0 ? heroHp / heroMaxHp : 0;
 
   return (
     <View style={styles.container}>
-      {/* Top Panel: Quest Info */}
-      <PixelCard variant="default" style={styles.questInfoCard}>
-        <PixelText variant="heading" color="gold" style={styles.questTitle}>
-          {quest.title}
-        </PixelText>
-        <View style={[styles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <PixelText variant="label" color="cream">
-            {t("quest.difficulty")}:
-          </PixelText>
-          <PixelText variant="body" color="gold">
-            {t(`quest.difficulty.${quest.difficulty}`)}
-          </PixelText>
-        </View>
-        <View style={[styles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <PixelText variant="label" color="cream">
-            {t("quest.estimatedTime")}:
-          </PixelText>
-          <PixelText variant="body" color="gray">
-            {t("time.minutes", { n: quest.estimatedMinutes })}
-          </PixelText>
-        </View>
-      </PixelCard>
+      {/* Attack flash overlay */}
+      <Animated.View
+        style={[styles.flashOverlay, { opacity: flashOpacity }]}
+        pointerEvents="none"
+      />
 
-      {/* Battle Area */}
-      <View style={styles.battleArea}>
-        {battleState === "ready" && (
-          <View style={styles.centerContent}>
-            <PixelText variant="body" color="cream">
-              {t("battle.ready_message")}
-            </PixelText>
-            <PixelButton
-              label={t("battle.start")}
-              variant="primary"
-              size="lg"
-              onPress={onStartBattle}
-              style={styles.actionButton}
-            />
+      {/* Top UI: Monster HP Bar */}
+      <View style={styles.topPanel}>
+        <View style={styles.hpBarContainer}>
+          <Text style={styles.hpBarLabel}>{monsterName}</Text>
+          <View style={styles.hpBar}>
+            <View style={[styles.hpFill, styles.monsterHpFill, { width: `${monsterHpRatio * 100}%` }]} />
           </View>
-        )}
-
-        {(battleState === "inProgress" || battleState === "completed") && (
-          <>
-            <Animated.View
-              style={[
-                styles.monsterContainer,
-                monsterTransformStyle,
-                { opacity: monsterOpacity },
-              ]}
-            >
-              <PixelText style={styles.monsterEmoji}>{monsterInfo.emoji}</PixelText>
-            </Animated.View>
-
-            {battleState === "completed" && (
-              <Animated.View
-                style={[styles.rewardTextContainer, { opacity: rewardTextOpacity }]}
-              >
-                <PixelText variant="heading" color="gold" style={styles.rewardText}>
-                  {t("battle.victory")}!
-                </PixelText>
-                <PixelText variant="body" color="exp" style={styles.rewardText}>
-                  {t("quest.reward_exp", { exp: rewards.exp })}
-                </PixelText>
-                <PixelText variant="body" color="gold" style={styles.rewardText}>
-                  {t("quest.reward_gold", { gold: rewards.gold })}
-                </PixelText>
-              </Animated.View>
-            )}
-          </>
-        )}
-
-        {battleState === "failed" && (
-          <View style={styles.centerContent}>
-            <PixelText variant="heading" color="danger">
-              {t("battle.defeat")}!
-            </PixelText>
-            <PixelText variant="body" color="cream" style={styles.failMessage}>
-              {t("battle.time_up")}
-            </PixelText>
-            <PixelButton
-              label={t("common.back")}
-              variant="secondary"
-              size="lg"
-              onPress={onExitBattle}
-              style={styles.actionButton}
-            />
-          </View>
-        )}
+          <Text style={styles.hpValue}>{monsterHp}/{monsterMaxHp}</Text>
+        </View>
       </View>
 
-      {/* Bottom Panel: Timer & Actions */}
-      <PixelCard variant="default" style={styles.bottomPanel}>
-        <View style={[styles.timerRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <PixelText variant="label" color="cream">
-            {t("battle.time_left")}:
-          </PixelText>
-          <PixelText
-            variant="stat"
-            color={timeRemaining <= 60 ? "danger" : "gold"}
-          >
-            {formatTime(timeRemaining)}
-          </PixelText>
+      {/* Battle Field: Monster & Hero */}
+      <View style={styles.battleField}>
+        {/* Monster */}
+        <Animated.Text style={[styles.monsterEmoji, { transform: [{ translateX: monsterShakeAnim }] }]}>
+          {monsterEmoji}
+        </Animated.Text>
+        {/* Damage number floating up */}
+        <Animated.Text
+          style={[
+            styles.damageText,
+            {
+              opacity: damageAnim,
+              transform: [{
+                translateY: damageAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-40, 0],
+                }),
+              }],
+            },
+          ]}
+        >
+          {"💥"}
+        </Animated.Text>
+
+        {/* Hero (placeholder for now) */}
+        <Animated.Text style={[styles.heroEmoji, { transform: [{ translateX: heroShakeAnim }] }]}>
+          {"🧝"}
+        </Animated.Text>
+      </View>
+
+      {/* Bottom UI: Hero Status & Message Box */}
+      <View style={styles.bottomPanel}>
+        <View style={styles.heroStatusBox}>
+          <Text style={styles.heroNameText}>{heroName}</Text>
+          <View style={styles.hpBarContainer}>
+            <Text style={styles.hpBarLabel}>HP</Text>
+            <View style={styles.hpBar}>
+              <View style={[styles.hpFill, styles.heroHpFill, { width: `${heroHpRatio * 100}%` }]} />
+            </View>
+            <Text style={styles.hpValue}>{heroHp}/{heroMaxHp}</Text>
+          </View>
+          {/* Add MP, EXP, etc. here later */}
         </View>
 
-        {battleState === "inProgress" && (
-          <>
-            <TouchableOpacity
-              style={[styles.checkboxRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}
-              onPress={onToggleQuestCompleted}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: isQuestCompleted }}
-              accessibilityLabel={t("battle.complete_checkbox")}
-            >
-              <View
-                style={[
-                  styles.checkbox,
-                  isQuestCompleted && styles.checkboxChecked,
-                ]}
-              >
-                {isQuestCompleted && (
-                  <PixelText variant="label" color="gold">
-                    ✓
-                  </PixelText>
-                )}
-              </View>
-              <PixelText variant="body" color="cream" style={styles.checkboxText}>
-                {t("battle.complete_checkbox")}
-              </PixelText>
-            </TouchableOpacity>
-
-            <PixelButton
-              label={t("battle.finish_quest")}
-              variant="primary"
-              size="lg"
-              onPress={onCompleteQuest}
-              disabled={!isQuestCompleted || !isTimerRunning}
-              style={styles.actionButton}
-            />
-            <PixelButton
-              label={t("common.exit")}
-              variant="ghost"
-              size="md"
-              onPress={onExitBattle}
-              style={styles.actionButton}
-            />
-          </>
-        )}
-        {battleState === "completed" && (
-          <PixelButton
-            label={t("battle.view_results")}
-            variant="primary"
-            size="lg"
-            onPress={onExitBattle} // Navigates to result screen, then back to camp
-            style={styles.actionButton}
-          />
-        )}
-      </PixelCard>
+        <View style={styles.messageBox}>
+          <Text style={styles.messageText}>{message}</Text>
+        </View>
+      </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: COLORS.bgDark, // Dark background for battle
     justifyContent: "space-between",
-    padding: SPACING.md,
+    padding: 16,
   },
-  questInfoCard: {
-    marginBottom: SPACING.md,
+  flashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.cream, // White flash
+    zIndex: 10,
   },
-  questTitle: {
-    textAlign: "center",
-    marginBottom: SPACING.sm,
-  },
-  detailRow: {
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.xs,
-  },
-  battleArea: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: SPACING.md,
-    backgroundColor: COLORS.bgMid,
+  topPanel: {
+    padding: 8,
+    backgroundColor: COLORS.bgCard,
     borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: PIXEL_BORDER.borderColor,
+    borderColor: COLORS.windowBorder,
     borderRadius: PIXEL_BORDER.borderRadius,
-    overflow: "hidden",
+    marginBottom: 16,
   },
-  centerContent: {
+  battleField: {
+    flex: 1,
+    justifyContent: "space-around",
     alignItems: "center",
-    padding: SPACING.md,
-  },
-  monsterContainer: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+    position: "relative",
   },
   monsterEmoji: {
-    fontSize: 100, // Large emoji size
-    lineHeight: 120, // Adjust line height to center
+    fontSize: 80,
     textAlign: "center",
+    fontFamily: FONT_FAMILY_MAIN, // Use main font for emojis if available, or a system emoji font
   },
-  rewardTextContainer: {
+  heroEmoji: {
+    fontSize: 60,
+    textAlign: "center",
+    fontFamily: FONT_FAMILY_MAIN, // Use main font for emojis if available, or a system emoji font
+  },
+  damageText: {
+    fontSize: 36,
     position: "absolute",
-    alignItems: "center",
-    gap: SPACING.xs,
-  },
-  rewardText: {
-    textAlign: "center",
-  },
-  failMessage: {
-    textAlign: "center",
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.lg,
+    top: "30%",
+    color: COLORS.danger,
+    fontWeight: "bold",
+    fontFamily: FONT_FAMILY,
   },
   bottomPanel: {
-    marginTop: SPACING.md,
+    marginTop: 16,
   },
-  timerRow: {
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.md,
-  },
-  checkboxRow: {
-    alignItems: "center",
-    gap: SPACING.sm,
-    marginBottom: SPACING.md,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: PIXEL_BORDER.borderColor,
+  heroStatusBox: {
     backgroundColor: COLORS.bgCard,
+    borderWidth: PIXEL_BORDER.borderWidth,
+    borderColor: COLORS.windowBorder,
+    borderRadius: PIXEL_BORDER.borderRadius,
+    padding: 8,
+    marginBottom: 8,
+  },
+  heroNameText: {
+    color: COLORS.gold,
+    fontSize: 20,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  hpBarContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
+    marginBottom: 4,
   },
-  checkboxChecked: {
-    backgroundColor: COLORS.buttonPrimary,
-    borderColor: COLORS.gold,
+  hpBarLabel: {
+    color: COLORS.cream,
+    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+    width: 40,
   },
-  checkboxText: {
+  hpBar: {
     flex: 1,
-    fontSize: FONT_SIZES.md,
+    height: 10,
+    backgroundColor: COLORS.darkGray,
+    borderRadius: 2,
+    overflow: "hidden",
+    marginHorizontal: 8,
   },
-  actionButton: {
-    width: "100%",
-    marginBottom: SPACING.sm,
+  hpFill: {
+    height: "100%",
+    borderRadius: 2,
+  },
+  monsterHpFill: {
+    backgroundColor: COLORS.danger, // Red for monster HP
+  },
+  heroHpFill: {
+    backgroundColor: COLORS.exp, // Green for hero HP
+  },
+  hpValue: {
+    color: COLORS.cream,
+    fontSize: 14,
+    fontFamily: FONT_FAMILY,
+    width: 60,
+    textAlign: "right",
+  },
+  messageBox: {
+    backgroundColor: COLORS.bgCard,
+    borderWidth: PIXEL_BORDER.borderWidth,
+    borderColor: COLORS.windowBorder,
+    borderRadius: PIXEL_BORDER.borderRadius,
+    padding: 12,
+    minHeight: 80,
+    justifyContent: "center",
+  },
+  messageText: {
+    color: COLORS.cream,
+    fontSize: 18,
+    fontFamily: FONT_FAMILY,
+    textAlign: "center",
   },
 });
+
+export default BattleScene;

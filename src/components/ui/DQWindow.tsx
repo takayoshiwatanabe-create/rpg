@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, ViewStyle, Platform } from "react-native";
+import { View, StyleSheet, ViewStyle } from "react-native"; // Removed Platform import as FONT_SIZES is now from theme
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import { PixelText } from "./PixelText";
 import { getIsRTL } from "@/i18n";
@@ -35,14 +35,14 @@ const styles = StyleSheet.create({
   window: {
     backgroundColor: COLORS.bgCard, // Using bgCard for general window background
     borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.pixelBorder, // Using general pixel border
+    borderColor: COLORS.windowBorder, // Using general pixel border
     borderRadius: PIXEL_BORDER.borderRadius,
     padding: SPACING.md,
-    shadowColor: COLORS.shadow.shadowColor,
-    shadowOffset: COLORS.shadow.shadowOffset,
-    shadowOpacity: COLORS.shadow.shadowOpacity,
-    shadowRadius: COLORS.shadow.shadowRadius,
-    elevation: COLORS.shadow.elevation, // Android shadow
+    shadowColor: COLORS.shadow, // Use the shadow color directly
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1, // Pixel shadows are usually opaque
+    shadowRadius: 0, // Pixel shadows have no blur
+    elevation: 4, // Android shadow
   },
   titleContainer: {
     position: "absolute",

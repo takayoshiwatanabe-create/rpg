@@ -1,32 +1,45 @@
-import { useState } from "react";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import * as SplashScreen from "expo-splash-screen";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { RuokSplash } from "@/components/RuokSplash";
+import { SplashScreen } from "expo-router";
+import { useFonts } from "expo-font";
+import { useEffect } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"; // Corrected import
+import { AuthProvider } from "@/hooks/useAuth"; // Corrected import
+import { I18nProvider } from "@/i18n"; // Corrected import
+import RootLayoutNav from "./_layout.nav"; // Corrected import
 
+// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-/**
- * Root layout — wraps all routes with AuthProvider so that
- * every screen shares the same auth state (no redundant
- * AsyncStorage reads or out-of-sync auth instances).
- */
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
-  const [splashDone, setSplashDone] = useState(false);
+  const [loaded, error] = useFonts({
+    "PressStart2P": require("../assets/fonts/PressStart2P-Regular.ttf"),
+    // Add other fonts if needed
+  });
+
+  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
+  useEffect(() => {
+    if (error) throw error;
+  }, [error]);
+
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded]);
+
+  if (!loaded) {
+    return null;
+  }
 
   return (
-    <AuthProvider>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }} />
-      {!splashDone && (
-        <RuokSplash
-          onFinish={() => {
-            setSplashDone(true);
-            SplashScreen.hideAsync();
-          }}
-        />
-      )}
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <I18nProvider>
+          <RootLayoutNav />
+        </I18nProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
+

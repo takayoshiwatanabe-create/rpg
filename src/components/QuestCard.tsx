@@ -1,102 +1,93 @@
-import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
-import { isQuestOverdue, daysUntilDeadline } from "@/lib/gameLogic";
-import { PixelCard, PixelText, PixelButton } from "@/components/ui";
-import { t, getLang, getIsRTL } from "@/i18n";
-import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
-import type { Quest } from "@/types";
+import React from "react";
+import { View, StyleSheet, TouchableOpacity, Text } from "react-native"; // Removed Platform import as FONT_FAMILY is now from theme
+import { PixelText, PixelCard } from "@/components/ui";
+import { t, getLang } from "@/i18n";
+import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER, FONT_FAMILY_MAIN } from "@/constants/theme"; // FONT_FAMILY is no longer needed here as PixelText handles it
+import type { Quest, Subject, Difficulty } from "@/types";
+import { getMonster } from "@/constants/monsters";
 
-export type QuestCardProps = {
+// FONT_FAMILY is now handled by PixelText internally based on theme.ts,
+// but for emojis, we might want a specific font that supports them well,
+// or rely on system defaults. For now, using FONT_FAMILY_MAIN for consistency.
+
+type QuestCardProps = {
   quest: Quest;
-  onStartBattle: (questId: string) => void;
-  onDelete?: (questId: string) => void;
+  onPress: (questId: string) => void;
+  isRTL: boolean;
+  variant?: "default" | "highlighted"; // Allow variant prop
 };
 
-export function QuestCard({ quest, onStartBattle, onDelete }: QuestCardProps) {
-  const overdue = isQuestOverdue(quest.deadlineDate);
-  const days = daysUntilDeadline(quest.deadlineDate);
-  const subjectColor = COLORS[quest.subject as keyof typeof COLORS] ?? COLORS.other;
-  const difficultyColor = COLORS[quest.difficulty as keyof typeof COLORS] ?? COLORS.normal;
-  const isRTL = getIsRTL();
-
-  const deadlineLabel = overdue
-    ? t("quest.overdue")
-    : new Intl.DateTimeFormat(getLang(), { month: "numeric", day: "numeric" }).format(
-        new Date(quest.deadlineDate),
-      ) + (days > 0 ? ` (${days})` : "");
-
-  const handleDelete = () => {
-    Alert.alert(
-      t("quest.abandon"),
-      t("quest.abandon_confirm"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("common.delete"),
-          style: "destructive",
-          onPress: () => onDelete?.(quest.id),
-        },
-      ],
-    );
-  };
-
-  return (
-    <PixelCard
-      variant={overdue ? "highlighted" : "default"}
-      style={styles.card}
-      accessibilityLabel={quest.title}
-    >
-      <View style={[styles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <View style={[styles.badge, { borderColor: subjectColor }]}>
-          <PixelText variant="caption" style={{ color: subjectColor }}>
-            {t(`quest.subject.${quest.subject}`)}
-          </PixelText>
-        </View>
-        <View style={[styles.badge, { borderColor: difficultyColor }]}>
-          <PixelText variant="caption" style={{ color: difficultyColor }}>
-            {t(`quest.difficulty.${quest.difficulty}`)}
-          </PixelText>
-        </View>
-        <View style={styles.deadlineSpacer} />
-        <PixelText variant="caption" color={overdue ? "danger" : "gray"}>
-          {deadlineLabel}
-        </PixelText>
-        {onDelete !== undefined && (
-          <TouchableOpacity
-            onPress={handleDelete}
-            style={styles.deleteBtn}
-            accessibilityRole="button"
-            accessibilityLabel={t("common.delete")}
-          >
-            <PixelText variant="caption" color="danger">
-              {"×"}
-            </PixelText>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <PixelText variant="body" color="cream" style={styles.title}>
-        {quest.title}
-      </PixelText>
-
-      <View style={[styles.footer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="caption" color="exp">
-          {t("quest.reward_exp", { exp: quest.expReward })}
-        </PixelText>
-        <PixelText variant="caption" color="gold">
-          {t("quest.reward_gold", { gold: quest.goldReward })}
-        </PixelText>
-        <View style={styles.battleBtnWrapper}>
-          <PixelButton
-            label={t("camp.startBattle")}
-            variant="primary"
-            size="sm"
-            onPress={() => onStartBattle(quest.id)}
-          />
-        </View>
-      </View>
-    </PixelCard>
-  );
+function formatDeadline(dateStr: string, locale: string): string {
+  // Ensure the date string is valid before formatting
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    return t("common.invalid_date"); // Fallback for invalid dates
+  }
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(date);
 }
+
+export const QuestCard = React.memo(
+  ({ quest, onPress, isRTL, variant = "default" }: QuestCardProps) => {
+    const subjectColor = COLORS[quest.subject as keyof typeof COLORS] ?? COLORS.other;
+    const difficultyColor = COLORS[quest.difficulty as keyof typeof COLORS] ?? COLORS.normal;
+    const monster = getMonster(quest.subject, quest.difficulty);
+
+    const statusColor =
+      quest.status === "pending"
+        ? COLORS.gold
+        : quest.status === "inProgress"
+          ? COLORS.info
+          : COLORS.exp;
+
+    return (
+      <TouchableOpacity
+        onPress={() => onPress(quest.id)}
+        activeOpacity={0.7}
+        accessibilityLabel={t("quest.card_accessibility", { title: quest.title })}
+      >
+        <PixelCard variant={variant} style={styles.card}>
+          <View style={[styles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <View style={[styles.badge, { borderColor: subjectColor }]}>
+              <PixelText variant="caption" style={{ color: subjectColor }}>
+                {t(`quest.subject.${quest.subject}`)}
+              </PixelText>
+            </View>
+            <View style={[styles.badge, { borderColor: difficultyColor }]}>
+              <PixelText variant="caption" style={{ color: difficultyColor }}>
+                {t(`quest.difficulty.${quest.difficulty}`)}
+              </PixelText>
+            </View>
+            <View style={styles.spacer} />
+            <PixelText variant="caption" color="gray">
+              {t("quest.deadline")}: {formatDeadline(quest.deadlineDate, getLang())}
+            </PixelText>
+          </View>
+
+          <PixelText variant="body" color="cream" style={styles.title}>
+            {quest.title}
+          </PixelText>
+
+          <View style={[styles.footer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <View style={styles.monsterInfo}>
+              <Text style={styles.monsterEmoji}>{monster.emoji}</Text>
+              <PixelText variant="label" color="gold">
+                {t(monster.nameKey)}
+              </PixelText>
+            </View>
+            <View style={styles.spacer} />
+            <PixelText variant="label" style={{ color: statusColor }}>
+              {t(`quest.status.${quest.status}`)}
+            </PixelText>
+          </View>
+        </PixelCard>
+      </TouchableOpacity>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   card: {
@@ -113,21 +104,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
   },
-  deadlineSpacer: {
+  spacer: {
     flex: 1,
-  },
-  deleteBtn: {
-    paddingHorizontal: SPACING.xs,
-    paddingVertical: 2,
   },
   title: {
     marginBottom: SPACING.sm,
   },
   footer: {
     alignItems: "center",
-    gap: SPACING.sm,
+    marginTop: SPACING.sm,
   },
-  battleBtnWrapper: {
-    marginLeft: "auto",
+  monsterInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xs,
+  },
+  monsterEmoji: {
+    fontSize: FONT_SIZES.md,
+    fontFamily: FONT_FAMILY_MAIN, // Use main font for emojis if available, or a system emoji font
   },
 });

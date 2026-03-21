@@ -1,13 +1,4 @@
-import { StyleSheet } from "react-native";
-
-/**
- * Theme constants for the 8-bit RPG style.
- * All colors and spacing values are defined here for consistency.
- */
-
-// ---------------------------------------------------------------------------
-// Colors
-// ---------------------------------------------------------------------------
+import { Platform } from "react-native";
 
 export const COLORS = {
   // Backgrounds
@@ -16,146 +7,78 @@ export const COLORS = {
   bgLight: "#2D2D4A",
   bgCard: "#16213E",
 
-  // Primary UI elements
-  gold: "#FFD700", // Main accent color for important text, currency
-  goldDark: "#B8860B", // Darker gold for shadows
+  // Primary/Accent
+  gold: "#FFD700", // Main accent color (e.g., hero name, important text)
+  goldDark: "#B8860B", // Shadow for gold
   goldLight: "#FFF176", // Lighter gold for highlights
-  cream: "#F5F5DC", // General text color
-  gray: "#A9A9A9", // Secondary text, disabled elements
-  grayDark: "#696969", // Darker gray for shadows/borders
-
-  // Pixel art borders
-  pixelBorder: "#5C5C5C",
-  pixelBorderDark: "#3A3A3A",
-
-  // Status/Game elements
-  hp: "#FF4500", // Health points (red-orange)
-  mp: "#1E90FF", // Magic points (dodger blue)
-  exp: "#32CD32", // Experience points (lime green)
-  danger: "#DC143C", // Error messages, destructive actions
-  success: "#3CB371", // Success messages
-
-  // Button variants
-  primary: "#4A4A6A", // Primary button background
-  primaryDark: "#3A3A5A", // Primary button border/shadow
-  secondary: "#2A2A3A", // Secondary button background
-  secondaryDark: "#1A1A2A", // Secondary button border/shadow
 
   // Text colors
-  textPrimary: "#F5F5DC", // Cream for general text
-  textLight: "#FFFFFF", // White for primary buttons
-  textMuted: "#A9A9A9", // Gray for disabled text
+  cream: "#F0E6D2", // Default text color
+  gray: "#AAAACC", // Secondary text, hints
+  darkGray: "#333333", // Used in some UI elements like HP bar background
 
-  // Subject colors (for quest categorization)
+  // Status/Semantic colors
+  primary: "#228B22", // Green for positive actions, main buttons
+  secondary: "#4682B4", // Steel blue for secondary actions
+  danger: "#FF4500", // Red-orange for warnings, HP, destructive actions
+  info: "#1E90FF", // Dodger blue for informational, MP
+  exp: "#32CD32", // Lime green for EXP
+  success: "#3CB371", // Medium sea green for success messages
+  warning: "#FFD700", // Gold for warnings (can overlap with primary accent)
+
+  // Specific UI elements
+  windowBorder: "#5C5C5C", // Border for DQ-style windows/cards
+  shadow: "#000000", // General shadow color
+
+  // Subject colors (for quests)
   math: "#FF6347", // Tomato
-  japanese: "#DA70D6", // Orchid
   english: "#4682B4", // SteelBlue
   science: "#3CB371", // MediumSeaGreen
-  social: "#FFD700", // Gold
-  other: "#94A3B8", // SlateGray
-
-  // Difficulty colors (for quest difficulty)
-  easy: "#32CD32", // LimeGreen
-  normal: "#1E90FF", // DodgerBlue
-  hard: "#FF4500", // OrangeRed
-  boss: "#DC143C", // Crimson
-
-  // Basic
-  white: "#FFFFFF",
-
-  // Dragon Quest UI
-  dqBlue: "#0000AA",
-  dqBorder: "#FFFFFF",
-  dqInnerBorder: "#000066", // Added for inner border of DQ components
-  dqText: "#FFFFFF",
-  dqCursor: "#FFD700",
-  dqBattleBg: "#000000",
-
-  // Window background
-  windowBg: "#16213E", // Using bgCard for general window background
-  windowBorder: "#5C5C5C", // Using general pixel border
-} as const; // `as const` makes this a readonly tuple, improving type safety
-
-// ---------------------------------------------------------------------------
-// Spacing
-// ---------------------------------------------------------------------------
+  history: "#D2B48C", // Tan
+  art: "#DA70D6", // Orchid
+  other: "#6A5ACD", // SlateBlue
+  normal: "#808080", // Gray for normal difficulty
+  easy: "#90EE90", // LightGreen for easy difficulty
+  hard: "#FF6347", // Tomato for hard difficulty
+};
 
 export const SPACING = {
-  xxs: 2,
   xs: 4,
   sm: 8,
   md: 16,
   lg: 24,
   xl: 32,
   xxl: 48,
-} as const;
-
-// ---------------------------------------------------------------------------
-// Font Sizes
-// ---------------------------------------------------------------------------
+};
 
 export const FONT_SIZES = {
-  xs: 14,
-  sm: 16,
-  md: 18,
-  lg: 22,
-  xl: 26,
-  xxl: 32,
-  title: 40,
-} as const;
-
-// ---------------------------------------------------------------------------
-// Pixel Border
-// ---------------------------------------------------------------------------
+  xs: 12,
+  sm: 14,
+  md: 16,
+  lg: 18,
+  xl: 22,
+  xxl: 26,
+  title: 32, // For main screen titles
+  heading: 24, // For section headings
+  body: 18, // Default text size
+  label: 16, // For labels, smaller text
+  caption: 14, // Smallest text for details
+};
 
 export const PIXEL_BORDER = {
   borderWidth: 2,
   borderRadius: 4,
-  borderColor: COLORS.pixelBorder,
-} as const;
+};
 
-// ---------------------------------------------------------------------------
-// Shadow
-// ---------------------------------------------------------------------------
-
-export const SHADOW = {
-  shadowColor: COLORS.goldDark,
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-  elevation: 4,
-} as const;
-
-// ---------------------------------------------------------------------------
-// Global Styles (can be extended by individual components)
-// ---------------------------------------------------------------------------
-
-export const GLOBAL_STYLES = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bgDark,
-  },
-  textBase: {
-    fontFamily: "monospace", // Use a pixel-art friendly font
-    color: COLORS.cream,
-  },
-  heading: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: "bold",
-    color: COLORS.gold,
-  },
-  subheading: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "bold",
-    color: COLORS.cream,
-  },
-  body: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.cream,
-  },
-  caption: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.gray,
-  },
-  // Add more global styles as needed
+export const FONT_FAMILY_MAIN = Platform.select({
+  ios: "PressStart2P",
+  android: "PressStart2P",
+  default: "PressStart2P",
 });
+
+export const FONT_FAMILY_SUB = Platform.select({
+  ios: "DotGothic16",
+  android: "DotGothic16",
+  default: "DotGothic16",
+});
+

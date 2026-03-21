@@ -3,6 +3,7 @@ import { View, StyleSheet, Animated, Easing } from "react-native";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import { PixelText } from "./PixelText";
 import type { TextColor } from "@/types";
+import { getIsRTL } from "@/i18n"; // Import getIsRTL
 
 export type PixelProgressBarProps = {
   value: number;
@@ -25,6 +26,7 @@ export function PixelProgressBar({
 }: PixelProgressBarProps) {
   const animatedWidth = useRef(new Animated.Value(0)).current;
   const prevValue = useRef(value);
+  const isRTL = getIsRTL();
 
   useEffect(() => {
     const progress = max > 0 ? value / max : 0;
@@ -53,7 +55,7 @@ export function PixelProgressBar({
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { direction: isRTL ? "rtl" : "ltr" }]}>
       {label && (
         <PixelText variant="label" color="cream" style={styles.label}>
           {label}
@@ -63,7 +65,12 @@ export function PixelProgressBar({
         <Animated.View
           style={[
             styles.progressBarFill,
-            { backgroundColor: (COLORS as Record<string, string>)[color] ?? COLORS.gold, width: barWidth },
+            {
+              backgroundColor: (COLORS as Record<string, string>)[color] ?? COLORS.gold,
+              width: barWidth,
+              // Adjust position for RTL if needed, though width animation handles it for fill
+              // For a simple bar, `left: 0` (LTR) or `right: 0` (RTL) would be needed if not using width directly
+            },
           ]}
         />
         {showValues && (
@@ -95,7 +102,7 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: "100%",
     position: "absolute",
-    left: 0,
+    left: 0, // Default to LTR fill direction
   },
   valueText: {
     position: "absolute",

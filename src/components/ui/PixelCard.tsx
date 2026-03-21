@@ -1,83 +1,43 @@
 import React from "react";
-import { StyleSheet, View, type ViewProps } from "react-native";
-import { COLORS, PIXEL_BORDER, SHADOW, SPACING } from "@/constants/theme";
-import { PixelText } from "./PixelText";
-import { getIsRTL } from "@/i18n";
+import { View, StyleSheet } from "react-native";
+import { COLORS, PIXEL_BORDER, SPACING } from "@/constants/theme";
 
-export type CardVariant =
-  | "default"   // standard card with pixel border
-  | "elevated"  // adds gold drop-shadow
-  | "highlighted"; // gold border + drop-shadow (for active/selected state)
+export type PixelCardVariant = "default" | "highlighted";
 
-export type PixelCardProps = ViewProps & {
-  variant?: CardVariant;
-  title?: string;
+type PixelCardProps = {
   children: React.ReactNode;
+  variant?: PixelCardVariant;
+  style?: object;
 };
 
-/**
- * Container card styled as an 8-bit RPG panel.
- *
- * - `default`     — flat panel with a cream pixel border
- * - `elevated`    — adds a gold drop-shadow for depth
- * - `highlighted` — brighter gold border + shadow; use for selected quests or
- *                   active hero stats
- *
- * Pass a `title` string to render an RPG-style header bar inside the card.
- */
-export function PixelCard({
-  variant = "default",
-  title,
-  children,
-  style,
-  ...rest
-}: PixelCardProps) {
-  const isRTL = getIsRTL();
-  return (
-    <View
-      style={[
-        styles.card,
-        variant === "elevated" && styles.elevated,
-        variant === "highlighted" && styles.highlighted,
-        style,
-      ]}
-      {...rest}
-    >
-      {title !== undefined && (
-        <View style={[styles.titleBar, { borderBottomColor: PIXEL_BORDER.borderColor }]}>
-          <PixelText variant="label" color="gold" style={{ textAlign: isRTL ? "right" : "left" }}>
-            {title}
-          </PixelText>
-        </View>
-      )}
-      <View style={styles.content}>{children}</View>
-    </View>
-  );
-}
+export const PixelCard = React.memo(
+  ({ children, variant = "default", style }: PixelCardProps) => {
+    const cardStyle = [
+      styles.base,
+      variant === "highlighted" && styles.highlighted,
+      style,
+    ];
+
+    return <View style={cardStyle}>{children}</View>;
+  },
+);
 
 const styles = StyleSheet.create({
-  card: {
+  base: {
     backgroundColor: COLORS.bgCard,
     borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: PIXEL_BORDER.borderColor,
+    borderColor: COLORS.windowBorder,
     borderRadius: PIXEL_BORDER.borderRadius,
-    overflow: "hidden",
-  },
-  elevated: {
-    ...SHADOW,
+    padding: SPACING.md,
+    shadowColor: COLORS.shadow, // Use the shadow color directly
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1, // Pixel shadows are usually opaque
+    shadowRadius: 0, // Pixel shadows have no blur
+    elevation: 4, // Android shadow
   },
   highlighted: {
-    ...SHADOW,
+    backgroundColor: COLORS.bgLight,
     borderColor: COLORS.gold,
-    borderWidth: PIXEL_BORDER.borderWidth + 1, // Slightly thicker for highlight
-  },
-  titleBar: {
-    backgroundColor: COLORS.bgMid,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderBottomWidth: PIXEL_BORDER.borderWidth, // Use pixel border width
-  },
-  content: {
-    padding: SPACING.md,
+    shadowColor: COLORS.goldDark, // Use goldDark for highlighted shadow
   },
 });

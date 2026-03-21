@@ -1,337 +1,185 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, View, Image } from "react-native";
-import { PixelButton, PixelCard, PixelText } from "@/components/ui";
+import React from "react";
+import { View, StyleSheet } from "react-native"; // Removed Platform import as FONT_FAMILY is now from theme
+import { PixelText, PixelCard } from "@/components/ui";
 import { t } from "@/i18n";
-import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
+import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme"; // FONT_FAMILY is no longer needed here as PixelText handles it
+import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile } from "@/types";
-import {
-  calculateLevelFromExp,
-  expProgressInCurrentLevel,
-  isAtMaxLevel,
-} from "@/lib/expCalculator";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
 
-export type RewardDisplayProps = {
+// FONT_FAMILY is now handled by PixelText internally based on theme.ts
+
+type RewardDisplayProps = {
   hero: HeroProfile;
-  gainedExp: number;
-  gainedGold: number;
-  isOverdue: boolean;
-  onComplete: () => void;
+  expGained: number;
+  goldGained: number;
   isRTL: boolean;
+  monsterName: string;
+  durationSeconds: number;
 };
 
-/**
- * Displays the results of a battle, including gained EXP, gold,
- * and hero level-up animations.
- */
-export function RewardDisplay({
-  hero,
-  gainedExp,
-  gainedGold,
-  isOverdue,
-  onComplete,
-  isRTL,
-}: RewardDisplayProps) {
-  const reducedMotion = useReducedMotion();
+function formatStudyTime(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  }
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`; // Ensure minutes are always two digits
+}
 
-  const initialLevel = calculateLevelFromExp(hero.totalExp - gainedExp);
-  const finalLevel = hero.level; // hero.level already reflects the updated totalExp
-  const levelUpCount = finalLevel - initialLevel;
+export const RewardDisplay = React.memo(
+  ({
+    hero,
+    expGained,
+    goldGained,
+    isRTL,
+    monsterName,
+    durationSeconds,
+  }: RewardDisplayProps) => {
+    const expProgress = expProgressInCurrentLevel(hero.totalExp);
+    const expRatio = expProgress.required > 0 ? expProgress.current / expProgress.required : 0;
 
-  const [currentExp, setCurrentExp] = useState(hero.totalExp - gainedExp);
-  const [currentGold, setCurrentGold] = useState(hero.gold - gainedGold);
-  const [currentLevel, setCurrentLevel] = useState(initialLevel);
-  const [showLevelUp, setShowLevelUp] = useState(false);
-  const [showRewards, setShowRewards] = useState(false);
-
-  // Animations
-  const expBarValue = useRef(new Animated.Value(0)).current;
-  const goldValue = useRef(new Animated.Value(0)).current;
-  const levelUpOpacity = useRef(new Animated.Value(0)).current;
-  const rewardsOpacity = useRef(new Animated.Value(0)).current;
-
-  const heroSprite = require("@/assets/hero_idle.png"); // Example hero sprite
-
-  useEffect(() => {
-    // Animate EXP gain
-    if (!reducedMotion) {
-      Animated.timing(expBarValue, {
-        toValue: gainedExp,
-        duration: 1500,
-        useNativeDriver: false, // Must be false for width animation
-      }).start(() => {
-        setShowRewards(true);
-        Animated.timing(rewardsOpacity, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }).start();
-      });
-    } else {
-      setCurrentExp(hero.totalExp);
-      setCurrentGold(hero.gold);
-      setShowRewards(true);
-      rewardsOpacity.setValue(1);
-    }
-
-    // Animate gold gain
-    if (!reducedMotion) {
-      Animated.timing(goldValue, {
-        toValue: gainedGold,
-        duration: 1500,
-        useNativeDriver: false,
-      }).start();
-    }
-  }, [gainedExp, gainedGold, hero.totalExp, hero.gold, reducedMotion]);
-
-  useEffect(() => {
-    if (levelUpCount > 0 && showRewards && !reducedMotion) {
-      setShowLevelUp(true);
-      Animated.sequence([
-        Animated.delay(500),
-        Animated.timing(levelUpOpacity, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.delay(1500),
-        Animated.timing(levelUpOpacity, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start(() => setShowLevelUp(false));
-    }
-  }, [levelUpCount, showRewards, reducedMotion]);
-
-  // Update current EXP/Gold for display during animation
-  useEffect(() => {
-    const listener = expBarValue.addListener(({ value }) => {
-      setCurrentExp(hero.totalExp - gainedExp + Math.floor(value));
-      setCurrentLevel(calculateLevelFromExp(hero.totalExp - gainedExp + Math.floor(value)));
-    });
-    const goldListener = goldValue.addListener(({ value }) => {
-      setCurrentGold(hero.gold - gainedGold + Math.floor(value));
-    });
-    return () => {
-      expBarValue.removeListener(listener);
-      goldValue.removeListener(goldListener);
-    };
-  }, [expBarValue, goldValue, hero.totalExp, gainedExp, hero.gold, gainedGold]);
-
-  const expProgress = expProgressInCurrentLevel(currentExp);
-  const atMax = isAtMaxLevel(currentLevel);
-
-  return (
-    <View style={styles.container}>
-      <PixelText variant="title" color="gold" style={styles.title}>
-        {t("result.title")}
-      </PixelText>
-
-      {isOverdue && (
-        <PixelCard variant="highlighted" style={styles.overdueCard}>
-          <PixelText variant="body" color="danger" style={styles.overdueText}>
-            {t("quest.overdue_penalty")}
+    return (
+      <View style={[styles.container, { direction: isRTL ? "rtl" : "ltr" }]}>
+        {/* Victory fanfare area */}
+        <View style={styles.victoryArea}>
+          <PixelText variant="title" color="gold" style={styles.victoryTitle}>
+            {"🎉 "}{t("dq.result.defeated", { monster: monsterName })}
           </PixelText>
-        </PixelCard>
-      )}
+        </View>
 
-      <PixelCard variant="default" style={styles.heroStatusCard}>
-        <View style={[styles.heroHeader, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <Image
-            source={heroSprite}
-            style={styles.heroSprite}
-            resizeMode="contain"
-            accessibilityLabel={t("hero.label")}
-          />
-          <View style={styles.heroInfo}>
-            <PixelText variant="heading" color="cream">
+        {/* Study time display */}
+        {durationSeconds > 0 && (
+          <PixelCard variant="default">
+            <PixelText variant="label" color="cream" style={styles.cardTitle}>
+              {t("dq.result.study_time")}
+            </PixelText>
+            <PixelText variant="title" color="gold" style={styles.studyTimeText}>
+              {"📚 "}{formatStudyTime(durationSeconds)}
+            </PixelText>
+          </PixelCard>
+        )}
+
+        {/* Reward summary */}
+        <PixelCard variant="default">
+          <PixelText variant="label" color="cream" style={styles.cardTitle}>
+            {t("dq.result.rewards")}
+          </PixelText>
+          <View style={[styles.rewardRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <PixelText variant="body" color="cream">
+              {"✨ "}{t("hero.exp")}
+            </PixelText>
+            <PixelText variant="body" color="exp">
+              {`+${expGained}`}
+            </PixelText>
+          </View>
+          <View style={[styles.rewardRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <PixelText variant="body" color="cream">
+              {"💰 "}{t("hero.gold")}
+            </PixelText>
+            <PixelText variant="body" color="gold">
+              {`+${goldGained}`}
+            </PixelText>
+          </View>
+        </PixelCard>
+
+        {/* Hero growth: level + EXP bar */}
+        <PixelCard variant="highlighted">
+          <PixelText variant="label" color="cream" style={styles.cardTitle}>
+            {t("dq.result.hero_growth")}
+          </PixelText>
+          <View style={[styles.heroRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <PixelText variant="body" color="gold" style={styles.heroLevelLabel}>
               {hero.displayName}
             </PixelText>
-            <View style={[styles.levelRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-              <PixelText variant="label" color="cream">
-                {t("hero.level")}:
-              </PixelText>
-              <PixelText variant="stat" color="gold">
-                {currentLevel}
-              </PixelText>
+            <PixelText variant="body" color="cream" style={styles.heroLevelValue}>
+              Lv.{hero.level}
+            </PixelText>
+          </View>
+          <View style={[styles.expBarRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <PixelText variant="label" color="exp" style={styles.expBarLabel}>
+              EXP
+            </PixelText>
+            <View style={styles.expBarContainer}>
+              <View style={[styles.expBarFill, { flex: expRatio || 0.01 }]} />
+              <View style={{ flex: 1 - (expRatio || 0.01) }} />
             </View>
-          </View>
-        </View>
-
-        <View style={styles.progressBarWrapper}>
-          <PixelText variant="label" color="cream" style={styles.progressLabel}>
-            {t("hero.exp")}
-          </PixelText>
-          <View style={styles.progressBarContainer}>
-            <Animated.View
-              style={[
-                styles.progressBarFill,
-                {
-                  width: expBarValue.interpolate({
-                    inputRange: [0, gainedExp],
-                    outputRange: [
-                      `${
-                        (expProgressInCurrentLevel(hero.totalExp - gainedExp)
-                          .current /
-                          (expProgressInCurrentLevel(hero.totalExp - gainedExp)
-                            .required || 1)) *
-                        100
-                      }%`,
-                      `${
-                        (expProgressInCurrentLevel(hero.totalExp).current /
-                          (expProgressInCurrentLevel(hero.totalExp).required ||
-                            1)) *
-                        100
-                      }%`,
-                    ],
-                    extrapolate: "clamp",
-                  }),
-                  backgroundColor: COLORS.exp,
-                },
-              ]}
-            />
-            <PixelText variant="caption" color="cream" style={styles.progressText}>
-              {atMax
-                ? t("hero.max_level")
-                : `${expProgress.current}/${expProgress.required}`}
+            <PixelText variant="caption" color="gray" style={styles.expBarValue}>
+              {expProgress.current}/{expProgress.required}
             </PixelText>
           </View>
-        </View>
-
-        <View style={[styles.rewardSummary, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <View style={styles.rewardItem}>
-            <PixelText variant="label" color="exp">
-              {t("hero.exp")}
-            </PixelText>
-            <PixelText variant="stat" color="exp">
-              +{gainedExp}
-            </PixelText>
-          </View>
-          <View style={styles.rewardItem}>
-            <PixelText variant="label" color="gold">
-              {t("hero.gold")}
-            </PixelText>
-            <PixelText variant="stat" color="gold">
-              +{gainedGold}
-            </PixelText>
-          </View>
-        </View>
-      </PixelCard>
-
-      {showLevelUp && (
-        <Animated.View style={[styles.levelUpOverlay, { opacity: levelUpOpacity }]}>
-          <PixelText variant="title" color="gold" style={styles.levelUpText}>
-            {t("result.level_up")}!
-          </PixelText>
-          <PixelText variant="heading" color="cream" style={styles.levelUpText}>
-            {t("result.new_level", { level: finalLevel })}
-          </PixelText>
-        </Animated.View>
-      )}
-
-      {showRewards && (
-        <Animated.View style={[styles.actions, { opacity: rewardsOpacity }]}>
-          <PixelButton
-            label={t("result.return_to_camp")}
-            variant="primary"
-            size="lg"
-            onPress={onComplete}
-            style={styles.actionButton}
-          />
-        </Animated.View>
-      )}
-    </View>
-  );
-}
+        </PixelCard>
+      </View>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
-    justifyContent: "center",
     padding: SPACING.md,
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: SPACING.lg,
-  },
-  overdueCard: {
-    marginBottom: SPACING.md,
-  },
-  overdueText: {
-    textAlign: "center",
-  },
-  heroStatusCard: {
-    marginBottom: SPACING.lg,
-  },
-  heroHeader: {
-    alignItems: "center",
-    marginBottom: SPACING.md,
     gap: SPACING.md,
   },
-  heroSprite: {
-    width: 64,
-    height: 64,
+  victoryArea: {
+    alignItems: "center",
+    marginBottom: SPACING.md,
   },
-  heroInfo: {
-    flex: 1,
-    justifyContent: "center",
+  victoryTitle: {
+    textAlign: "center",
+    textShadowColor: COLORS.goldDark,
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 0,
   },
-  levelRow: {
+  cardTitle: {
+    marginBottom: SPACING.sm,
+    textAlign: "center",
+  },
+  studyTimeText: {
+    textAlign: "center",
+    fontSize: FONT_SIZES.title,
+  },
+  rewardRow: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  heroRow: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.sm,
+  },
+  heroLevelLabel: {
+    fontSize: FONT_SIZES.lg,
+  },
+  heroLevelValue: {
+    fontSize: FONT_SIZES.lg,
+  },
+  expBarRow: {
     alignItems: "center",
     gap: SPACING.xs,
   },
-  progressBarWrapper: {
-    marginBottom: SPACING.md,
+  expBarLabel: {
+    fontSize: FONT_SIZES.sm,
+    width: 32,
   },
-  progressLabel: {
-    marginBottom: SPACING.xs,
-  },
-  progressBarContainer: {
-    height: 16,
+  expBarContainer: {
+    flex: 1,
+    height: 12,
     backgroundColor: COLORS.bgMid,
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: PIXEL_BORDER.borderColor,
     borderRadius: PIXEL_BORDER.borderRadius,
+    flexDirection: "row",
     overflow: "hidden",
-    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: COLORS.windowBorder,
   },
-  progressBarFill: {
+  expBarFill: {
     height: "100%",
-    position: "absolute",
-    left: 0,
+    backgroundColor: COLORS.exp,
+    borderRadius: PIXEL_BORDER.borderRadius,
   },
-  progressText: {
-    position: "absolute",
-    width: "100%",
-    textAlign: "center",
-    color: COLORS.cream,
+  expBarValue: {
     fontSize: FONT_SIZES.xs,
-  },
-  rewardSummary: {
-    justifyContent: "space-around",
-    marginTop: SPACING.md,
-  },
-  rewardItem: {
-    alignItems: "center",
-  },
-  levelUpOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  levelUpText: {
-    textAlign: "center",
-    marginBottom: SPACING.sm,
-  },
-  actions: {
-    marginTop: SPACING.md,
-    alignItems: "center",
-  },
-  actionButton: {
-    width: "100%",
+    width: 80,
+    textAlign: "right",
   },
 });

@@ -1,13 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
-import { View, TouchableOpacity, StyleSheet, Animated, Platform } from "react-native";
-import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
-import { PixelText } from "./PixelText";
-import { getIsRTL } from "@/i18n";
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { PixelButton } from "./PixelButton";
+import { PixelCard } from "./PixelCard";
+import { SPACING } from "@/constants/theme";
 
-type MenuItem = {
+export type MenuItem = {
   label: string;
   onPress: () => void;
-  disabled?: boolean;
+  isDestructive?: boolean;
+  disabled?: boolean; // Added disabled prop
 };
 
 type DQCommandMenuProps = {
@@ -15,126 +16,36 @@ type DQCommandMenuProps = {
   style?: object;
 };
 
-export function DQCommandMenu({ items, style }: DQCommandMenuProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const cursorAnim = useRef(new Animated.Value(1)).current;
-  const isRTL = getIsRTL();
-
-  useEffect(() => {
-    const blink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(cursorAnim, {
-          toValue: 0.2,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(cursorAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    blink.start();
-    return () => blink.stop();
-  }, [cursorAnim]);
-
-  return (
-    <View style={[styles.outer, style, { direction: isRTL ? "rtl" : "ltr" }]}>
-      <View style={styles.inner}>
-        <View style={styles.content}>
+export const DQCommandMenu = React.memo(
+  ({ items, style }: DQCommandMenuProps) => {
+    return (
+      <PixelCard variant="default" style={[styles.container, style]}>
+        <View style={styles.menuItems}>
           {items.map((item, index) => (
-            <TouchableOpacity
+            <PixelButton
               key={index}
-              style={[styles.menuItem, { flexDirection: isRTL ? "row-reverse" : "row" }]}
-              onPress={() => {
-                setSelectedIndex(index);
-                if (!item.disabled) item.onPress();
-              }}
-              disabled={item.disabled}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: item.disabled, selected: index === selectedIndex }}
-            >
-              <Animated.Text
-                style={[
-                  styles.cursor,
-                  {
-                    opacity: index === selectedIndex ? cursorAnim : 0,
-                    marginRight: isRTL ? 0 : SPACING.xs,
-                    marginLeft: isRTL ? SPACING.xs : 0,
-                  },
-                ]}
-              >
-                {isRTL ? "◀" : "▶"}
-              </Animated.Text>
-              <PixelText
-                style={[
-                  styles.label,
-                  item.disabled && styles.labelDisabled,
-                ]}
-                variant="body"
-              >
-                {item.label}
-              </PixelText>
-            </TouchableOpacity>
+              label={item.label}
+              onPress={item.onPress}
+              variant={item.isDestructive ? "danger" : "primary"}
+              size="lg"
+              style={styles.menuButton}
+              disabled={item.disabled} // Pass disabled prop
+            />
           ))}
         </View>
-      </View>
-    </View>
-  );
-}
+      </PixelCard>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
-  outer: {
-    borderWidth: PIXEL_BORDER.borderWidth + 1, // Slightly thicker border for DQ style
-    borderColor: COLORS.dqBorder,
-    borderRadius: PIXEL_BORDER.borderRadius,
-    backgroundColor: COLORS.dqBlue,
-    shadowColor: COLORS.shadow.shadowColor,
-    shadowOffset: COLORS.shadow.shadowOffset,
-    shadowOpacity: COLORS.shadow.shadowOpacity,
-    shadowRadius: COLORS.shadow.shadowRadius,
-    elevation: COLORS.shadow.elevation,
+  container: {
+    padding: SPACING.md,
   },
-  inner: {
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.dqInnerBorder, // Darker inner border
-    borderRadius: PIXEL_BORDER.borderRadius - 1,
-    margin: PIXEL_BORDER.borderWidth / 2, // Small margin to show outer border
+  menuItems: {
+    gap: SPACING.sm,
   },
-  content: {
-    padding: SPACING.sm,
-    gap: SPACING.xs,
-  },
-  menuItem: {
-    alignItems: "center",
-    paddingVertical: SPACING.xxs,
-    paddingHorizontal: SPACING.xs,
-  },
-  cursor: {
-    color: COLORS.dqCursor,
-    fontSize: FONT_SIZES.md,
-    fontFamily: Platform.select({
-      ios: "Courier New",
-      android: "monospace",
-      default: "monospace",
-    }),
-    width: FONT_SIZES.md + SPACING.xs, // Ensure enough space for cursor
-    textAlign: "center",
-  },
-  label: {
-    color: COLORS.dqText,
-    fontSize: FONT_SIZES.md,
-    fontFamily: Platform.select({
-      ios: "Courier New",
-      android: "monospace",
-      default: "monospace",
-    }),
-    fontWeight: "bold",
-    letterSpacing: 0.5,
-  },
-  labelDisabled: {
-    color: COLORS.grayDark,
+  menuButton: {
+    width: "100%",
   },
 });

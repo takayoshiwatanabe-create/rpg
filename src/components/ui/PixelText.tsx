@@ -1,9 +1,9 @@
 import React from "react";
 import { Text, StyleSheet, TextProps, Platform } from "react-native";
-import { FONT_SIZES, COLORS } from "@/constants/theme";
+import { FONT_SIZES, COLORS, FONT_FAMILY_MAIN, FONT_FAMILY_SUB } from "@/constants/theme";
 
 type PixelTextVariant = "heading" | "body" | "label" | "caption" | "title" | "stat";
-type PixelTextColor = keyof typeof COLORS | "default" | "textPrimary" | "textLight" | "textMuted";
+type PixelTextColor = keyof typeof COLORS | "default"; // Removed specific text colors as they are now in COLORS
 
 interface PixelTextProps extends TextProps {
   variant?: PixelTextVariant;
@@ -11,20 +11,23 @@ interface PixelTextProps extends TextProps {
   children: React.ReactNode;
 }
 
-const FONT_FAMILY = Platform.select({
-  ios: "Courier New",
-  android: "monospace",
-  default: "monospace",
-});
+// Use the fonts defined in theme.ts
+const FONT_FAMILY = FONT_FAMILY_SUB; // Default to sub font for general text
+const FONT_FAMILY_HEADING = FONT_FAMILY_MAIN; // Use main font for headings/titles
 
 export function PixelText({
   variant = "body",
-  color = "textPrimary", // Default to textPrimary from COLORS
+  color = "cream", // Default to cream from COLORS
   style,
   children,
   ...rest
 }: PixelTextProps) {
-  const textColor = COLORS[color as keyof typeof COLORS] || COLORS.textPrimary; // Ensure color is from COLORS or fallback
+  const textColor = COLORS[color as keyof typeof COLORS] || COLORS.cream; // Ensure color is from COLORS or fallback to cream
+
+  const fontStyle =
+    variant === "title" || variant === "heading"
+      ? { fontFamily: FONT_FAMILY_HEADING }
+      : { fontFamily: FONT_FAMILY };
 
   return (
     <Text
@@ -32,6 +35,7 @@ export function PixelText({
         styles.base,
         styles[variant],
         { color: textColor },
+        fontStyle, // Apply font family based on variant
         style,
       ]}
       {...rest}
@@ -43,8 +47,8 @@ export function PixelText({
 
 const styles = StyleSheet.create({
   base: {
-    fontFamily: FONT_FAMILY,
-    color: COLORS.textPrimary,
+    // fontFamily is now applied dynamically based on variant
+    color: COLORS.cream, // Default text color
   },
   title: {
     fontSize: FONT_SIZES.title,

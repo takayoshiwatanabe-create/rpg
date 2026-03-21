@@ -1,147 +1,124 @@
-import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Animated, TouchableOpacity, Platform } from "react-native";
-import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
+import React, { useEffect, useState, useRef } from "react";
+import { View, StyleSheet, Platform, TouchableOpacity } from "react-native"; // Added TouchableOpacity
 import { PixelText } from "./PixelText";
-import { getIsRTL } from "@/i18n";
+import { PixelCard } from "./PixelCard";
+import { SPACING, FONT_SIZES, COLORS } from "@/constants/theme";
+import * as Haptics from "expo-haptics";
+import { getIsRTL } from "@/i18n"; // Import getIsRTL
 
 type DQMessageBoxProps = {
   text: string;
+  speed?: number; // milliseconds per character
+  variant?: "default" | "error" | "info";
   onComplete?: () => void;
-  speed?: number;
-  autoClose?: boolean;
-  style?: object;
+  skippable?: boolean; // Added skippable prop
 };
 
-export function DQMessageBox({
-  text,
-  onComplete,
-  speed = 50,
-  autoClose = false,
-  style,
-}: DQMessageBoxProps) {
-  const [displayedText, setDisplayedText] = useState("");
-  const [isComplete, setIsComplete] = useState(false);
-  const arrowAnim = useRef(new Animated.Value(1)).current;
-  const charIndex = useRef(0);
-  const isRTL = getIsRTL();
+export const DQMessageBox = React.memo(
+  ({ text, speed = 50, variant = "default", onComplete, skippable = true }: DQMessageBoxProps) => {
+    const [displayedText, setDisplayedText] = useState("");
+    const currentIndex = useRef(0);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const isTypingComplete = useRef(false); // Track if typing is complete
+    const isRTL = getIsRTL();
 
-  useEffect(() => {
-    // Reset when text changes
-    setDisplayedText("");
-    setIsComplete(false);
-    charIndex.current = 0;
-
-    const interval = setInterval(() => {
-      charIndex.current += 1;
-      if (charIndex.current <= text.length) {
-        setDisplayedText(text.slice(0, charIndex.current));
-      } else {
-        clearInterval(interval);
-        setIsComplete(true);
-        if (autoClose && onComplete) {
-          setTimeout(onComplete, 1000);
-        }
+    const completeTyping = () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
-    }, speed);
-
-    return () => clearInterval(interval);
-  }, [text, speed, autoClose, onComplete]);
-
-  // Arrow blink animation
-  useEffect(() => {
-    if (!isComplete) return;
-    const blink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(arrowAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(arrowAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    blink.start();
-    return () => blink.stop();
-  }, [isComplete, arrowAnim]);
-
-  const handlePress = () => {
-    if (isComplete && onComplete) {
-      onComplete();
-    } else if (!isComplete) {
-      // Skip typewriter — show all text immediately
-      charIndex.current = text.length;
       setDisplayedText(text);
-      setIsComplete(true);
-    }
-  };
+      currentIndex.current = text.length;
+      isTypingComplete.current = true;
+      onComplete?.();
+    };
 
-  return (
-    <TouchableOpacity
-      style={[styles.outer, style, { direction: isRTL ? "rtl" : "ltr" }]}
-      onPress={handlePress}
-      activeOpacity={0.9}
-      accessibilityRole="text"
-    >
-      <View style={styles.inner}>
-        <View style={styles.content}>
-          <PixelText style={styles.text} variant="body">{displayedText}</PixelText>
-          {isComplete && (
-            <Animated.Text style={[styles.arrow, { opacity: arrowAnim, textAlign: isRTL ? "left" : "right" }]}>
-              {isRTL ? "▲" : "▼"}
-            </Animated.Text>
+    const startTyping = () => {
+      currentIndex.current = 0;
+      setDisplayedText("");
+      isTypingComplete.current = false;
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+
+      timerRef.current = setInterval(() => {
+        if (currentIndex.current < text.length) {
+          setDisplayedText((prev) => prev + text[currentIndex.current]);
+          currentIndex.current++;
+          if (Platform.OS !== "web") {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
+        } else {
+          completeTyping(); // Call completeTyping to set isTypingComplete and call onComplete
+        }
+      }, speed);
+    };
+
+    useEffect(() => {
+      startTyping();
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+      };
+    }, [text, speed]); // Restart typing if text or speed changes
+
+    const textColor =
+      variant === "error"
+        ? COLORS.danger
+        : variant === "info"
+          ? COLORS.info
+          : COLORS.cream;
+
+    const handlePress = () => {
+      if (skippable && !isTypingComplete.current) {
+        completeTyping();
+      } else if (isTypingComplete.current) {
+        onComplete?.(); // If typing is complete, a tap can trigger the next action
+      }
+    };
+
+    return (
+      <TouchableOpacity
+        onPress={handlePress}
+        activeOpacity={skippable || isTypingComplete.current ? 0.7 : 1} // Only show active opacity if skippable or complete
+        style={[styles.touchableContainer, { direction: isRTL ? "rtl" : "ltr" }]}
+      >
+        <PixelCard variant="default" style={styles.container}>
+          <PixelText variant="body" color={textColor} style={styles.text}>
+            {displayedText}
+          </PixelText>
+          {!isTypingComplete.current && (
+            <View style={[styles.typingIndicator, {
+              [isRTL ? "left" : "right"]: SPACING.sm, // Position indicator based on RTL
+            }]}>
+              <PixelText variant="caption" color="gold">
+                ▼
+              </PixelText>
+            </View>
           )}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-}
+        </PixelCard>
+      </TouchableOpacity>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
-  outer: {
-    borderWidth: PIXEL_BORDER.borderWidth + 1,
-    borderColor: COLORS.dqBorder,
-    borderRadius: PIXEL_BORDER.borderRadius,
-    backgroundColor: COLORS.dqBlue,
-    shadowColor: COLORS.shadow.shadowColor,
-    shadowOffset: COLORS.shadow.shadowOffset,
-    shadowOpacity: COLORS.shadow.shadowOpacity,
-    shadowRadius: COLORS.shadow.shadowRadius,
-    elevation: COLORS.shadow.elevation,
+  touchableContainer: {
+    width: "100%", // Ensure TouchableOpacity takes full width
   },
-  inner: {
-    borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.dqInnerBorder,
-    borderRadius: PIXEL_BORDER.borderRadius - 1,
-    margin: PIXEL_BORDER.borderWidth / 2,
-  },
-  content: {
-    padding: SPACING.sm,
-    minHeight: FONT_SIZES.md * 3 + SPACING.sm * 2, // Ensure enough height for 3 lines of text + padding
-    justifyContent: "space-between",
+  container: {
+    padding: SPACING.md,
+    minHeight: 80, // Ensure consistent height
+    justifyContent: "center",
+    position: "relative", // For positioning the typing indicator
   },
   text: {
-    color: COLORS.dqText,
-    fontSize: FONT_SIZES.md,
-    fontFamily: Platform.select({
-      ios: "Courier New",
-      android: "monospace",
-      default: "monospace",
-    }),
-    lineHeight: FONT_SIZES.md * 1.5, // Adjust line height for readability
-    letterSpacing: 0.5,
+    fontSize: FONT_SIZES.lg, // Use FONT_SIZES.lg for body text
+    lineHeight: FONT_SIZES.lg * 1.4,
   },
-  arrow: {
-    color: COLORS.dqText,
-    fontSize: FONT_SIZES.sm,
-    fontFamily: Platform.select({
-      ios: "Courier New",
-      android: "monospace",
-      default: "monospace",
-    }),
-    marginTop: SPACING.xs,
+  typingIndicator: {
+    position: "absolute",
+    bottom: SPACING.xs,
+    // Right or Left will be set dynamically based on RTL
   },
 });
