@@ -1,180 +1,173 @@
-import React, { useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import {
-  Animated,
-  Pressable,
+  TouchableOpacity,
   StyleSheet,
-  Text,
-  View,
-  type GestureResponderEvent,
-  type PressableProps,
-  type ViewStyle,
+  Animated,
+  GestureResponderEvent,
+  ViewStyle,
+  TextStyle,
+  Platform,
 } from "react-native";
-import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { getIsRTL } from "@/i18n";
+import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
+import { PixelText } from "./PixelText";
 
-export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
-export type ButtonSize = "sm" | "md" | "lg";
+type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
+type ButtonSize = "sm" | "md" | "lg";
 
-export type PixelButtonProps = Omit<
-  PressableProps,
-  "style" | "children" | "onPress"
-> & {
+interface PixelButtonProps {
   label: string;
+  onPress: (event: GestureResponderEvent) => void;
   variant?: ButtonVariant;
   size?: ButtonSize;
-  onPress?: (event: GestureResponderEvent) => void;
-  style?: ViewStyle; // Changed to ViewStyle
-};
+  style?: ViewStyle;
+  textStyle?: TextStyle;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+  accessibilityRole?: "button" | "link" | "menuitem" | "radio" | "tab";
+  accessibilityState?: {
+    selected?: boolean;
+    disabled?: boolean;
+    checked?: boolean;
+  };
+}
 
-type VariantConfig = {
-  background: string;
-  text: string;
-  borderHighlight: string;
-  borderShadow: string;
-};
-
-const VARIANT_CONFIG: Record<ButtonVariant, VariantConfig> = {
-  primary: {
-    background: COLORS.buttonPrimary,
-    text: COLORS.gold,
-    borderHighlight: COLORS.goldLight,
-    borderShadow: COLORS.goldDark,
-  },
-  secondary: {
-    background: COLORS.buttonSecondary,
-    text: COLORS.cream,
-    borderHighlight: "#2A3A4A",
-    borderShadow: COLORS.grayDark,
-  },
-  danger: {
-    background: "#3A0000",
-    text: COLORS.hp,
-    borderHighlight: "#662222",
-    borderShadow: "#220000",
-  },
-  ghost: {
-    background: "transparent",
-    text: COLORS.cream,
-    borderHighlight: COLORS.grayDark,
-    borderShadow: COLORS.grayDark,
-  },
-};
-
-type SizeConfig = { paddingH: number; paddingV: number; fontSize: number };
-
-const SIZE_CONFIG: Record<ButtonSize, SizeConfig> = {
-  sm: { paddingH: SPACING.sm, paddingV: SPACING.xs, fontSize: FONT_SIZES.sm },
-  md: { paddingH: SPACING.md, paddingV: SPACING.sm, fontSize: FONT_SIZES.md },
-  lg: { paddingH: SPACING.lg, paddingV: SPACING.md, fontSize: FONT_SIZES.lg },
-};
-
-/**
- * 8-bit style pressable button with a 3-D pixel border effect.
- *
- * Top/left edges use a lighter highlight color; bottom/right edges use a
- * darker shadow color to simulate depth. A spring animation squeezes the
- * button on press (skipped when the system "Reduce Motion" setting is on).
- */
 export function PixelButton({
   label,
+  onPress,
   variant = "primary",
   size = "md",
+  style,
+  textStyle,
   disabled = false,
-  onPress,
   accessibilityLabel,
-  style, // Destructure style prop
-  ...rest
+  accessibilityRole = "button",
+  accessibilityState,
 }: PixelButtonProps) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const reducedMotion = useReducedMotion();
-  const config = VARIANT_CONFIG[variant];
-  const sizeConfig = SIZE_CONFIG[size];
-  const isRTL = getIsRTL();
+  const animatedScale = useRef(new Animated.Value(1)).current;
 
-  function handlePressIn() {
-    if (reducedMotion) return;
-    Animated.spring(scale, {
-      toValue: 0.93,
+  const handlePressIn = useCallback(() => {
+    Animated.spring(animatedScale, {
+      toValue: 0.95,
       useNativeDriver: true,
-      speed: 50,
-      bounciness: 0,
     }).start();
-  }
+  }, [animatedScale]);
 
-  function handlePressOut() {
-    if (reducedMotion) return;
-    Animated.spring(scale, {
+  const handlePressOut = useCallback(() => {
+    Animated.spring(animatedScale, {
       toValue: 1,
+      friction: 3,
+      tension: 40,
       useNativeDriver: true,
-      speed: 30,
-      bounciness: 4,
     }).start();
-  }
+  }, [animatedScale]);
 
-  function handlePress(e: GestureResponderEvent) {
-    if (!disabled && onPress) {
-      onPress(e);
-    }
-  }
+  const buttonStyles = [
+    styles.base,
+    styles[variant],
+    styles[size],
+    disabled && styles.disabled,
+    style,
+  ];
+
+  const textStyles = [
+    styles.textBase,
+    styles[`text_${variant}`],
+    styles[`text_${size}`],
+    disabled && styles.textDisabled,
+    textStyle,
+  ];
 
   return (
-    <Animated.View
-      style={[{ transform: [{ scale }], opacity: disabled ? 0.45 : 1 }, style]} // Apply style here
-    >
-      <Pressable
-        onPress={handlePress}
+    <Animated.View style={{ transform: [{ scale: animatedScale }] }}>
+      <TouchableOpacity
+        onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        disabled={!!disabled}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? label}
-        accessibilityState={{ disabled: !!disabled }}
-        {...rest}
+        style={buttonStyles}
+        disabled={disabled}
+        accessibilityLabel={accessibilityLabel || label}
+        accessibilityRole={accessibilityRole}
+        accessibilityState={{ ...accessibilityState, disabled }}
       >
-        <View
-          style={[
-            styles.button,
-            {
-              backgroundColor: config.background,
-              paddingHorizontal: sizeConfig.paddingH,
-              paddingVertical: sizeConfig.paddingV,
-              // Adjust border colors for RTL to maintain the 3D effect
-              borderTopColor: config.borderHighlight,
-              borderBottomColor: config.borderShadow,
-              borderLeftColor: isRTL ? config.borderShadow : config.borderHighlight,
-              borderRightColor: isRTL ? config.borderHighlight : config.borderShadow,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.label,
-              { fontSize: sizeConfig.fontSize, color: config.text },
-            ]}
-          >
-            {label}
-          </Text>
-        </View>
-      </Pressable>
+        <PixelText style={textStyles} variant="body">
+          {label}
+        </PixelText>
+      </TouchableOpacity>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
-    borderTopWidth: 2,
-    // Thicker bottom/right for the classic pixel "raised" look
-    borderBottomWidth: 4,
-    borderLeftWidth: 2,
-    borderRightWidth: 4,
+  base: {
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     borderRadius: PIXEL_BORDER.borderRadius,
+    borderWidth: PIXEL_BORDER.borderWidth,
     alignItems: "center",
     justifyContent: "center",
   },
-  label: {
+  // Variants
+  primary: {
+    backgroundColor: COLORS.buttonPrimary,
+    borderColor: COLORS.primaryDark, // Assuming primaryDark exists or use a darker version of buttonPrimary
+  },
+  secondary: {
+    backgroundColor: COLORS.buttonSecondary,
+    borderColor: COLORS.secondaryDark, // Assuming secondaryDark exists or use a darker version of buttonSecondary
+  },
+  danger: {
+    backgroundColor: COLORS.danger,
+    borderColor: COLORS.dangerDark,
+  },
+  ghost: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+  },
+  disabled: {
+    opacity: 0.6,
+  },
+  // Sizes
+  sm: {
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+  },
+  md: {
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+  },
+  lg: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+  },
+  // Text Base
+  textBase: {
     fontWeight: "bold",
-    letterSpacing: 1,
     textAlign: "center",
+  },
+  // Text Variants
+  text_primary: {
+    color: COLORS.textLight, // Assuming textLight exists or use a suitable color
+  },
+  text_secondary: {
+    color: COLORS.textPrimary,
+  },
+  text_danger: {
+    color: COLORS.textLight,
+  },
+  text_ghost: {
+    color: COLORS.textPrimary,
+  },
+  textDisabled: {
+    color: COLORS.textMuted, // Assuming textMuted exists or use a suitable color
+  },
+  // Text Sizes
+  text_sm: {
+    fontSize: FONT_SIZES.sm,
+  },
+  text_md: {
+    fontSize: FONT_SIZES.md,
+  },
+  text_lg: {
+    fontSize: FONT_SIZES.lg,
   },
 });

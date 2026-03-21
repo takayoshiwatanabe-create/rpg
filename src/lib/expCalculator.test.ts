@@ -1,84 +1,94 @@
 import { describe, it, expect } from "vitest";
-import { calculateLevelAndExp } from "./expCalculator";
-import { EXP_PER_LEVEL, MAX_LEVEL } from "@/constants/game";
+import { calculateLevelFromExp, expProgressInCurrentLevel, isAtMaxLevel } from "./expCalculator";
+import { HERO_EXP_CURVE, MAX_LEVEL } from "@/constants/game";
 
-describe("calculateLevelAndExp", () => {
-  it("should return level 1 and 0 currentExp for 0 totalExp", () => {
-    const { level, currentExp } = calculateLevelAndExp(0);
-    expect(level).toBe(1);
-    expect(currentExp).toBe(0);
+describe("calculateLevelFromExp", () => {
+  it("should return level 1 for 0 totalExp", () => {
+    expect(calculateLevelFromExp(0)).toBe(1);
   });
 
-  it("should return level 1 and correct currentExp for less than first level EXP", () => {
-    const totalExp = EXP_PER_LEVEL[0] / 2; // Halfway to level 2
-    const { level, currentExp } = calculateLevelAndExp(totalExp);
-    expect(level).toBe(1);
-    expect(currentExp).toBe(totalExp);
+  it("should return level 1 for less than first level EXP", () => {
+    const totalExp = HERO_EXP_CURVE[1] / 2; // Halfway to level 2
+    expect(calculateLevelFromExp(totalExp)).toBe(1);
   });
 
-  it("should return level 2 and 0 currentExp for exactly first level EXP", () => {
-    const totalExp = EXP_PER_LEVEL[0]; // Exactly enough for level 2
-    const { level, currentExp } = calculateLevelAndExp(totalExp);
-    expect(level).toBe(2);
-    expect(currentExp).toBe(0);
+  it("should return level 2 for exactly first level EXP", () => {
+    const totalExp = HERO_EXP_CURVE[1]; // Exactly enough for level 2
+    expect(calculateLevelFromExp(totalExp)).toBe(2);
   });
 
-  it("should return correct level and currentExp for multiple levels", () => {
-    // Level 1: 100 EXP
-    // Level 2: 200 EXP
-    // Level 3: 300 EXP
-    // Total EXP for Level 3: 100 + 200 = 300
-    // Total EXP for Level 4: 100 + 200 + 300 = 600
+  it("should return correct level for multiple levels", () => {
+    // HERO_EXP_CURVE: [0, 100, 250, 450, ...]
+    // Level 1: 0-99 EXP
+    // Level 2: 100-249 EXP
+    // Level 3: 250-449 EXP
+    // Level 4: 450-699 EXP
 
-    // Test for totalExp = 450 (Level 3 + 150 EXP towards Level 4)
-    const totalExp = EXP_PER_LEVEL[0] + EXP_PER_LEVEL[1] + 150; // 100 + 200 + 150 = 450
-    const { level, currentExp } = calculateLevelAndExp(totalExp);
-    expect(level).toBe(3);
-    expect(currentExp).toBe(150);
+    expect(calculateLevelFromExp(99)).toBe(1);
+    expect(calculateLevelFromExp(100)).toBe(2);
+    expect(calculateLevelFromExp(249)).toBe(2);
+    expect(calculateLevelFromExp(250)).toBe(3);
+    expect(calculateLevelFromExp(449)).toBe(3);
+    expect(calculateLevelFromExp(450)).toBe(4);
   });
 
-  it("should cap at MAX_LEVEL and show remaining exp", () => {
-    // Calculate total EXP needed to reach MAX_LEVEL
-    let expToMaxLevel = 0;
-    for (let i = 0; i < MAX_LEVEL - 1; i++) {
-      expToMaxLevel += EXP_PER_LEVEL[i];
-    }
+  it("should cap at MAX_LEVEL", () => {
+    // MAX_LEVEL is HERO_EXP_CURVE.length
+    // The last element in HERO_EXP_CURVE is the total EXP needed to reach MAX_LEVEL
+    const expToMaxLevel = HERO_EXP_CURVE[MAX_LEVEL - 1];
+    expect(calculateLevelFromExp(expToMaxLevel)).toBe(MAX_LEVEL);
+    expect(calculateLevelFromExp(expToMaxLevel + 1000)).toBe(MAX_LEVEL); // Beyond max EXP
+  });
+});
 
-    const totalExp = expToMaxLevel + 500; // 500 EXP beyond max level
-    const { level, currentExp } = calculateLevelAndExp(totalExp);
-    expect(level).toBe(MAX_LEVEL);
-    expect(currentExp).toBe(500); // Should show excess EXP
+describe("expProgressInCurrentLevel", () => {
+  it("should return correct progress for level 1", () => {
+    const progress = expProgressInCurrentLevel(50);
+    expect(progress.current).toBe(50);
+    expect(progress.required).toBe(HERO_EXP_CURVE[1] - HERO_EXP_CURVE[0]); // EXP for level 1 to 2
   });
 
-  it("should handle edge case where totalExp is exactly enough for MAX_LEVEL", () => {
-    let expToMaxLevel = 0;
-    for (let i = 0; i < MAX_LEVEL - 1; i++) {
-      expToMaxLevel += EXP_PER_LEVEL[i];
-    }
-    const { level, currentExp } = calculateLevelAndExp(expToMaxLevel);
-    expect(level).toBe(MAX_LEVEL);
-    expect(currentExp).toBe(0);
+  it("should return correct progress for an intermediate level", () => {
+    // Total EXP 300: Level 3 (250 total EXP for level 3)
+    // EXP needed for Level 3 -> 4 is HERO_EXP_CURVE[3] - HERO_EXP_CURVE[2] = 450 - 250 = 200
+    // Current EXP in Level 3: 300 - HERO_EXP_CURVE[2] = 300 - 250 = 50
+    const progress = expProgressInCurrentLevel(300);
+    expect(progress.current).toBe(50);
+    expect(progress.required).toBe(HERO_EXP_CURVE[3] - HERO_EXP_CURVE[2]);
   });
 
-  it("should handle large totalExp values correctly", () => {
-    // Assuming MAX_LEVEL is 10 and EXP_PER_LEVEL are small for this test
-    // If EXP_PER_LEVEL = [100, 100, ..., 100] for 9 levels
-    // Total EXP for level 10 = 9 * 100 = 900
-    // If totalExp = 1500, should be level 10, currentExp = 600
-    const mockExpPerLevel = Array(MAX_LEVEL - 1).fill(100);
-    const originalExpPerLevel = [...EXP_PER_LEVEL];
-    (EXP_PER_LEVEL as number[]) = mockExpPerLevel; // Temporarily override for test
+  it("should return 0 currentExp and correct requiredExp when exactly at level start", () => {
+    const progress = expProgressInCurrentLevel(HERO_EXP_CURVE[2]); // Exactly at start of level 3
+    expect(progress.current).toBe(0);
+    expect(progress.required).toBe(HERO_EXP_CURVE[3] - HERO_EXP_CURVE[2]);
+  });
 
-    let expToMaxLevel = 0;
-    for (let i = 0; i < MAX_LEVEL - 1; i++) {
-      expToMaxLevel += mockExpPerLevel[i];
-    }
+  it("should return max progress for MAX_LEVEL", () => {
+    const expAtMaxLevel = HERO_EXP_CURVE[MAX_LEVEL - 1];
+    const progress = expProgressInCurrentLevel(expAtMaxLevel);
+    expect(progress.current).toBe(0); // At the start of max level, no progress needed
+    expect(progress.required).toBe(0); // No more EXP required for next level
+  });
 
-    const totalExp = expToMaxLevel + 600;
-    const { level, currentExp } = calculateLevelAndExp(totalExp);
-    expect(level).toBe(MAX_LEVEL);
-    expect(currentExp).toBe(600);
+  it("should handle EXP beyond MAX_LEVEL", () => {
+    const expBeyondMax = HERO_EXP_CURVE[MAX_LEVEL - 1] + 500;
+    const progress = expProgressInCurrentLevel(expBeyondMax);
+    expect(progress.current).toBe(0); // Should be 0 as no more progress
+    expect(progress.required).toBe(0); // No more EXP required
+  });
+});
 
-    (EXP_PER_LEVEL as number[]) = originalExpPerLevel; // Restore original
+describe("isAtMaxLevel", () => {
+  it("should return false for levels below MAX_LEVEL", () => {
+    expect(isAtMaxLevel(1)).toBe(false);
+    expect(isAtMaxLevel(MAX_LEVEL - 1)).toBe(false);
+  });
+
+  it("should return true for MAX_LEVEL", () => {
+    expect(isAtMaxLevel(MAX_LEVEL)).toBe(true);
+  });
+
+  it("should return true for levels above MAX_LEVEL (should not happen in practice)", () => {
+    expect(isAtMaxLevel(MAX_LEVEL + 1)).toBe(true);
   });
 });

@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "용사의 숙제장",
+    "tagline": "숙제를 모험으로 바꾸자"
+  },
+  "nav": {
+    "home": "홈",
+    "quests": "퀘스트",
+    "battle": "배틀",
+    "records": "모험 기록"
+  },
+  "auth": {
+    "signIn": "로그인",
+    "signUp": "회원가입",
+    "signOut": "로그아웃",
+    "welcome": "모험이 시작됩니다!",
+    "email": "이메일",
+    "password": "비밀번호",
+    "confirmPassword": "비밀번호 확인",
+    "heroName": "용사 이름",
+    "childAccount": "용사 계정",
+    "parentAccount": "보호자 계정",
+    "startAdventure": "모험 시작!",
+    "alreadyHaveAccount": "이미 계정이 있으신가요?",
+    "noAccount": "계정이 없으신가요?"
+  },
+  "common": {
+    "loading": "로딩 중...",
+    "error": "오류가 발생했습니다",
+    "retry": "다시 시도",
+    "save": "저장",
+    "cancel": "취소",
+    "confirm": "확인",
+    "delete": "삭제",
+    "back": "뒤로",
+    "next": "다음",
+    "close": "닫기"
+  },
+  "hero": {
+    "level": "레벨",
+    "exp": "경험치",
+    "gold": "골드",
+    "hp": "HP",
+    "mp": "MP",
+    "attack": "공격",
+    "defense": "방어"
+  },
+  "quest": {
+    "title": "퀘스트",
+    "new": "새 퀘스트",
+    "subject": "과목",
+    "difficulty": "난이도",
+    "deadline": "마감일",
+    "status": {
+      "active": "진행 중",
+      "completed": "완료",
+      "overdue": "기간 초과"
+    },
+    "difficulty_levels": {
+      "easy": "쉬움",
+      "normal": "보통",
+      "hard": "어려움",
+      "legendary": "전설"
+    }
+  },
+  "battle": {
+    "title": "배틀",
+    "start": "싸우다!",
+    "victory": "승리!",
+    "defeat": "패배...",
+    "reward": "보상",
+    "expGained": "경험치 +{amount}",
+    "goldGained": "골드 +{amount}"
+  }
+}

@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Animated, TouchableOpacity, Platform } from "react-native";
+import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
+import { PixelText } from "./PixelText";
+import { getIsRTL } from "@/i18n";
 
 type DQMessageBoxProps = {
   text: string;
@@ -20,6 +23,7 @@ export function DQMessageBox({
   const [isComplete, setIsComplete] = useState(false);
   const arrowAnim = useRef(new Animated.Value(1)).current;
   const charIndex = useRef(0);
+  const isRTL = getIsRTL();
 
   useEffect(() => {
     // Reset when text changes
@@ -77,17 +81,17 @@ export function DQMessageBox({
 
   return (
     <TouchableOpacity
-      style={[styles.outer, style]}
+      style={[styles.outer, style, { direction: isRTL ? "rtl" : "ltr" }]}
       onPress={handlePress}
       activeOpacity={0.9}
       accessibilityRole="text"
     >
       <View style={styles.inner}>
         <View style={styles.content}>
-          <Animated.Text style={styles.text}>{displayedText}</Animated.Text>
+          <PixelText style={styles.text} variant="body">{displayedText}</PixelText>
           {isComplete && (
-            <Animated.Text style={[styles.arrow, { opacity: arrowAnim }]}>
-              {"▼"}
+            <Animated.Text style={[styles.arrow, { opacity: arrowAnim, textAlign: isRTL ? "left" : "right" }]}>
+              {isRTL ? "▲" : "▼"}
             </Animated.Text>
           )}
         </View>
@@ -96,50 +100,48 @@ export function DQMessageBox({
   );
 }
 
-const DQ_BLUE = "#0000AA";
-const DQ_BORDER = "#FFFFFF";
-const DQ_INNER_BORDER = "#000066";
-
-const FONT_FAMILY = Platform.select({
-  ios: "Courier New",
-  android: "monospace",
-  default: "monospace",
-});
-
 const styles = StyleSheet.create({
   outer: {
-    borderWidth: 3,
-    borderColor: DQ_BORDER,
-    borderRadius: 4,
-    backgroundColor: DQ_BLUE,
-    shadowColor: "#000",
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 0,
-    elevation: 4,
+    borderWidth: PIXEL_BORDER.borderWidth + 1,
+    borderColor: COLORS.dqBorder,
+    borderRadius: PIXEL_BORDER.borderRadius,
+    backgroundColor: COLORS.dqBlue,
+    shadowColor: COLORS.shadow.shadowColor,
+    shadowOffset: COLORS.shadow.shadowOffset,
+    shadowOpacity: COLORS.shadow.shadowOpacity,
+    shadowRadius: COLORS.shadow.shadowRadius,
+    elevation: COLORS.shadow.elevation,
   },
   inner: {
-    borderWidth: 2,
-    borderColor: DQ_INNER_BORDER,
-    borderRadius: 2,
-    margin: 2,
+    borderWidth: PIXEL_BORDER.borderWidth,
+    borderColor: COLORS.dqInnerBorder,
+    borderRadius: PIXEL_BORDER.borderRadius - 1,
+    margin: PIXEL_BORDER.borderWidth / 2,
   },
   content: {
-    padding: 12,
-    minHeight: 60,
+    padding: SPACING.sm,
+    minHeight: FONT_SIZES.md * 3 + SPACING.sm * 2, // Ensure enough height for 3 lines of text + padding
+    justifyContent: "space-between",
   },
   text: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontFamily: FONT_FAMILY,
-    lineHeight: 26,
+    color: COLORS.dqText,
+    fontSize: FONT_SIZES.md,
+    fontFamily: Platform.select({
+      ios: "Courier New",
+      android: "monospace",
+      default: "monospace",
+    }),
+    lineHeight: FONT_SIZES.md * 1.5, // Adjust line height for readability
     letterSpacing: 0.5,
   },
   arrow: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontFamily: FONT_FAMILY,
-    textAlign: "right",
-    marginTop: 4,
+    color: COLORS.dqText,
+    fontSize: FONT_SIZES.sm,
+    fontFamily: Platform.select({
+      ios: "Courier New",
+      android: "monospace",
+      default: "monospace",
+    }),
+    marginTop: SPACING.xs,
   },
 });

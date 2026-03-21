@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View, type ViewProps, I18nManager } from "react-native";
+import { StyleSheet, View, type ViewProps } from "react-native";
 import { COLORS, PIXEL_BORDER, SHADOW, SPACING } from "@/constants/theme";
 import { PixelText } from "./PixelText";
 import { getIsRTL } from "@/i18n";
@@ -45,7 +45,7 @@ export function PixelCard({
     >
       {title !== undefined && (
         <View style={[styles.titleBar, { borderBottomColor: PIXEL_BORDER.borderColor }]}>
-          <PixelText variant="heading" color="gold" style={{ textAlign: isRTL ? "right" : "left" }}>
+          <PixelText variant="label" color="gold" style={{ textAlign: isRTL ? "right" : "left" }}>
             {title}
           </PixelText>
         </View>
@@ -69,16 +69,15 @@ const styles = StyleSheet.create({
   highlighted: {
     ...SHADOW,
     borderColor: COLORS.gold,
-    borderWidth: 3,
+    borderWidth: PIXEL_BORDER.borderWidth + 1, // Slightly thicker for highlight
   },
   titleBar: {
     backgroundColor: COLORS.bgMid,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
-    borderBottomWidth: 2,
+    borderBottomWidth: PIXEL_BORDER.borderWidth, // Use pixel border width
   },
   content: {
     padding: SPACING.md,
   },
 });
-

@@ -84,9 +84,9 @@ export function HeroStatus({ hero, style, ...rest }: HeroStatusProps) {
 
       {/* Attack / Defense / Gold row */}
       <View style={[styles.statsFooter, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <StatChip label={t("hero.attack")} value={String(hero.attack)} color={COLORS.hp} />
-        <StatChip label={t("hero.defense")} value={String(hero.defense)} color={COLORS.mp} />
-        <StatChip label={t("hero.gold")} value={String(hero.gold)} color={COLORS.gold} />
+        <StatChip label={t("hero.attack")} value={String(hero.attack)} color="hp" />
+        <StatChip label={t("hero.defense")} value={String(hero.defense)} color="mp" />
+        <StatChip label={t("hero.gold")} value={String(hero.gold)} color="gold" />
       </View>
     </PixelCard>
   );
@@ -99,7 +99,7 @@ export function HeroStatus({ hero, style, ...rest }: HeroStatusProps) {
 type StatChipProps = {
   label: string;
   value: string;
-  color: string;
+  color: keyof typeof COLORS;
 };
 
 function StatChip({ label, value, color }: StatChipProps) {
@@ -113,7 +113,7 @@ function StatChip({ label, value, color }: StatChipProps) {
       <PixelText variant="caption" color="cream" style={{ textAlign: "center" }}>
         {label}
       </PixelText>
-      <PixelText variant="stat" style={{ color, textAlign: "center" }}>
+      <PixelText variant="stat" style={{ color: COLORS[color], textAlign: "center" }}>
         {value}
       </PixelText>
     </View>

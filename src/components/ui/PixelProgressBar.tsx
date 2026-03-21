@@ -63,7 +63,7 @@ export function PixelProgressBar({
         <Animated.View
           style={[
             styles.progressBarFill,
-            { width: barWidth, backgroundColor: (COLORS as Record<string, string>)[color] ?? COLORS.gold },
+            { backgroundColor: (COLORS as Record<string, string>)[color] ?? COLORS.gold, width: barWidth },
           ]}
         />
         {showValues && (

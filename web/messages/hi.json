@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "वीर का होमवर्क बही",
+    "tagline": "होमवर्क को एक साहसिक कार्य में बदलें"
+  },
+  "nav": {
+    "home": "होम",
+    "quests": "क्वेस्ट",
+    "battle": "युद्ध",
+    "records": "साहसिक रिकॉर्ड"
+  },
+  "auth": {
+    "signIn": "साइन इन",
+    "signUp": "साइन अप",
+    "signOut": "साइन आउट",
+    "welcome": "आपका साहसिक कार्य शुरू होता है!",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "confirmPassword": "पासवर्ड की पुष्टि करें",
+    "heroName": "वीर का नाम",
+    "childAccount": "वीर खाता",
+    "parentAccount": "अभिभावक खाता",
+    "startAdventure": "साहसिक कार्य शुरू करें!",
+    "alreadyHaveAccount": "पहले से खाता है?",
+    "noAccount": "कोई खाता नहीं है?"
+  },
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "error": "एक त्रुटि हुई",
+    "retry": "फिर से प्रयास करें",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "confirm": "पुष्टि करें",
+    "delete": "हटाएं",
+    "back": "वापस",
+    "next": "अगला",
+    "close": "बंद करें"
+  },
+  "hero": {
+    "level": "स्तर",
+    "exp": "अनुभव",
+    "gold": "सोना",
+    "hp": "HP",
+    "mp": "MP",
+    "attack": "हमला",
+    "defense": "बचाव"
+  },
+  "quest": {
+    "title": "क्वेस्ट",
+    "new": "नया क्वेस्ट",
+    "subject": "विषय",
+    "difficulty": "कठिनाई",
+    "deadline": "अंतिम तिथि",
+    "status": {
+      "active": "चल रहा है",
+      "completed": "पूर्ण",
+      "overdue": "अतिदेय"
+    },
+    "difficulty_levels": {
+      "easy": "आसान",
+      "normal": "सामान्य",
+      "hard": "कठिन",
+      "legendary": "किंवदंती"
+    }
+  },
+  "battle": {
+    "title": "युद्ध",
+    "start": "लड़ो!",
+    "victory": "जीत!",
+    "defeat": "हार...",
+    "reward": "पुरस्कार",
+    "expGained": "अनुभव +{amount}",
+    "goldGained": "सोना +{amount}"
+  }
+}

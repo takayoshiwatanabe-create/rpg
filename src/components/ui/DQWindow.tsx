@@ -1,63 +1,60 @@
 import React from "react";
-import { View, StyleSheet, ViewStyle } from "react-native";
+import { View, StyleSheet, ViewStyle, Platform } from "react-native";
+import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import { PixelText } from "./PixelText";
+import { getIsRTL } from "@/i18n";
 
-type DQWindowProps = {
+interface DQWindowProps {
   children: React.ReactNode;
-  style?: ViewStyle;
   title?: string;
-};
+  style?: ViewStyle;
+}
 
-export function DQWindow({ children, style, title }: DQWindowProps) {
+export function DQWindow({ children, title, style }: DQWindowProps) {
+  const isRTL = getIsRTL();
+
   return (
-    <View style={[styles.outer, style]}>
-      <View style={styles.inner}>
-        {title && (
-          <View style={styles.titleBar}>
-            <PixelText variant="caption" style={styles.titleText}>
-              {title}
-            </PixelText>
-          </View>
-        )}
-        <View style={styles.content}>{children}</View>
-      </View>
+    <View style={[styles.window, style, { direction: isRTL ? "rtl" : "ltr" }]}>
+      {title && (
+        <View style={[styles.titleContainer, {
+          alignSelf: isRTL ? "flex-end" : "flex-start",
+          right: isRTL ? SPACING.md : undefined,
+          left: isRTL ? undefined : SPACING.md,
+        }]}>
+          <PixelText variant="label" color="gold" style={styles.titleText}>
+            {title}
+          </PixelText>
+        </View>
+      )}
+      <View style={styles.content}>{children}</View>
     </View>
   );
 }
 
-const DQ_BLUE = "#0000AA";
-const DQ_BORDER = "#FFFFFF";
-const DQ_INNER_BORDER = "#000066";
-
 const styles = StyleSheet.create({
-  outer: {
-    borderWidth: 3,
-    borderColor: DQ_BORDER,
-    borderRadius: 4,
-    backgroundColor: DQ_BLUE,
-    shadowColor: "#000",
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 0,
-    elevation: 4,
+  window: {
+    backgroundColor: COLORS.bgCard, // Using bgCard for general window background
+    borderWidth: PIXEL_BORDER.borderWidth,
+    borderColor: COLORS.pixelBorder, // Using general pixel border
+    borderRadius: PIXEL_BORDER.borderRadius,
+    padding: SPACING.md,
+    shadowColor: COLORS.shadow.shadowColor,
+    shadowOffset: COLORS.shadow.shadowOffset,
+    shadowOpacity: COLORS.shadow.shadowOpacity,
+    shadowRadius: COLORS.shadow.shadowRadius,
+    elevation: COLORS.shadow.elevation, // Android shadow
   },
-  inner: {
-    borderWidth: 2,
-    borderColor: DQ_INNER_BORDER,
-    borderRadius: 2,
-    margin: 2,
-  },
-  titleBar: {
-    paddingHorizontal: 12,
-    paddingTop: 6,
-    paddingBottom: 2,
+  titleContainer: {
+    position: "absolute",
+    top: -FONT_SIZES.md / 2 - PIXEL_BORDER.borderWidth, // Adjust to sit on the border
+    backgroundColor: COLORS.bgCard, // Match window background
+    paddingHorizontal: SPACING.xs,
+    zIndex: 1,
   },
   titleText: {
-    color: "#AAAAFF",
-    fontSize: 11,
-    letterSpacing: 1,
+    fontSize: FONT_SIZES.md,
   },
   content: {
-    padding: 12,
+    // Content padding is handled by the window itself
   },
 });

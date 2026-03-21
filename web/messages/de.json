@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "Helden-Hausaufgabenbuch",
+    "tagline": "Verwandle Hausaufgaben in ein Abenteuer"
+  },
+  "nav": {
+    "home": "Start",
+    "quests": "Quests",
+    "battle": "Kampf",
+    "records": "Abenteuerprotokoll"
+  },
+  "auth": {
+    "signIn": "Anmelden",
+    "signUp": "Registrieren",
+    "signOut": "Abmelden",
+    "welcome": "Dein Abenteuer beginnt!",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "heroName": "Heldenname",
+    "childAccount": "Helden-Konto",
+    "parentAccount": "Eltern-Konto",
+    "startAdventure": "Abenteuer starten!",
+    "alreadyHaveAccount": "Bereits ein Konto?",
+    "noAccount": "Noch kein Konto?"
+  },
+  "common": {
+    "loading": "Lädt...",
+    "error": "Ein Fehler ist aufgetreten",
+    "retry": "Erneut versuchen",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "delete": "Löschen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "close": "Schließen"
+  },
+  "hero": {
+    "level": "Level",
+    "exp": "EXP",
+    "gold": "Gold",
+    "hp": "HP",
+    "mp": "MP",
+    "attack": "ANF",
+    "defense": "VER"
+  },
+  "quest": {
+    "title": "Quest",
+    "new": "Neue Quest",
+    "subject": "Fach",
+    "difficulty": "Schwierigkeitsgrad",
+    "deadline": "Frist",
+    "status": {
+      "active": "In Bearbeitung",
+      "completed": "Abgeschlossen",
+      "overdue": "Überfällig"
+    },
+    "difficulty_levels": {
+      "easy": "Einfach",
+      "normal": "Normal",
+      "hard": "Schwer",
+      "legendary": "Legendär"
+    }
+  },
+  "battle": {
+    "title": "Kampf",
+    "start": "Kämpfen!",
+    "victory": "Sieg!",
+    "defeat": "Niederlage...",
+    "reward": "Belohnung",
+    "expGained": "EXP +{amount}",
+    "goldGained": "Gold +{amount}"
+  }
+}

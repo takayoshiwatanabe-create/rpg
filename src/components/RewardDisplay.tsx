@@ -3,7 +3,7 @@ import { Animated, StyleSheet, View, Image } from "react-native";
 import { PixelButton, PixelCard, PixelText } from "@/components/ui";
 import { t } from "@/i18n";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
-import type { HeroProfile, TextColor } from "@/types";
+import type { HeroProfile } from "@/types";
 import {
   calculateLevelFromExp,
   expProgressInCurrentLevel,

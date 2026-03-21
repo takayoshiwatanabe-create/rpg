@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "دفتر مهام البطل",
+    "tagline": "حوّل الواجبات المنزلية إلى مغامرة"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "quests": "المهام",
+    "battle": "المعركة",
+    "records": "سجل المغامرات"
+  },
+  "auth": {
+    "signIn": "تسجيل الدخول",
+    "signUp": "إنشاء حساب",
+    "signOut": "تسجيل الخروج",
+    "welcome": "مغامرتك تبدأ!",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "heroName": "اسم البطل",
+    "childAccount": "حساب البطل",
+    "parentAccount": "حساب ولي الأمر",
+    "startAdventure": "ابدأ المغامرة!",
+    "alreadyHaveAccount": "لديك حساب بالفعل؟",
+    "noAccount": "ليس لديك حساب؟"
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "retry": "حاول مجددًا",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "delete": "حذف",
+    "back": "رجوع",
+    "next": "التالي",
+    "close": "إغلاق"
+  },
+  "hero": {
+    "level": "المستوى",
+    "exp": "الخبرة",
+    "gold": "الذهب",
+    "hp": "الصحة",
+    "mp": "السحر",
+    "attack": "الهجوم",
+    "defense": "الدفاع"
+  },
+  "quest": {
+    "title": "المهمة",
+    "new": "مهمة جديدة",
+    "subject": "المادة",
+    "difficulty": "الصعوبة",
+    "deadline": "الموعد النهائي",
+    "status": {
+      "active": "قيد التنفيذ",
+      "completed": "مكتمل",
+      "overdue": "متأخر"
+    },
+    "difficulty_levels": {
+      "easy": "سهل",
+      "normal": "عادي",
+      "hard": "صعب",
+      "legendary": "أسطوري"
+    }
+  },
+  "battle": {
+    "title": "معركة",
+    "start": "قاتل!",
+    "victory": "نصر!",
+    "defeat": "هزيمة...",
+    "reward": "مكافأة",
+    "expGained": "خبرة +{amount}",
+    "goldGained": "ذهب +{amount}"
+  }
+}

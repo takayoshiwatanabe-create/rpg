@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "Cuaderno de Tareas del Héroe",
+    "tagline": "Convierte los deberes en una aventura"
+  },
+  "nav": {
+    "home": "Inicio",
+    "quests": "Misiones",
+    "battle": "Batalla",
+    "records": "Diario de Aventuras"
+  },
+  "auth": {
+    "signIn": "Iniciar Sesión",
+    "signUp": "Registrarse",
+    "signOut": "Cerrar Sesión",
+    "welcome": "¡Tu aventura comienza!",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "heroName": "Nombre del Héroe",
+    "childAccount": "Cuenta Héroe",
+    "parentAccount": "Cuenta de Padres",
+    "startAdventure": "¡Comenzar Aventura!",
+    "alreadyHaveAccount": "¿Ya tienes cuenta?",
+    "noAccount": "¿No tienes cuenta?"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Se produjo un error",
+    "retry": "Intentar de Nuevo",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "close": "Cerrar"
+  },
+  "hero": {
+    "level": "Nivel",
+    "exp": "EXP",
+    "gold": "Oro",
+    "hp": "HP",
+    "mp": "MP",
+    "attack": "ATQ",
+    "defense": "DEF"
+  },
+  "quest": {
+    "title": "Misión",
+    "new": "Nueva Misión",
+    "subject": "Materia",
+    "difficulty": "Dificultad",
+    "deadline": "Fecha Límite",
+    "status": {
+      "active": "En Progreso",
+      "completed": "Completado",
+      "overdue": "Vencido"
+    },
+    "difficulty_levels": {
+      "easy": "Fácil",
+      "normal": "Normal",
+      "hard": "Difícil",
+      "legendary": "Legendario"
+    }
+  },
+  "battle": {
+    "title": "Batalla",
+    "start": "¡Luchar!",
+    "victory": "¡Victoria!",
+    "defeat": "Derrotado...",
+    "reward": "Recompensa",
+    "expGained": "EXP +{amount}",
+    "goldGained": "Oro +{amount}"
+  }
+}

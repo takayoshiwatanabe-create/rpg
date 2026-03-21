@@ -9,8 +9,9 @@ import {
 import { PixelButton, PixelCard, PixelText } from "@/components/ui";
 import { t } from "@/i18n";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
-import type { Quest, QuestReward, TextColor } from "@/types";
+import type { Quest, QuestReward } from "@/types";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { getMonster } from "@/constants/monsters";
 
 // Define battle states for the UI
 type BattleState =
@@ -132,7 +133,7 @@ export function BattleScene({
     ],
   };
 
-  const monsterImageSource = require("@/assets/monster_slime.png"); // Example monster sprite
+  const monsterInfo = getMonster(quest.subject, quest.difficulty);
 
   return (
     <View style={styles.container}>
@@ -185,12 +186,7 @@ export function BattleScene({
                 { opacity: monsterOpacity },
               ]}
             >
-              <Image
-                source={monsterImageSource}
-                style={styles.monsterSprite}
-                resizeMode="contain"
-                accessibilityLabel={t("battle.monster_label")}
-              />
+              <PixelText style={styles.monsterEmoji}>{monsterInfo.emoji}</PixelText>
             </Animated.View>
 
             {battleState === "completed" && (
@@ -342,9 +338,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  monsterSprite: {
-    width: 150,
-    height: 150,
+  monsterEmoji: {
+    fontSize: 100, // Large emoji size
+    lineHeight: 120, // Adjust line height to center
+    textAlign: "center",
   },
   rewardTextContainer: {
     position: "absolute",

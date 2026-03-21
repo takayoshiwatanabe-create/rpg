@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "Cahier de Quêtes du Héros",
+    "tagline": "Transforme les devoirs en aventure"
+  },
+  "nav": {
+    "home": "Accueil",
+    "quests": "Quêtes",
+    "battle": "Bataille",
+    "records": "Journal d'Aventure"
+  },
+  "auth": {
+    "signIn": "Se connecter",
+    "signUp": "S'inscrire",
+    "signOut": "Se déconnecter",
+    "welcome": "Votre aventure commence !",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "heroName": "Nom du Héros",
+    "childAccount": "Compte Héros",
+    "parentAccount": "Compte Parent",
+    "startAdventure": "Commencer l'Aventure !",
+    "alreadyHaveAccount": "Déjà un compte ?",
+    "noAccount": "Pas encore de compte ?"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite",
+    "retry": "Réessayer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "delete": "Supprimer",
+    "back": "Retour",
+    "next": "Suivant",
+    "close": "Fermer"
+  },
+  "hero": {
+    "level": "Niveau",
+    "exp": "EXP",
+    "gold": "Or",
+    "hp": "HP",
+    "mp": "MP",
+    "attack": "ATQ",
+    "defense": "DEF"
+  },
+  "quest": {
+    "title": "Quête",
+    "new": "Nouvelle Quête",
+    "subject": "Matière",
+    "difficulty": "Difficulté",
+    "deadline": "Date Limite",
+    "status": {
+      "active": "En Cours",
+      "completed": "Terminé",
+      "overdue": "En Retard"
+    },
+    "difficulty_levels": {
+      "easy": "Facile",
+      "normal": "Normal",
+      "hard": "Difficile",
+      "legendary": "Légendaire"
+    }
+  },
+  "battle": {
+    "title": "Bataille",
+    "start": "Combattre !",
+    "victory": "Victoire !",
+    "defeat": "Défaite...",
+    "reward": "Récompense",
+    "expGained": "EXP +{amount}",
+    "goldGained": "Or +{amount}"
+  }
+}

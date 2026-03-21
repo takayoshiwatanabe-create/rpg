@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, TouchableOpacity, StyleSheet, Animated, Platform } from "react-native";
+import { COLORS, FONT_SIZES, PIXEL_BORDER, SPACING } from "@/constants/theme";
+import { PixelText } from "./PixelText";
+import { getIsRTL } from "@/i18n";
 
 type MenuItem = {
   label: string;
@@ -15,6 +18,7 @@ type DQCommandMenuProps = {
 export function DQCommandMenu({ items, style }: DQCommandMenuProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const cursorAnim = useRef(new Animated.Value(1)).current;
+  const isRTL = getIsRTL();
 
   useEffect(() => {
     const blink = Animated.loop(
@@ -36,13 +40,13 @@ export function DQCommandMenu({ items, style }: DQCommandMenuProps) {
   }, [cursorAnim]);
 
   return (
-    <View style={[styles.outer, style]}>
+    <View style={[styles.outer, style, { direction: isRTL ? "rtl" : "ltr" }]}>
       <View style={styles.inner}>
         <View style={styles.content}>
           {items.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.menuItem}
+              style={[styles.menuItem, { flexDirection: isRTL ? "row-reverse" : "row" }]}
               onPress={() => {
                 setSelectedIndex(index);
                 if (!item.disabled) item.onPress();
@@ -50,25 +54,29 @@ export function DQCommandMenu({ items, style }: DQCommandMenuProps) {
               disabled={item.disabled}
               activeOpacity={0.7}
               accessibilityRole="button"
+              accessibilityState={{ disabled: item.disabled, selected: index === selectedIndex }}
             >
               <Animated.Text
                 style={[
                   styles.cursor,
                   {
                     opacity: index === selectedIndex ? cursorAnim : 0,
+                    marginRight: isRTL ? 0 : SPACING.xs,
+                    marginLeft: isRTL ? SPACING.xs : 0,
                   },
                 ]}
               >
-                {"▶"}
+                {isRTL ? "◀" : "▶"}
               </Animated.Text>
-              <Animated.Text
+              <PixelText
                 style={[
                   styles.label,
                   item.disabled && styles.labelDisabled,
                 ]}
+                variant="body"
               >
                 {item.label}
-              </Animated.Text>
+              </PixelText>
             </TouchableOpacity>
           ))}
         </View>
@@ -77,60 +85,56 @@ export function DQCommandMenu({ items, style }: DQCommandMenuProps) {
   );
 }
 
-const DQ_BLUE = "#0000AA";
-const DQ_BORDER = "#FFFFFF";
-const DQ_INNER_BORDER = "#000066";
-const DQ_CURSOR = "#FFD700";
-
-const FONT_FAMILY = Platform.select({
-  ios: "Courier New",
-  android: "monospace",
-  default: "monospace",
-});
-
 const styles = StyleSheet.create({
   outer: {
-    borderWidth: 3,
-    borderColor: DQ_BORDER,
-    borderRadius: 4,
-    backgroundColor: DQ_BLUE,
-    shadowColor: "#000",
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 0,
-    elevation: 4,
+    borderWidth: PIXEL_BORDER.borderWidth + 1, // Slightly thicker border for DQ style
+    borderColor: COLORS.dqBorder,
+    borderRadius: PIXEL_BORDER.borderRadius,
+    backgroundColor: COLORS.dqBlue,
+    shadowColor: COLORS.shadow.shadowColor,
+    shadowOffset: COLORS.shadow.shadowOffset,
+    shadowOpacity: COLORS.shadow.shadowOpacity,
+    shadowRadius: COLORS.shadow.shadowRadius,
+    elevation: COLORS.shadow.elevation,
   },
   inner: {
-    borderWidth: 2,
-    borderColor: DQ_INNER_BORDER,
-    borderRadius: 2,
-    margin: 2,
+    borderWidth: PIXEL_BORDER.borderWidth,
+    borderColor: COLORS.dqInnerBorder, // Darker inner border
+    borderRadius: PIXEL_BORDER.borderRadius - 1,
+    margin: PIXEL_BORDER.borderWidth / 2, // Small margin to show outer border
   },
   content: {
-    padding: 12,
-    gap: 4,
+    padding: SPACING.sm,
+    gap: SPACING.xs,
   },
   menuItem: {
-    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 4,
+    paddingVertical: SPACING.xxs,
+    paddingHorizontal: SPACING.xs,
   },
   cursor: {
-    color: DQ_CURSOR,
-    fontSize: 16,
-    fontFamily: FONT_FAMILY,
-    width: 24,
+    color: COLORS.dqCursor,
+    fontSize: FONT_SIZES.md,
+    fontFamily: Platform.select({
+      ios: "Courier New",
+      android: "monospace",
+      default: "monospace",
+    }),
+    width: FONT_SIZES.md + SPACING.xs, // Ensure enough space for cursor
     textAlign: "center",
   },
   label: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontFamily: FONT_FAMILY,
+    color: COLORS.dqText,
+    fontSize: FONT_SIZES.md,
+    fontFamily: Platform.select({
+      ios: "Courier New",
+      android: "monospace",
+      default: "monospace",
+    }),
     fontWeight: "bold",
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   labelDisabled: {
-    color: "#666688",
+    color: COLORS.grayDark,
   },
 });

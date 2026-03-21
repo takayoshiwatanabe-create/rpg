@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "Hero Homework Quest",
+    "tagline": "Turn homework into an adventure"
+  },
+  "nav": {
+    "home": "Home",
+    "quests": "Quests",
+    "battle": "Battle",
+    "records": "Adventure Log"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "welcome": "Your adventure begins!",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "heroName": "Hero Name",
+    "childAccount": "Hero Account",
+    "parentAccount": "Parent Account",
+    "startAdventure": "Start Adventure!",
+    "alreadyHaveAccount": "Already have an account?",
+    "noAccount": "Don't have an account?"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Try Again",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "back": "Back",
+    "next": "Next",
+    "close": "Close"
+  },
+  "hero": {
+    "level": "Level",
+    "exp": "EXP",
+    "gold": "Gold",
+    "hp": "HP",
+    "mp": "MP",
+    "attack": "ATK",
+    "defense": "DEF"
+  },
+  "quest": {
+    "title": "Quest",
+    "new": "New Quest",
+    "subject": "Subject",
+    "difficulty": "Difficulty",
+    "deadline": "Deadline",
+    "status": {
+      "active": "In Progress",
+      "completed": "Completed",
+      "overdue": "Overdue"
+    },
+    "difficulty_levels": {
+      "easy": "Easy",
+      "normal": "Normal",
+      "hard": "Hard",
+      "legendary": "Legendary"
+    }
+  },
+  "battle": {
+    "title": "Battle",
+    "start": "Fight!",
+    "victory": "Victory!",
+    "defeat": "Defeated...",
+    "reward": "Reward",
+    "expGained": "EXP +{amount}",
+    "goldGained": "Gold +{amount}"
+  }
+}

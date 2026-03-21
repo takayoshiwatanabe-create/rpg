@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  /* ========================================================================
+   * Pixel font — DotGothic16 from Google Fonts (loaded in layout.tsx)
+   * Phase 1 will wire up the actual font-face declarations.
+   * ======================================================================== */
+  --font-pixel: 'DotGothic16', monospace;
+
+  /* ========================================================================
+   * 8-16bit RPG color palette
+   * ======================================================================== */
+  --color-rpg-black: #0d0d1a;
+  --color-rpg-dark: #1a1a2e;
+  --color-rpg-navy: #16213e;
+  --color-rpg-blue: #0f3460;
+
+  /* Primary — sky/magic blue */
+  --color-rpg-primary: #4a90d9;
+  --color-rpg-primary-light: #6cb3f5;
+  --color-rpg-primary-dark: #2c6da4;
+
+  /* Accent — gold/treasure */
+  --color-rpg-accent: #f5c842;
+  --color-rpg-accent-light: #ffe066;
+  --color-rpg-accent-dark: #c9a200;
+
+  /* Semantic */
+  --color-rpg-success: #5dca5d;
+  --color-rpg-danger: #e05252;
+  --color-rpg-warning: #f0a000;
+  --color-rpg-info: #4ac8e8;
+
+  /* Text */
+  --color-rpg-text: #e8e8f0;
+  --color-rpg-text-dim: #a0a0b8;
+  --color-rpg-text-dark: #1a1a2e;
+}
+
+/* Global base styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-pixel), monospace;
+}
+
+body {
+  background-color: var(--color-rpg-dark);
+  color: var(--color-rpg-text);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Respect reduced motion preference per WCAG 2.1 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

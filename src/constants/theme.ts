@@ -36,8 +36,15 @@ export const COLORS = {
   success: "#3CB371", // Success messages
 
   // Button variants
-  buttonPrimary: "#4A4A6A",
-  buttonSecondary: "#2A2A3A",
+  primary: "#4A4A6A", // Primary button background
+  primaryDark: "#3A3A5A", // Primary button border/shadow
+  secondary: "#2A2A3A", // Secondary button background
+  secondaryDark: "#1A1A2A", // Secondary button border/shadow
+
+  // Text colors
+  textPrimary: "#F5F5DC", // Cream for general text
+  textLight: "#FFFFFF", // White for primary buttons
+  textMuted: "#A9A9A9", // Gray for disabled text
 
   // Subject colors (for quest categorization)
   math: "#FF6347", // Tomato
@@ -59,9 +66,14 @@ export const COLORS = {
   // Dragon Quest UI
   dqBlue: "#0000AA",
   dqBorder: "#FFFFFF",
+  dqInnerBorder: "#000066", // Added for inner border of DQ components
   dqText: "#FFFFFF",
   dqCursor: "#FFD700",
   dqBattleBg: "#000000",
+
+  // Window background
+  windowBg: "#16213E", // Using bgCard for general window background
+  windowBorder: "#5C5C5C", // Using general pixel border
 } as const; // `as const` makes this a readonly tuple, improving type safety
 
 // ---------------------------------------------------------------------------

@@ -155,3 +155,4 @@ export const INVENTORY_EXPANSION_COST: number = 50;
  * Default locale for new users if not detected.
  */
 export const DEFAULT_LOCALE: string = "ja";
+

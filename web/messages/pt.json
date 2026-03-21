@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "Caderno de Quests do Herói",
+    "tagline": "Transforme o dever de casa em aventura"
+  },
+  "nav": {
+    "home": "Início",
+    "quests": "Quests",
+    "battle": "Batalha",
+    "records": "Diário de Aventuras"
+  },
+  "auth": {
+    "signIn": "Entrar",
+    "signUp": "Cadastrar",
+    "signOut": "Sair",
+    "welcome": "Sua aventura começa!",
+    "email": "E-mail",
+    "password": "Senha",
+    "confirmPassword": "Confirmar Senha",
+    "heroName": "Nome do Herói",
+    "childAccount": "Conta Herói",
+    "parentAccount": "Conta dos Pais",
+    "startAdventure": "Começar Aventura!",
+    "alreadyHaveAccount": "Já tem uma conta?",
+    "noAccount": "Não tem uma conta?"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "error": "Ocorreu um erro",
+    "retry": "Tentar Novamente",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Excluir",
+    "back": "Voltar",
+    "next": "Próximo",
+    "close": "Fechar"
+  },
+  "hero": {
+    "level": "Nível",
+    "exp": "EXP",
+    "gold": "Ouro",
+    "hp": "HP",
+    "mp": "MP",
+    "attack": "ATQ",
+    "defense": "DEF"
+  },
+  "quest": {
+    "title": "Quest",
+    "new": "Nova Quest",
+    "subject": "Matéria",
+    "difficulty": "Dificuldade",
+    "deadline": "Prazo",
+    "status": {
+      "active": "Em Andamento",
+      "completed": "Concluído",
+      "overdue": "Atrasado"
+    },
+    "difficulty_levels": {
+      "easy": "Fácil",
+      "normal": "Normal",
+      "hard": "Difícil",
+      "legendary": "Lendário"
+    }
+  },
+  "battle": {
+    "title": "Batalha",
+    "start": "Lutar!",
+    "victory": "Vitória!",
+    "defeat": "Derrotado...",
+    "reward": "Recompensa",
+    "expGained": "EXP +{amount}",
+    "goldGained": "Ouro +{amount}"
+  }
+}

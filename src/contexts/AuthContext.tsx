@@ -2,6 +2,7 @@ import { createContext, useEffect, useState, type ReactNode } from "react";
 import { onAuthStateChange, type LocalUser } from "@/lib/firebase";
 import { getUserProfile } from "@/lib/firestore";
 import type { UserProfile } from "@/types";
+import { useQuery } from "@tanstack/react-query";
 
 export type AuthState = {
   user: (LocalUser & UserProfile) | null;
@@ -18,42 +19,29 @@ const initialState: AuthState = {
 export const AuthContext = createContext<AuthState>(initialState);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>(initialState);
+  const [localUser, setLocalUser] = useState<LocalUser | null>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-
-    const unsubscribe = onAuthStateChange(async (localUser) => {
-      if (!mounted) return;
-
-      if (localUser) {
-        try {
-          const userProfile = await getUserProfile(localUser.uid);
-          if (!mounted) return;
-          if (userProfile) {
-            setAuthState({
-              user: { ...localUser, ...userProfile },
-              userProfile,
-              isLoading: false,
-            });
-          } else {
-            setAuthState({ user: null, userProfile: null, isLoading: false });
-          }
-        } catch {
-          if (mounted) {
-            setAuthState({ user: null, userProfile: null, isLoading: false });
-          }
-        }
-      } else {
-        setAuthState({ user: null, userProfile: null, isLoading: false });
-      }
+    const unsubscribe = onAuthStateChange((user) => {
+      setLocalUser(user);
+      setIsLoadingAuth(false);
     });
-
-    return () => {
-      mounted = false;
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
+
+  const { data: userProfile, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ["userProfile", localUser?.uid],
+    queryFn: () => (localUser ? getUserProfile(localUser.uid) : Promise.resolve(null)),
+    enabled: !!localUser,
+    staleTime: Infinity, // User profile data is relatively static or updated via other means
+  });
+
+  const authState: AuthState = {
+    user: localUser && userProfile ? { ...localUser, ...userProfile } : null,
+    userProfile: userProfile || null,
+    isLoading: isLoadingAuth || isLoadingProfile,
+  };
 
   return (
     <AuthContext.Provider value={authState}>{children}</AuthContext.Provider>

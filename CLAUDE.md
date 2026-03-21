@@ -191,10 +191,19 @@ N/A
 - Playwright for E2E tests
 
 ## Code Standards
-- TypeScript strict mode, no `any`
+- TypeScript strict mode, no `any`, no type assertions unless unavoidable
 - Minimal comments — code should be self-documenting
 - Use path alias `@/` for imports from `src/`
 - All components use functional style with proper typing
+
+## 商用品質要件 (Commercial Quality Requirements)
+- **UI/UX**: プロフェッショナルで洗練されたデザイン。一貫したカラーパレット、レスポンシブレイアウト
+- **アニメーション**: 画面遷移にスムーズなアニメーション（framer-motion推奨）
+- **エラーハンドリング**: ローディング状態、空状態、エラー状態を全画面に実装
+- **アクセシビリティ**: セマンティックHTML、ARIAラベル、キーボードナビゲーション
+- **パフォーマンス**: Server Components優先、dynamic importで遅延ロード
+- **日本語**: 全UIテキストは日本語。プレースホルダーやTODOは禁止
+- **完全実装**: スタブや仮実装は禁止。全機能が実際に動作すること
 
 ## Internationalization (i18n)
 - Supported languages: ja (日本語), en (English), zh (中文), ko (한국어), es (Español), fr (Français), de (Deutsch), pt (Português), ar (العربية), hi (हिन्दी)

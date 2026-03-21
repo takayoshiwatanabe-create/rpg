@@ -1,75 +1,37 @@
 import React from "react";
-import { Platform, StyleSheet, Text, type TextProps } from "react-native";
-import { COLORS, FONT_SIZES } from "@/constants/theme";
-import { getIsRTL } from "@/i18n";
+import { Text, StyleSheet, TextProps, Platform } from "react-native";
+import { FONT_SIZES, COLORS } from "@/constants/theme";
 
-export type TextVariant = "title" | "heading" | "body" | "caption" | "stat" | "label";
+type PixelTextVariant = "heading" | "body" | "label" | "caption" | "title" | "stat";
+type PixelTextColor = keyof typeof COLORS | "default" | "textPrimary" | "textLight" | "textMuted";
 
-export type TextColor =
-  | "gold"
-  | "cream"
-  | "white"
-  | "gray"
-  | "hp"
-  | "mp"
-  | "exp"
-  | "danger";
-
-export type PixelTextProps = Omit<TextProps, "style"> & {
-  variant?: TextVariant;
-  color?: TextColor;
+interface PixelTextProps extends TextProps {
+  variant?: PixelTextVariant;
+  color?: PixelTextColor;
   children: React.ReactNode;
-  style?: TextProps["style"];
-};
+}
 
-const VARIANT_FONT_SIZE: Record<TextVariant, number> = {
-  title: FONT_SIZES.title,
-  heading: FONT_SIZES.xl,
-  body: FONT_SIZES.md,
-  caption: FONT_SIZES.sm,
-  stat: FONT_SIZES.lg,
-  label: FONT_SIZES.xs,
-};
-
-const VARIANT_WEIGHT: Record<TextVariant, "normal" | "bold"> = {
-  title: "bold",
-  heading: "bold",
-  body: "normal",
-  caption: "normal",
-  stat: "bold",
-  label: "bold",
-};
-
-const COLOR_MAP: Record<TextColor, string> = {
-  gold: COLORS.gold,
-  cream: COLORS.cream,
-  white: COLORS.white,
-  gray: COLORS.gray,
-  hp: COLORS.hp,
-  mp: COLORS.mp,
-  exp: COLORS.exp,
-  danger: COLORS.hp,
-};
+const FONT_FAMILY = Platform.select({
+  ios: "Courier New",
+  android: "monospace",
+  default: "monospace",
+});
 
 export function PixelText({
   variant = "body",
-  color = "cream",
-  children,
+  color = "textPrimary", // Default to textPrimary from COLORS
   style,
+  children,
   ...rest
 }: PixelTextProps) {
-  const isRTL = getIsRTL();
+  const textColor = COLORS[color as keyof typeof COLORS] || COLORS.textPrimary; // Ensure color is from COLORS or fallback
 
   return (
     <Text
       style={[
         styles.base,
-        {
-          fontSize: VARIANT_FONT_SIZE[variant],
-          fontWeight: VARIANT_WEIGHT[variant],
-          color: COLOR_MAP[color],
-          textAlign: isRTL ? "right" : "left",
-        },
+        styles[variant],
+        { color: textColor },
         style,
       ]}
       {...rest}
@@ -81,15 +43,29 @@ export function PixelText({
 
 const styles = StyleSheet.create({
   base: {
-    // Courier New is available on both iOS and Android as a monospace fallback
-    // until a custom pixel font (e.g. Press Start 2P) is loaded via expo-font.
-    fontFamily: Platform.select({
-      ios: "Courier New",
-      android: "monospace",
-      default: "monospace",
-    }),
-    letterSpacing: 0.5,
+    fontFamily: FONT_FAMILY,
+    color: COLORS.textPrimary,
+  },
+  title: {
+    fontSize: FONT_SIZES.title,
+    fontWeight: "bold",
+  },
+  heading: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: "bold",
+  },
+  body: {
+    fontSize: FONT_SIZES.md,
+  },
+  label: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "bold",
+  },
+  caption: {
+    fontSize: FONT_SIZES.xs,
+  },
+  stat: {
+    fontSize: FONT_SIZES.lg, // Larger for stats
+    fontWeight: "bold",
   },
 });
-
-
