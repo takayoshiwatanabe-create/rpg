@@ -1,73 +1,21 @@
-import React from "react";
-import { Text, StyleSheet, TextProps, Platform } from "react-native";
-import { FONT_SIZES, COLORS, FONT_FAMILY_MAIN, FONT_FAMILY_SUB } from "@/constants/theme";
-
-type PixelTextVariant = "heading" | "body" | "label" | "caption" | "title" | "stat";
-type PixelTextColor = keyof typeof COLORS;
-
-interface PixelTextProps extends TextProps {
-  variant?: PixelTextVariant;
-  color?: PixelTextColor;
-  children: React.ReactNode;
-}
-
-const FONT_FAMILY = FONT_FAMILY_SUB;
-const FONT_FAMILY_HEADING = FONT_FAMILY_MAIN;
-
-export function PixelText({
-  variant = "body",
-  color = "cream",
-  style,
-  children,
-  ...rest
-}: PixelTextProps) {
-  const textColor = COLORS[color] || COLORS.cream;
-
-  const fontStyle =
-    variant === "title" || variant === "heading"
-      ? { fontFamily: FONT_FAMILY_HEADING }
-      : { fontFamily: FONT_FAMILY };
-
-  return (
-    <Text
-      style={[
-        styles.base,
-        styles[variant],
-        { color: textColor },
-        fontStyle,
-        style,
-      ]}
-      {...rest}
-    >
-      {children}
-    </Text>
-  );
-}
-
-const styles = StyleSheet.create({
-  base: {
-    color: COLORS.cream,
-  },
-  title: {
-    fontSize: FONT_SIZES.title,
-    fontWeight: "bold",
-  },
-  heading: {
-    fontSize: FONT_SIZES.heading,
-    fontWeight: "bold",
-  },
-  body: {
-    fontSize: FONT_SIZES.body,
-  },
-  label: {
-    fontSize: FONT_SIZES.label,
-    fontWeight: "bold",
-  },
-  caption: {
-    fontSize: FONT_SIZES.caption,
-  },
-  stat: {
-    fontSize: FONT_SIZES.stat,
-    fontWeight: "bold",
-  },
-});
+```diff
+--- a/src/components/ui/PixelText.tsx
++++ b/src/components/ui/PixelText.tsx
+@@ -1,6 +1,6 @@
+ import React from "react";
+ import { Text, StyleSheet, TextProps, Platform } from "react-native";
+-import { FONT_SIZES, COLORS, FONT_FAMILY_MAIN, FONT_FAMILY_SUB } from "@/constants/theme";
++import { FONT_SIZES, COLORS, FONT_FAMILY_MAIN, FONT_FAMILY_SUB } from "@/constants/theme"; // Ensure FONT_FAMILY_MAIN is imported
+ 
+ type PixelTextVariant = "heading" | "body" | "label" | "caption" | "title" | "stat";
+ type PixelTextColor = keyof typeof COLORS;
+@@ -15,7 +15,7 @@
+   children,
+   ...rest
+ }: PixelTextProps) {
+-  const textColor = COLORS[color] || COLORS.cream;
++  const textColor = COLORS[color] || COLORS.textDefault; // Use textDefault as fallback
+ 
+   const fontStyle =
+     variant === "title" || variant === "heading"
+```

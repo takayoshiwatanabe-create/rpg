@@ -1,58 +1,13 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, View } from "react-native";
-import * as SplashScreen from "expo-splash-screen";
-
-interface Props {
-  onFinish: () => void;
-}
-
-export function RuokSplash({ onFinish }: Props) {
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    // Prevent the default splash screen from hiding too early
-    SplashScreen.preventAutoHideAsync();
-
-    Animated.sequence([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.delay(1200),
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      SplashScreen.hideAsync(); // Hide the splash screen after our animation
-      onFinish();
-    });
-  }, [opacity, onFinish]);
-
-  return (
-    <View style={styles.overlay}>
-      <Animated.Image
-        source={require("@/assets/ruok-splash.png")}
-        style={[styles.image, { opacity }]}
-        resizeMode="contain"
-        accessibilityLabel="App Splash Screen"
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 9999,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-});
+```diff
+--- a/src/components/RuokSplash.tsx
++++ b/src/components/RuokSplash.tsx
+@@ -34,7 +34,7 @@
+   overlay: {
+     ...StyleSheet.absoluteFillObject,
+     zIndex: 9999,
+-    backgroundColor: "#FFFFFF",
++    backgroundColor: COLORS.white,
+     alignItems: "center",
+     justifyContent: "center",
+   },
+```

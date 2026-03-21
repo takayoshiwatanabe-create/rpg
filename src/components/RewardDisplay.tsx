@@ -1,149 +1,50 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
-import { PixelText, PixelCard, PixelProgressBar } from "@/components/ui";
-import { t } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme";
-import { expProgressInCurrentLevel } from "@/lib/expCalculator";
-import type { HeroProfile } from "@/types";
-
-type RewardDisplayProps = {
-  hero: HeroProfile;
-  expGained: number;
-  goldGained: number;
-  isRTL: boolean;
-  monsterName: string;
-  durationSeconds: number;
-};
-
-function formatStudyTime(totalSeconds: number): string {
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-  }
-  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-}
-
-export const RewardDisplay = React.memo(
-  ({
-    hero,
-    expGained,
-    goldGained,
-    isRTL,
-    monsterName,
-    durationSeconds,
-  }: RewardDisplayProps) => {
-    const expProgress = expProgressInCurrentLevel(hero.totalExp);
-
-    return (
-      <View style={[styles.container, { direction: isRTL ? "rtl" : "ltr" }]}>
-        {/* Victory fanfare area */}
-        <View style={styles.victoryArea}>
-          <PixelText variant="title" color="gold" style={styles.victoryTitle}>
-            {"🎉 "}{t("dq.result.defeated", { monster: monsterName })}
-          </PixelText>
-        </View>
-
-        {/* Study time display */}
-        {durationSeconds > 0 && (
-          <PixelCard variant="default">
-            <PixelText variant="label" color="cream" style={styles.cardTitle}>
-              {t("dq.result.study_time")}
-            </PixelText>
-            <PixelText variant="title" color="gold" style={styles.studyTimeText}>
-              {"📚 "}{formatStudyTime(durationSeconds)}
-            </PixelText>
-          </PixelCard>
-        )}
-
-        {/* Reward summary */}
-        <PixelCard variant="default">
-          <PixelText variant="label" color="cream" style={styles.cardTitle}>
-            {t("dq.result.rewards")}
-          </PixelText>
-          <View style={[styles.rewardRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-            <PixelText variant="body" color="cream">
-              {"✨ "}{t("hero.exp")}
-            </PixelText>
-            <PixelText variant="body" color="exp">
-              {`+${expGained}`}
-            </PixelText>
-          </View>
-          <View style={[styles.rewardRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-            <PixelText variant="body" color="cream">
-              {"💰 "}{t("hero.gold")}
-            </PixelText>
-            <PixelText variant="body" color="gold">
-              {`+${goldGained}`}
-            </PixelText>
-          </View>
-        </PixelCard>
-
-        {/* Hero growth: level + EXP bar */}
-        <PixelCard variant="highlighted">
-          <PixelText variant="label" color="cream" style={styles.cardTitle}>
-            {t("dq.result.hero_growth")}
-          </PixelText>
-          <View style={[styles.heroRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-            <PixelText variant="body" color="gold" style={styles.heroLevelLabel}>
-              {hero.displayName}
-            </PixelText>
-            <PixelText variant="body" color="cream" style={styles.heroLevelValue}>
-              Lv.{hero.level}
-            </PixelText>
-          </View>
-          <PixelProgressBar
-            label={t("hero.exp")}
-            value={expProgress.current}
-            max={expProgress.required}
-            color="exp"
-            showValues={true}
-          />
-        </PixelCard>
-      </View>
-    );
-  },
-);
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: SPACING.md,
-    gap: SPACING.md,
-  },
-  victoryArea: {
-    alignItems: "center",
-    marginBottom: SPACING.md,
-  },
-  victoryTitle: {
-    textAlign: "center",
-    textShadowColor: COLORS.goldDark,
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 0,
-  },
-  cardTitle: {
-    marginBottom: SPACING.sm,
-    textAlign: "center",
-  },
-  studyTimeText: {
-    textAlign: "center",
-    fontSize: FONT_SIZES.title,
-  },
-  rewardRow: {
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.xs,
-  },
-  heroRow: {
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.sm,
-  },
-  heroLevelLabel: {
-    fontSize: FONT_SIZES.lg,
-  },
-  heroLevelValue: {
-    fontSize: FONT_SIZES.lg,
-  },
-});
+```diff
+--- a/src/components/RewardDisplay.tsx
++++ b/src/components/RewardDisplay.tsx
+@@ -48,7 +48,7 @@
+         {/* Study time display */}
+         {durationSeconds > 0 && (
+           <PixelCard variant="default">
+-            <PixelText variant="label" color="cream" style={styles.cardTitle}>
++            <PixelText variant="label" color="textDefault" style={styles.cardTitle}>
+               {t("dq.result.study_time")}
+             </PixelText>
+             <PixelText variant="title" color="gold" style={styles.studyTimeText}>
+@@ -59,14 +59,14 @@
+         {/* Reward summary */}
+         <PixelCard variant="default">
+           <PixelText variant="label" color="cream" style={styles.cardTitle}>
+-            {t("dq.result.rewards")}
++            {t("dq.result.rewards_label")}
+           </PixelText>
+           <View style={[styles.rewardRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+-            <PixelText variant="body" color="cream">
+-              {"✨ "}{t("hero.exp")}
++            <PixelText variant="body" color="textDefault">
++              {"✨ "}{t("hero.exp_label")}
+             </PixelText>
+             <PixelText variant="body" color="exp">
+-              {`+${expGained}`}
++              {`+${expGained} EXP`}
+             </PixelText>
+           </View>
+           <View style={[styles.rewardRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+@@ -80,7 +80,7 @@
+         {/* Hero growth: level + EXP bar */}
+         <PixelCard variant="highlighted">
+           <PixelText variant="label" color="cream" style={styles.cardTitle}>
+-            {t("dq.result.hero_growth")}
++            {t("dq.result.hero_growth_label")}
+           </PixelText>
+           <View style={[styles.heroRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+             <PixelText variant="body" color="gold" style={styles.heroLevelLabel}>
+@@ -89,7 +89,7 @@
+             <PixelText variant="body" color="cream" style={styles.heroLevelValue}>
+               Lv.{hero.level}
+             </PixelText>
+-          </View>
++          </View> 
+           <PixelProgressBar
+             label={t("hero.exp")}
+             value={expProgress.current}
+```

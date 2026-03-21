@@ -33,7 +33,7 @@ vi.mock("@/lib/firestore", () => ({
 vi.mock("@/i18n", () => ({
   t: vi.fn((key, params) => {
     if (key === "parent.hero_summary")
-      return `${params?.name}, Level ${params?.level}, Gold ${params?.gold}`;
+      return `${params?.name}、レベル${params?.level}、ゴールド${params?.gold}`;
     if (key.startsWith("quest.subject.")) return key.split(".").pop();
     if (key.startsWith("quest.difficulty.")) return key.split(".").pop();
     if (key.startsWith("parent.quest_status.")) return key.split(".").pop();
@@ -71,7 +71,7 @@ vi.mock("@/i18n", () => ({
     return key;
   }),
   getIsRTL: vi.fn(() => false),
-  getLang: vi.fn(() => "en"),
+  getLang: vi.fn(() => "ja"),
 }));
 vi.mock("react-native", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-native")>();
@@ -87,11 +87,11 @@ vi.mock("react-native", async (importOriginal) => {
   };
 });
 vi.mock("@/components/ui", () => ({
-  PixelText: ({ children, variant, color, style }: any) => (
-    <actual.Text style={style}>{children}</actual.Text>
+  PixelText: ({ children, variant, color, style, accessibilityLabel }: any) => (
+    <actual.Text style={style} accessibilityLabel={accessibilityLabel}>{children}</actual.Text>
   ),
-  PixelButton: ({ label, onPress, variant, size, style }: any) => (
-    <actual.TouchableOpacity onPress={onPress} style={style}>
+  PixelButton: ({ label, onPress, variant, size, style, accessibilityLabel, accessibilityRole, accessibilityState }: any) => (
+    <actual.TouchableOpacity onPress={onPress} style={style} accessibilityLabel={accessibilityLabel} accessibilityRole={accessibilityRole} accessibilityState={accessibilityState}>
       <actual.Text>{label}</actual.Text>
     </actual.TouchableOpacity>
   ),
@@ -103,7 +103,7 @@ vi.mock("@/components/ui", () => ({
 const mockHero: HeroProfile = {
   id: "hero-123",
   userId: "user-123",
-  displayName: "Child Hero",
+  displayName: "子供勇者",
   level: 5,
   currentExp: 100,
   totalExp: 500,
@@ -124,7 +124,7 @@ const mockQuests: Quest[] = [
     id: "quest-1",
     userId: "user-123",
     heroId: "hero-123",
-    title: "Pending Math Homework",
+    title: "保留中の算数宿題",
     subject: "math" as Subject,
     difficulty: "easy" as Difficulty,
     status: "pending" as QuestStatus,
@@ -139,7 +139,7 @@ const mockQuests: Quest[] = [
     id: "quest-2",
     userId: "user-123",
     heroId: "hero-123",
-    title: "Completed English Essay",
+    title: "完了済みの英語作文",
     subject: "english" as Subject,
     difficulty: "normal" as Difficulty,
     status: "completed" as QuestStatus,
@@ -154,7 +154,7 @@ const mockQuests: Quest[] = [
     id: "quest-3",
     userId: "user-123",
     heroId: "hero-123",
-    title: "In Progress Science Project",
+    title: "進行中の理科プロジェクト",
     subject: "science" as Subject,
     difficulty: "hard" as Difficulty,
     status: "inProgress" as QuestStatus,
@@ -199,63 +199,63 @@ describe("ParentDashboardScreen", () => {
     });
     render(<ParentDashboardScreen />);
     await waitFor(() => {
-      expect(screen.getByText("parent.access_denied")).toBeVisible();
-      expect(screen.getByText("common.back")).toBeVisible();
+      expect(screen.getByText("アクセスが拒否されました。")).toBeVisible();
+      expect(screen.getByText("戻る")).toBeVisible();
     });
   });
 
   it("renders hero summary and quest management sections", async () => {
     render(<ParentDashboardScreen />);
     await waitFor(() => {
-      expect(screen.getByText("parent.child_progress")).toBeVisible();
-      expect(screen.getByText("Child Hero, Level 5, Gold 250")).toBeVisible();
-      expect(screen.getByText("parent.quest_management")).toBeVisible();
-      expect(screen.getByText("Pending Math Homework")).toBeVisible(); // Default filter is 'pending'
+      expect(screen.getByText("子供の進捗")).toBeVisible();
+      expect(screen.getByText("子供勇者、レベル5、ゴールド250")).toBeVisible();
+      expect(screen.getByText("クエスト管理")).toBeVisible();
+      expect(screen.getByText("保留中の算数宿題")).toBeVisible(); // Default filter is 'pending'
     });
   });
 
   it("filters quests by 'all'", async () => {
     render(<ParentDashboardScreen />);
-    await waitFor(() => screen.getByText("すべて"));
+    await waitFor(() => screen.getByLabelText("すべて"));
 
-    fireEvent.press(screen.getByText("すべて"));
+    fireEvent.press(screen.getByLabelText("すべて"));
 
-    expect(screen.getByText("Pending Math Homework")).toBeVisible();
-    expect(screen.getByText("Completed English Essay")).toBeVisible();
-    expect(screen.getByText("In Progress Science Project")).toBeVisible();
+    expect(screen.getByText("保留中の算数宿題")).toBeVisible();
+    expect(screen.getByText("完了済みの英語作文")).toBeVisible();
+    expect(screen.getByText("進行中の理科プロジェクト")).toBeVisible();
   });
 
   it("filters quests by 'pending'", async () => {
     render(<ParentDashboardScreen />);
-    await waitFor(() => screen.getByText("すべて")); // Wait for initial render
+    await waitFor(() => screen.getByLabelText("すべて")); // Wait for initial render
 
     // First switch to 'all' to ensure all quests are loaded, then back to 'pending'
-    fireEvent.press(screen.getByText("すべて"));
-    await waitFor(() => screen.getByText("Completed English Essay")); // Ensure 'all' is visible
+    fireEvent.press(screen.getByLabelText("すべて"));
+    await waitFor(() => screen.getByText("完了済みの英語作文")); // Ensure 'all' is visible
 
-    fireEvent.press(screen.getByText("pending"));
+    fireEvent.press(screen.getByLabelText("pending"));
 
-    expect(screen.getByText("Pending Math Homework")).toBeVisible();
-    expect(screen.queryByText("Completed English Essay")).toBeNull();
-    expect(screen.getByText("In Progress Science Project")).toBeVisible();
+    expect(screen.getByText("保留中の算数宿題")).toBeVisible();
+    expect(screen.queryByText("完了済みの英語作文")).toBeNull();
+    expect(screen.getByText("進行中の理科プロジェクト")).toBeVisible();
   });
 
   it("filters quests by 'completed'", async () => {
     render(<ParentDashboardScreen />);
-    await waitFor(() => screen.getByText("完了済み"));
+    await waitFor(() => screen.getByLabelText("完了済み"));
 
-    fireEvent.press(screen.getByText("完了済み"));
+    fireEvent.press(screen.getByLabelText("完了済み"));
 
-    expect(screen.queryByText("Pending Math Homework")).toBeNull();
-    expect(screen.getByText("Completed English Essay")).toBeVisible();
-    expect(screen.queryByText("In Progress Science Project")).toBeNull();
+    expect(screen.queryByText("保留中の算数宿題")).toBeNull();
+    expect(screen.getByText("完了済みの英語作文")).toBeVisible();
+    expect(screen.queryByText("進行中の理科プロジェクト")).toBeNull();
   });
 
   it("handles quest approval", async () => {
     render(<ParentDashboardScreen />);
-    await waitFor(() => screen.getByText("Pending Math Homework"));
+    await waitFor(() => screen.getByText("保留中の算数宿題"));
 
-    fireEvent.press(screen.getAllByText("承認")[0]); // Approve first pending quest
+    fireEvent.press(screen.getAllByLabelText("承認")[0]); // Approve first pending quest
 
     expect(Alert.alert).toHaveBeenCalledWith(
       "クエスト承認",
@@ -275,9 +275,9 @@ describe("ParentDashboardScreen", () => {
 
   it("handles quest rejection", async () => {
     render(<ParentDashboardScreen />);
-    await waitFor(() => screen.getByText("Pending Math Homework"));
+    await waitFor(() => screen.getByText("保留中の算数宿題"));
 
-    fireEvent.press(screen.getAllByText("却下")[0]); // Reject first pending quest
+    fireEvent.press(screen.getAllByLabelText("却下")[0]); // Reject first pending quest
 
     expect(Alert.alert).toHaveBeenCalledWith(
       "クエスト却下",
@@ -297,9 +297,9 @@ describe("ParentDashboardScreen", () => {
 
   it("navigates to settings when header button is pressed", async () => {
     render(<ParentDashboardScreen />);
-    await waitFor(() => screen.getByText("設定"));
+    await waitFor(() => screen.getByLabelText("設定"));
 
-    fireEvent.press(screen.getByText("設定"));
+    fireEvent.press(screen.getByLabelText("設定"));
     expect(router.push).toHaveBeenCalledWith("/(app)/parent/settings");
   });
 
@@ -309,17 +309,18 @@ describe("ParentDashboardScreen", () => {
 
     expect(screen.getByText("サブスクリプション情報")).toBeVisible();
     expect(screen.getByText("詳細情報")).toBeVisible();
-    expect(screen.getByText("サブスクリプション管理")).toBeVisible();
+    expect(screen.getByLabelText("サブスクリプション管理")).toBeVisible();
   });
 
   it("shows alert when 'Manage Subscription' is pressed", async () => {
     render(<ParentDashboardScreen />);
-    await waitFor(() => screen.getByText("サブスクリプション管理"));
+    await waitFor(() => screen.getByLabelText("サブスクリプション管理"));
 
-    fireEvent.press(screen.getByText("サブスクリプション管理"));
+    fireEvent.press(screen.getByLabelText("サブスクリプション管理"));
     expect(Alert.alert).toHaveBeenCalledWith(
       "情報",
       "サブスクリプション管理はウェブサイトで行ってください。",
     );
   });
 });
+

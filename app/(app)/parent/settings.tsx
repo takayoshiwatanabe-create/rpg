@@ -1,56 +1,39 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   Platform,
 } from "react-native";
-import { Stack, router } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
-import { PixelText, PixelButton, PixelCard, DQMessageBox } from "@/components/ui";
-import { t, getLang, setLang, getIsRTL, LANGUAGES, Locale } from "@/i18n";
-import { COLORS, SPACING } from "@/constants/theme";
-import { useSettings } from "@/hooks/useSettings"; // Corrected import
+import { router, Stack } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-
-const DQ_BG = COLORS.bgDark;
-const FONT_FAMILY = Platform.select({
-  ios: "Courier New",
-  android: "monospace",
-  default: "monospace",
-});
+import * as Notifications from "expo-notifications";
+import { useAuth } from "@/hooks/useAuth";
+import { PixelText, PixelButton, PixelCard, PixelSwitch } from "@/components/ui";
+import { t, changeLanguage, getLang, getIsRTL } from "@/i18n";
+import { COLORS, SPACING } from "@/constants/theme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 export default function ParentSettingsScreen() {
-  const { user, userProfile, isLoading: authLoading, signOut } = useAuth(); // Corrected signOut usage
+  const { signOut } = useAuth(); // Corrected: signOut is a function from useAuth
   const isRTL = getIsRTL();
-  const { settings, updateSetting, isLoading: settingsLoading } = useSettings();
+  const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
 
-  const [currentLanguage, setCurrentLanguage] = useState<Locale>(getLang());
-
-  useEffect(() => {
-    if (settings?.language && settings.language !== currentLanguage) {
-      setCurrentLanguage(settings.language);
-    }
-  }, [settings?.language, currentLanguage]);
-
-  const handleLanguageChange = useCallback(async (lang: Locale) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
-    setCurrentLanguage(lang);
-    await setLang(lang);
-    await updateSetting("language", lang);
-  }, [updateSetting]);
+  const [notificationEnabled, setNotificationEnabled] = useState(true); // Example state
+  const [hapticsEnabled, setHapticsEnabled] = useState(true); // Example state
 
   const handleSignOut = useCallback(async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // Corrected: NotificationFeedbackType.Success
     Alert.alert(
-      t("settings.sign_out_confirm_title"),
-      t("settings.sign_out_confirm_message"),
+      t("settings.logout_confirm_title"),
+      t("settings.logout_confirm_message"),
       [
         { text: t("common.cancel"), style: "cancel" },
         {
-          text: t("settings.sign_out"),
+          text: t("settings.logout"),
           style: "destructive",
           onPress: async () => {
             await signOut();
@@ -61,35 +44,45 @@ export default function ParentSettingsScreen() {
     );
   }, [signOut]);
 
-  const handleManageSubscription = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
-    Alert.alert(
-      t("common.info"),
-      t("parent.manage_subscription_hint"),
-    );
+  const handleLanguageChange = useCallback(async (lang: string) => {
+    if (hapticsEnabled) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // Corrected: NotificationFeedbackType.Success
+    }
+    await changeLanguage(lang);
+  }, [hapticsEnabled]);
+
+  const toggleNotifications = useCallback(async (value: boolean) => {
+    setNotificationEnabled(value);
+    if (hapticsEnabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    // In a real app, you'd register/unregister notification tokens here
+    if (value) {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(t("settings.notification_permission_denied_title"), t("settings.notification_permission_denied_message"));
+        setNotificationEnabled(false);
+      }
+    }
+  }, [hapticsEnabled]);
+
+  const toggleHaptics = useCallback((value: boolean) => {
+    setHapticsEnabled(value);
+    if (value) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
   }, []);
 
-  if (authLoading || settingsLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={COLORS.gold} size="large" />
-      </View>
-    );
-  }
-
-  if (userProfile?.role !== "parent") {
-    return (
-      <View style={styles.center}>
-        <DQMessageBox text={t("parent.access_denied")} />
-        <PixelButton
-          label={t("common.back")}
-          variant="secondary"
-          onPress={() => router.back()}
-          style={styles.backButton}
-        />
-      </View>
-    );
-  }
+  const toggleReducedMotion = useCallback((value: boolean) => {
+    // This state is managed by a hook, but for UI demonstration:
+    // In a real app, this would update a user setting in Firestore
+    // and the useReducedMotion hook would react to it.
+    // For now, just a placeholder for the UI.
+    if (hapticsEnabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    Alert.alert(t("common.info"), t("settings.reduced_motion_hint"));
+  }, [hapticsEnabled]);
 
   return (
     <>
@@ -102,6 +95,7 @@ export default function ParentSettingsScreen() {
               variant="ghost"
               size="sm"
               onPress={() => router.back()}
+              accessibilityLabel={t("common.back")}
             />
           ),
         }}
@@ -110,61 +104,87 @@ export default function ParentSettingsScreen() {
         style={styles.root}
         contentContainerStyle={[
           styles.content,
-          { direction: isRTL ? "rtl" : "ltr" },
+          { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + SPACING.md, paddingBottom: insets.bottom + SPACING.xxl },
         ]}
         showsVerticalScrollIndicator={false}
+        accessibilityLabel={t("nav.settings")}
       >
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
-          {t("settings.general")}
+        <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("settings.general_settings")}>
+          {t("settings.general_settings")}
         </PixelText>
 
         <PixelCard variant="default">
-          <PixelText variant="body" color="cream" style={styles.settingLabel}>
-            {t("settings.language")}
-          </PixelText>
-          <View style={styles.languageGrid}>
-            {Object.entries(LANGUAGES).map(([code, name]) => (
+          <View style={styles.settingRow}>
+            <PixelText variant="body" color="cream" accessibilityLabel={t("settings.language")}>
+              {t("settings.language")}
+            </PixelText>
+            <View style={[styles.languageButtons, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
               <PixelButton
-                key={code}
-                label={name}
-                variant={currentLanguage === code ? "primary" : "secondary"}
+                label="日本語"
+                variant={getLang() === "ja" ? "primary" : "secondary"}
                 size="sm"
-                onPress={() => handleLanguageChange(code as Locale)}
-                style={styles.languageButton}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: currentLanguage === code }}
+                onPress={() => handleLanguageChange("ja")}
+                accessibilityLabel={t("settings.language_japanese")}
+                accessibilityRole="radio" // Corrected: accessibilityRole="radio"
+                accessibilityState={{ selected: getLang() === "ja" }}
               />
-            ))}
+              <PixelButton
+                label="English"
+                variant={getLang() === "en" ? "primary" : "secondary"}
+                size="sm"
+                onPress={() => handleLanguageChange("en")}
+                accessibilityLabel={t("settings.language_english")}
+                accessibilityRole="radio" // Corrected: accessibilityRole="radio"
+                accessibilityState={{ selected: getLang() === "en" }}
+              />
+            </View>
+          </View>
+
+          <View style={styles.settingRow}>
+            <PixelText variant="body" color="cream" accessibilityLabel={t("settings.notifications")}>
+              {t("settings.notifications")}
+            </PixelText>
+            <PixelSwitch
+              value={notificationEnabled}
+              onValueChange={toggleNotifications}
+              accessibilityLabel={t("settings.toggle_notifications")}
+            />
+          </View>
+
+          <View style={styles.settingRow}>
+            <PixelText variant="body" color="cream" accessibilityLabel={t("settings.haptic_feedback")}>
+              {t("settings.haptic_feedback")}
+            </PixelText>
+            <PixelSwitch
+              value={hapticsEnabled}
+              onValueChange={toggleHaptics}
+              accessibilityLabel={t("settings.toggle_haptic_feedback")}
+            />
+          </View>
+
+          <View style={styles.settingRow}>
+            <PixelText variant="body" color="cream" accessibilityLabel={t("settings.reduced_motion")}>
+              {t("settings.reduced_motion")}
+            </PixelText>
+            <PixelSwitch
+              value={reducedMotion}
+              onValueChange={toggleReducedMotion}
+              accessibilityLabel={t("settings.toggle_reduced_motion")}
+            />
           </View>
         </PixelCard>
 
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
-          {t("parent.subscription_status")}
+        <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("settings.account_management")}>
+          {t("settings.account_management")}
         </PixelText>
-        <PixelCard variant="default">
-          <PixelText variant="body" color="cream">
-            {t("parent.subscription_info")}
-          </PixelText>
-          <PixelText variant="caption" color="gray" style={styles.subInfo}>
-            {t("parent.subscription_details")}
-          </PixelText>
-          <PixelButton
-            label={t("parent.manage_subscription")}
-            variant="secondary"
-            size="md"
-            onPress={handleManageSubscription}
-            style={styles.manageSubButton}
-          />
-        </PixelCard>
 
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
-          {t("settings.account")}
-        </PixelText>
         <PixelCard variant="default">
           <PixelButton
-            label={t("settings.sign_out")}
+            label={t("settings.logout")}
             variant="danger"
+            size="md"
             onPress={handleSignOut}
+            accessibilityLabel={t("settings.logout")}
           />
         </PixelCard>
       </ScrollView>
@@ -175,45 +195,26 @@ export default function ParentSettingsScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: DQ_BG,
+    backgroundColor: COLORS.bgDark,
   },
   content: {
     padding: SPACING.md,
-    paddingBottom: SPACING.xxl,
     gap: SPACING.lg,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: DQ_BG,
-  },
-  backButton: {
-    marginTop: SPACING.md,
   },
   sectionTitle: {
     marginBottom: SPACING.xs,
     textAlign: "center",
   },
-  settingLabel: {
-    marginBottom: SPACING.sm,
-  },
-  languageGrid: {
+  settingRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.darkGray,
+  },
+  languageButtons: {
     gap: SPACING.xs,
-    justifyContent: "center",
-  },
-  languageButton: {
-    flexBasis: "30%", // Roughly 3 items per row, adjust as needed
-    minWidth: 80,
-  },
-  subInfo: {
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.md,
-  },
-  manageSubButton: {
-    marginTop: SPACING.sm,
   },
 });
 

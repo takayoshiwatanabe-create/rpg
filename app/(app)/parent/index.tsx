@@ -7,6 +7,7 @@ import {
   Alert,
 } from "react-native";
 import { router, Stack } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
 import {
   subscribeToHero,
@@ -77,7 +78,8 @@ function FilterTabs({ current, onChange }: FilterTabsProps) {
           size="sm"
           onPress={() => onChange(f)}
           style={tabStyles.tabButton}
-          accessibilityRole="button" // Changed from "tab"
+          accessibilityRole="button"
+          accessibilityLabel={filterLabel(f)}
           accessibilityState={{ selected: current === f }}
         />
       ))}
@@ -120,41 +122,42 @@ function ParentQuestCard({
     <PixelCard variant="default" style={parentQuestCardStyles.card}>
       <View style={[parentQuestCardStyles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <View style={[parentQuestCardStyles.badge, { borderColor: subjectColor }]}>
-          <PixelText variant="caption" style={{ color: subjectColor }}>
+          <PixelText variant="caption" style={{ color: subjectColor }} accessibilityLabel={t(`quest.subject.${quest.subject}`)}>
             {t(`quest.subject.${quest.subject}`)}
           </PixelText>
         </View>
         <View style={[parentQuestCardStyles.badge, { borderColor: difficultyColor }]}>
-          <PixelText variant="caption" style={{ color: difficultyColor }}>
+          <PixelText variant="caption" style={{ color: difficultyColor }} accessibilityLabel={t(`quest.difficulty.${quest.difficulty}`)}>
             {t(`quest.difficulty.${quest.difficulty}`)}
           </PixelText>
         </View>
         <View style={parentQuestCardStyles.spacer} />
-        <PixelText variant="caption" color="gray">
+        <PixelText variant="caption" color="gray" accessibilityLabel={formatDeadline(quest.deadlineDate, getLang())}>
           {formatDeadline(quest.deadlineDate, getLang())}
         </PixelText>
       </View>
 
-      <PixelText variant="body" color="cream" style={parentQuestCardStyles.title}>
+      <PixelText variant="body" color="cream" style={parentQuestCardStyles.title} accessibilityLabel={quest.title}>
         {quest.title}
       </PixelText>
 
       <View style={[parentQuestCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="label" color="cream">
+        <PixelText variant="label" color="cream" accessibilityLabel={t("parent.hero_name")}>
           {t("parent.hero_name")}:
         </PixelText>
-        <PixelText variant="body" color="gold">
+        <PixelText variant="body" color="gold" accessibilityLabel={heroName}>
           {heroName}
         </PixelText>
       </View>
 
       <View style={[parentQuestCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="label" color="cream">
+        <PixelText variant="label" color="cream" accessibilityLabel={t("parent.status")}>
           {t("parent.status")}:
         </PixelText>
         <PixelText
           variant="body"
           color={isPending ? "gold" : "exp"}
+          accessibilityLabel={isPending ? t("parent.quest_status.pending") : t("quest.completed")}
         >
           {isPending
             ? t("parent.quest_status.pending")
@@ -170,6 +173,7 @@ function ParentQuestCard({
             size="sm"
             onPress={() => onApprove(quest.id)}
             style={parentQuestCardStyles.actionButton}
+            accessibilityLabel={t("parent.approve")}
           />
           <PixelButton
             label={t("parent.reject")}
@@ -177,6 +181,7 @@ function ParentQuestCard({
             size="sm"
             onPress={() => onReject(quest.id)}
             style={parentQuestCardStyles.actionButton}
+            accessibilityLabel={t("parent.reject")}
           />
         </View>
       )}
@@ -227,6 +232,7 @@ const parentQuestCardStyles = StyleSheet.create({
 export default function ParentDashboardScreen() {
   const { user, userProfile, isLoading: authLoading } = useAuth();
   const isRTL = getIsRTL();
+  const insets = useSafeAreaInsets();
 
   const [hero, setHero] = useState<HeroProfile | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
@@ -246,7 +252,7 @@ export default function ParentDashboardScreen() {
 
     setDataLoading(true);
 
-    const childId = user.uid;
+    const childId = user.uid; // Assuming child's heroId is same as parent's uid for simplicity
     const unsubHero = subscribeToHero(user.uid, childId, (h: HeroProfile | null) => {
       setHero(h);
       setDataLoading(false);
@@ -312,15 +318,15 @@ export default function ParentDashboardScreen() {
   if (authLoading || dataLoading) {
     return (
       <View style={styles.center} testID="activity-indicator">
-        <ActivityIndicator color={COLORS.gold} size="large" />
+        <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
       </View>
     );
   }
 
   if (!isParent) {
     return (
-      <View style={styles.center}>
-        <PixelText variant="body" color="danger">
+      <View style={[styles.center, { paddingTop: insets.top }]}>
+        <PixelText variant="body" color="danger" accessibilityLabel={t("parent.access_denied")}>
           {t("parent.access_denied")}
         </PixelText>
         <PixelButton
@@ -328,6 +334,7 @@ export default function ParentDashboardScreen() {
           variant="secondary"
           onPress={() => router.back()}
           style={styles.backButton}
+          accessibilityLabel={t("common.back")}
         />
       </View>
     );
@@ -344,6 +351,7 @@ export default function ParentDashboardScreen() {
               variant="ghost"
               size="sm"
               onPress={() => router.push("/(app)/parent/settings")}
+              accessibilityLabel={t("parent.settings")}
             />
           ),
         }}
@@ -352,17 +360,22 @@ export default function ParentDashboardScreen() {
         style={styles.root}
         contentContainerStyle={[
           styles.content,
-          { direction: isRTL ? "rtl" : "ltr" },
+          { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + SPACING.md, paddingBottom: insets.bottom + SPACING.xxl },
         ]}
         showsVerticalScrollIndicator={false}
+        accessibilityLabel={t("nav.parent_dashboard")}
       >
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
+        <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("parent.child_progress")}>
           {t("parent.child_progress")}
         </PixelText>
 
         {hero ? (
           <PixelCard variant="default" style={styles.heroSummaryCard}>
-            <PixelText variant="body" color="cream">
+            <PixelText variant="body" color="cream" accessibilityLabel={t("parent.hero_summary", {
+                name: hero.displayName,
+                level: hero.level,
+                gold: hero.gold,
+              })}>
               {t("parent.hero_summary", {
                 name: hero.displayName,
                 level: hero.level,
@@ -372,14 +385,14 @@ export default function ParentDashboardScreen() {
           </PixelCard>
         ) : (
           <PixelCard variant="default">
-            <PixelText variant="body" color="gray" style={styles.emptyText}>
+            <PixelText variant="body" color="gray" style={styles.emptyText} accessibilityLabel={t("parent.no_child_data")}>
               {t("parent.no_child_data")}
             </PixelText>
           </PixelCard>
         )}
 
         <View style={styles.section}>
-          <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
+          <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("parent.quest_management")}>
             {t("parent.quest_management")}
           </PixelText>
           <View style={styles.filterRow}>
@@ -388,7 +401,9 @@ export default function ParentDashboardScreen() {
 
           {visibleQuests.length === 0 ? (
             <PixelCard variant="default">
-              <PixelText variant="body" color="gray" style={styles.emptyText}>
+              <PixelText variant="body" color="gray" style={styles.emptyText} accessibilityLabel={filter === "pending"
+                  ? t("parent.no_pending_quests")
+                  : t("parent.no_quests_found")}>
                 {filter === "pending"
                   ? t("parent.no_pending_quests")
                   : t("parent.no_quests_found")}
@@ -409,28 +424,23 @@ export default function ParentDashboardScreen() {
         </View>
 
         <View style={styles.section}>
-          <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
+          <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("parent.subscription_status")}>
             {t("parent.subscription_status")}
           </PixelText>
           <PixelCard variant="default">
-            <PixelText variant="body" color="cream">
+            <PixelText variant="body" color="cream" accessibilityLabel={t("parent.subscription_info")}>
               {t("parent.subscription_info")}
             </PixelText>
-            <PixelText variant="caption" color="gray" style={styles.subInfo}>
+            <PixelText variant="caption" color="gray" style={styles.subInfo} accessibilityLabel={t("parent.subscription_details")}>
               {t("parent.subscription_details")}
             </PixelText>
-            {/*
-              [payment] デジタルコンテンツ販売がありますが StoreKit/IAP が未実装です
-              This button would typically trigger an In-App Purchase flow (e.g., via Expo's `expo-in-app-purchases` or a custom native module)
-              or navigate to a web view that handles subscription management via a secure payment provider (e.g., Stripe Customer Portal).
-              Direct links to external payment methods are generally not allowed by app stores for digital content.
-            */}
             <PixelButton
               label={t("parent.manage_subscription")}
               variant="secondary"
               size="md"
               onPress={() => Alert.alert(t("common.info"), t("parent.manage_subscription_hint"))}
               style={styles.manageSubButton}
+              accessibilityLabel={t("parent.manage_subscription")}
             />
           </PixelCard>
         </View>
@@ -446,7 +456,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
-    paddingBottom: SPACING.xxl,
     gap: SPACING.lg,
   },
   center: {
