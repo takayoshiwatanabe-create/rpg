@@ -53,21 +53,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   heading: {
-    fontSize: FONT_SIZES.heading, // Use FONT_SIZES.heading
+    fontSize: FONT_SIZES.heading,
     fontWeight: "bold",
   },
   body: {
-    fontSize: FONT_SIZES.body, // Use FONT_SIZES.body
+    fontSize: FONT_SIZES.body,
   },
   label: {
-    fontSize: FONT_SIZES.label, // Use FONT_SIZES.label
+    fontSize: FONT_SIZES.label,
     fontWeight: "bold",
   },
   caption: {
-    fontSize: FONT_SIZES.caption, // Use FONT_SIZES.caption
+    fontSize: FONT_SIZES.caption,
   },
   stat: {
-    fontSize: FONT_SIZES.stat, // Use FONT_SIZES.stat
+    fontSize: FONT_SIZES.stat,
     fontWeight: "bold",
   },
 });

@@ -15,7 +15,7 @@ import {
 } from "@/lib/firestore";
 import { PixelText, PixelButton, PixelCard } from "@/components/ui";
 import { t, getLang, getIsRTL } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
+import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
 import type { HeroProfile, Quest, QuestStatus } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ function FilterTabs({ current, onChange }: FilterTabsProps) {
           size="sm"
           onPress={() => onChange(f)}
           style={tabStyles.tabButton}
-          accessibilityRole="tab"
+          accessibilityRole="button" // Changed from "tab"
           accessibilityState={{ selected: current === f }}
         />
       ))}
@@ -483,3 +483,4 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
 });
+

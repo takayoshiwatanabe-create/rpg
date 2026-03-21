@@ -3,121 +3,78 @@ import {
   View,
   ScrollView,
   StyleSheet,
-  Alert,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { router, Stack } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
-import { signOutUser } from "@/lib/firebase";
-import { updateUserProfile } from "@/lib/firestore";
+import { useSettings, updateUserSettings } from "@/hooks/useSettings";
 import { PixelText, PixelButton, PixelCard } from "@/components/ui";
-import { t, getLang, setLang, getIsRTL, SUPPORTED_LANGUAGES } from "@/i18n";
-import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
-import type { Locale } from "@/types";
-
-type LanguageOptionProps = {
-  locale: Locale;
-  label: string;
-  currentLocale: Locale;
-  onSelect: (locale: Locale) => void;
-  isRTL: boolean;
-};
-
-function LanguageOption({
-  locale,
-  label,
-  currentLocale,
-  onSelect,
-  isRTL,
-}: LanguageOptionProps) {
-  const isActive = locale === currentLocale;
-  return (
-    <PixelButton
-      label={label}
-      variant={isActive ? "primary" : "secondary"}
-      size="md"
-      onPress={() => onSelect(locale)}
-      style={isActive ? { ...languageOptionStyles.button, ...languageOptionStyles.activeButton } : languageOptionStyles.button}
-      accessibilityRole="radio"
-      accessibilityState={{ checked: isActive }}
-    />
-  );
-}
-
-const languageOptionStyles = StyleSheet.create({
-  button: {
-    flex: 1,
-  },
-  activeButton: {
-    borderColor: COLORS.gold,
-  },
-  rtlText: {
-    textAlign: "right",
-  },
-});
+import { t, getLang, setLang, getIsRTL, LANGUAGES } from "@/i18n";
+import { COLORS, SPACING } from "@/constants/theme";
+import * as Haptics from "expo-haptics";
 
 export default function ParentSettingsScreen() {
-  const { user, userProfile, isLoading } = useAuth();
+  const { user, userProfile, isLoading: authLoading, signOut } = useAuth();
+  const { settings, isLoading: settingsLoading } = useSettings();
   const isRTL = getIsRTL();
-  const currentLocale = getLang();
 
-  const [isSaving, setIsSaving] = useState(false);
-
-  const isParent = userProfile?.role === "parent";
+  const [selectedLanguage, setSelectedLanguage] = useState(getLang());
 
   useEffect(() => {
-    if (!isLoading && !isParent) {
-      // Redirect if not a parent or not authenticated
-      router.replace("/(app)/camp");
+    if (settings && settings.language && settings.language !== selectedLanguage) {
+      setSelectedLanguage(settings.language);
     }
-  }, [isLoading, isParent]);
+  }, [settings, selectedLanguage]);
 
-  const handleLanguageChange = useCallback(
-    async (newLocale: Locale) => {
-      if (!user || isSaving) return;
+  const handleLanguageChange = useCallback(async (lang: string) => {
+    setSelectedLanguage(lang);
+    setLang(lang); // Update i18n immediately
+    if (user?.uid) {
+      await updateUserSettings(user.uid, { language: lang });
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [user?.uid]);
 
-      setIsSaving(true);
-      try {
-        await updateUserProfile(user.uid, { locale: newLocale });
-        setLang(newLocale); // Update i18n instance immediately
-        Alert.alert(t("common.success"), t("settings.language_updated"));
-      } catch (error) {
-        console.error("Failed to update language:", error);
-        Alert.alert(t("common.error"), t("error.unknown"));
-      } finally {
-        setIsSaving(false);
-      }
-    },
-    [user, isSaving],
-  );
-
-  const handleLogout = useCallback(async () => {
+  const handleSignOut = useCallback(async () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert(
-      t("settings.logout"),
-      t("settings.logout_confirm"),
+      t("settings.logout_confirm_title"),
+      t("settings.logout_confirm_message"),
       [
         { text: t("common.cancel"), style: "cancel" },
         {
           text: t("settings.logout"),
           style: "destructive",
           onPress: async () => {
-            try {
-              await signOutUser();
-              router.replace("/(auth)/login"); // Redirect to login after logout
-            } catch (error) {
-              console.error("Failed to log out:", error);
-              Alert.alert(t("common.error"), t("error.unknown"));
-            }
+            await signOut();
+            router.replace("/(auth)/login");
           },
         },
       ],
     );
-  }, []);
+  }, [signOut]);
 
-  if (isLoading || !isParent) {
+  if (authLoading || settingsLoading) {
     return (
-      <View style={styles.center} testID="activity-indicator">
+      <View style={styles.center}>
         <ActivityIndicator color={COLORS.gold} size="large" />
+      </View>
+    );
+  }
+
+  if (!user || userProfile?.role !== "parent") {
+    return (
+      <View style={styles.center}>
+        <PixelText variant="body" color="danger">
+          {t("parent.access_denied")}
+        </PixelText>
+        <PixelButton
+          label={t("common.back")}
+          variant="secondary"
+          onPress={() => router.back()}
+          style={styles.backButton}
+        />
       </View>
     );
   }
@@ -134,44 +91,46 @@ export default function ParentSettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
-          {t("settings.general_settings")}
+          {t("settings.general")}
         </PixelText>
 
-        {/* Language Selection */}
         <PixelCard variant="default">
           <PixelText variant="label" color="cream" style={styles.settingLabel}>
             {t("settings.language")}
           </PixelText>
           <View style={styles.languageOptions}>
-            {SUPPORTED_LANGUAGES.map((lang) => (
-              <LanguageOption
-                key={lang.locale}
-                locale={lang.locale}
-                label={lang.label}
-                currentLocale={currentLocale}
-                onSelect={handleLanguageChange}
-                isRTL={isRTL}
+            {Object.entries(LANGUAGES).map(([key, value]) => (
+              <PixelButton
+                key={key}
+                label={value.nativeName}
+                variant={selectedLanguage === key ? "primary" : "secondary"}
+                size="sm"
+                onPress={() => handleLanguageChange(key)}
+                style={styles.languageButton}
+                accessibilityRole="radio" // Changed from "radio"
+                accessibilityState={{ selected: selectedLanguage === key }} // Changed from "checked"
               />
             ))}
           </View>
-          {isSaving && (
-            <PixelText variant="caption" color="gray" style={styles.savingText}>
-              {t("common.saving")}...
-            </PixelText>
-          )}
         </PixelCard>
 
-        {/* Account Actions */}
         <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
-          {t("settings.account_actions")}
+          {t("settings.account")}
         </PixelText>
+
         <PixelCard variant="default">
+          <PixelText variant="label" color="cream" style={styles.settingLabel}>
+            {t("settings.email")}
+          </PixelText>
+          <PixelText variant="body" color="gray">
+            {user.email}
+          </PixelText>
+
           <PixelButton
             label={t("settings.logout")}
             variant="danger"
-            size="lg"
-            onPress={handleLogout}
-            style={styles.actionButton}
+            onPress={handleSignOut}
+            style={styles.logoutButton}
           />
         </PixelCard>
       </ScrollView>
@@ -195,6 +154,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: COLORS.bgDark,
   },
+  backButton: {
+    marginTop: SPACING.md,
+  },
   sectionTitle: {
     marginBottom: SPACING.xs,
     textAlign: "center",
@@ -206,12 +168,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: SPACING.xs,
-  },
-  savingText: {
     marginTop: SPACING.sm,
-    textAlign: "center",
   },
-  actionButton: {
-    width: "100%",
+  languageButton: {
+    minWidth: 80,
+  },
+  logoutButton: {
+    marginTop: SPACING.lg,
   },
 });
+

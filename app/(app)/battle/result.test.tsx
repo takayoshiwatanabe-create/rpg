@@ -16,6 +16,7 @@ vi.mock("expo-router", () => ({
     gold: "50",
     overdue: "false",
     monsterName: "スライム",
+    duration: "360", // 6 minutes
   })),
   router: {
     replace: vi.fn(),
@@ -148,6 +149,7 @@ describe("BattleResultScreen", () => {
       expect(screen.getByText("+100")).toBeVisible(); // EXP
       expect(screen.getByText("+50")).toBeVisible(); // Gold
       expect(screen.getByText("次へ")).toBeVisible();
+      expect(screen.getByText("📚 6:00")).toBeVisible(); // Study time
     });
   });
 
@@ -201,3 +203,4 @@ describe("BattleResultScreen", () => {
     await waitFor(() => expect(screen.getByText("次へ")).toBeVisible());
   });
 });
+

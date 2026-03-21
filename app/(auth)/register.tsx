@@ -2,22 +2,19 @@ import { useCallback, useState } from "react";
 import {
   View,
   StyleSheet,
+  ImageBackground,
   Alert,
   Platform,
   ActivityIndicator,
 } from "react-native";
-import { router, Link } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  registerUserWithEmail, // Corrected import
-  createHeroProfile, // Corrected import
-  createUserProfile, // Corrected import
-} from "@/lib/firebase";
-import { PixelText, PixelButton, PixelInput } from "@/components/ui"; // Corrected import
+import { router } from "expo-router";
+import { useAuth } from "@/hooks/useAuth";
+import { PixelText, PixelButton, PixelInput, PixelCard } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
 import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme";
-import { UserRole } from "@/types"; // Corrected import
+import * as Haptics from "expo-haptics";
 
+const REGISTER_BG = require("@/assets/register_bg.png");
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
@@ -25,187 +22,203 @@ const FONT_FAMILY = Platform.select({
 });
 
 export default function RegisterScreen() {
+  const { register, isLoading } = useAuth();
   const isRTL = getIsRTL();
-  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<UserRole>("child");
-  const [isLoading, setIsLoading] = useState(false);
+  const [role, setRole] = useState<"child" | "parent">("child");
 
   const handleRegister = useCallback(async () => {
-    if (!email || !password || !displayName) {
-      Alert.alert(t("common.error"), t("register.error.empty_fields"));
+    if (!email || !password || !confirmPassword || !displayName) {
+      Alert.alert(t("common.error"), t("auth.error.all_fields_required"));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert(t("common.error"), t("auth.error.passwords_not_match"));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert(t("common.error"), t("auth.error.password_too_short"));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
-    setIsLoading(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
+
     try {
-      const userCredential = await registerUserWithEmail(email, password);
-      const uid = userCredential.user.uid;
-
-      await createUserProfile(uid, {
-        email,
-        role,
-        displayName,
-        createdAt: new Date().toISOString(),
-      });
-
-      if (role === "child") {
-        await createHeroProfile(uid, {
-          userId: uid,
-          displayName,
-          level: 1,
-          currentExp: 0,
-          totalExp: 0,
-          gold: 0,
-          hp: 100,
-          maxHp: 100,
-          mp: 0, // Added MP for consistency with CampScreen
-          maxMp: 0, // Added Max MP
-          attack: 10,
-          defense: 5,
-          skills: [],
-          inventory: [],
-          createdAt: new Date().toISOString(),
-        });
-      }
-
-      Alert.alert(t("common.success"), t("register.success"));
-      router.replace("/(app)"); // Redirect to app after successful registration
+      await register(email, password, displayName, role);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(t("common.success"), t("auth.register_success"));
+      router.replace("/(app)");
     } catch (error: any) {
-      console.error("Registration error:", error);
-      Alert.alert(t("common.error"), t("register.error.failed"));
-    } finally {
-      setIsLoading(false);
+      console.error("Registration failed:", error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t("common.error"), error.message || t("auth.error.register_failed"));
     }
-  }, [email, password, displayName, role]);
+  }, [email, password, confirmPassword, displayName, role, register]);
+
+  const handleGoBack = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
+    router.back();
+  }, []);
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: insets.top + SPACING.md,
-          paddingBottom: insets.bottom + SPACING.md,
-          direction: isRTL ? "rtl" : "ltr",
-        },
-      ]}
-    >
-      <PixelText variant="heading" color="gold" style={styles.title}>
-        {t("register.title")}
-      </PixelText>
-
-      <View style={styles.form}>
-        <PixelInput
-          label={t("register.display_name")}
-          value={displayName}
-          onChangeText={setDisplayName}
-          autoCapitalize="words"
-          placeholder={t("register.display_name_placeholder")}
-          editable={!isLoading}
-        />
-        <PixelInput
-          label={t("register.email")}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          placeholder={t("register.email_placeholder")}
-          editable={!isLoading}
-        />
-        <PixelInput
-          label={t("register.password")}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholder={t("register.password_placeholder")}
-          editable={!isLoading}
-        />
-
-        <View style={[styles.roleSelection, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <PixelText variant="label" color="cream">
-            {t("register.account_type")}:
+    <ImageBackground source={REGISTER_BG} style={styles.background}>
+      <View style={[styles.overlay, { direction: isRTL ? "rtl" : "ltr" }]}>
+        <PixelCard variant="default" style={styles.registerCard}>
+          <PixelText variant="heading" color="gold" style={styles.title}>
+            {t("auth.register_title")}
           </PixelText>
-          <View style={[styles.roleButtons, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("auth.display_name")}
+          </PixelText>
+          <PixelInput
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder={t("auth.placeholder.display_name")}
+            autoCapitalize="words"
+            style={styles.input}
+          />
+
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("auth.email")}
+          </PixelText>
+          <PixelInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder={t("auth.placeholder.email")}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={styles.input}
+          />
+
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("auth.password")}
+          </PixelText>
+          <PixelInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder={t("auth.placeholder.password")}
+            secureTextEntry
+            style={styles.input}
+          />
+
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("auth.confirm_password")}
+          </PixelText>
+          <PixelInput
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder={t("auth.placeholder.confirm_password")}
+            secureTextEntry
+            style={styles.input}
+          />
+
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("auth.account_type")}
+          </PixelText>
+          <View style={styles.roleToggle}>
             <PixelButton
-              label={t("register.role_child")}
+              label={t("auth.role_child")}
               variant={role === "child" ? "primary" : "secondary"}
-              size="sm"
               onPress={() => setRole("child")}
-              disabled={isLoading}
               style={styles.roleButton}
             />
             <PixelButton
-              label={t("register.role_parent")}
+              label={t("auth.role_parent")}
               variant={role === "parent" ? "primary" : "secondary"}
-              size="sm"
               onPress={() => setRole("parent")}
-              disabled={isLoading}
               style={styles.roleButton}
             />
           </View>
-        </View>
 
-        <PixelButton
-          label={isLoading ? t("common.loading") : t("register.register_button")}
-          onPress={handleRegister}
-          variant="primary"
-          size="lg"
-          style={styles.button}
-          disabled={isLoading}
-        >
-          {isLoading && <ActivityIndicator color={COLORS.white} size="small" />}
-        </PixelButton>
-
-        <Link href="/(auth)/login" asChild>
           <PixelButton
-            label={t("register.login_link")}
-            variant="secondary"
-            size="md"
-            style={styles.loginButton}
+            label={isLoading ? t("common.loading") : t("auth.register")}
+            variant="primary"
+            onPress={handleRegister}
             disabled={isLoading}
+            style={styles.registerButton}
           />
-        </Link>
+
+          <PixelButton
+            label={t("auth.back_to_login")}
+            variant="secondary"
+            onPress={handleGoBack}
+            disabled={isLoading}
+            style={styles.backButton}
+          />
+        </PixelCard>
       </View>
-    </View>
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={COLORS.gold} />
+        </View>
+      )}
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
-    alignItems: "center",
+    resizeMode: "cover",
     justifyContent: "center",
-    paddingHorizontal: SPACING.md,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: SPACING.md,
+  },
+  registerCard: {
+    width: "90%",
+    maxWidth: 400,
+    padding: SPACING.lg,
+    gap: SPACING.sm,
   },
   title: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
     textAlign: "center",
   },
-  form: {
-    width: "100%",
-    maxWidth: 400,
+  inputLabel: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  input: {
+    backgroundColor: COLORS.darkGray,
+    color: COLORS.cream,
+    padding: SPACING.sm,
+    borderRadius: 4,
+    fontFamily: FONT_FAMILY,
+    fontSize: FONT_SIZES.body,
+  },
+  roleToggle: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: SPACING.sm,
     gap: SPACING.md,
-  },
-  roleSelection: {
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: SPACING.sm,
-  },
-  roleButtons: {
-    gap: SPACING.xs,
   },
   roleButton: {
     flex: 1,
   },
-  button: {
+  registerButton: {
+    marginTop: SPACING.lg,
+  },
+  backButton: {
     marginTop: SPACING.md,
   },
-  loginButton: {
-    marginTop: SPACING.sm,
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

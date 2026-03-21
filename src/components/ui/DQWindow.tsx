@@ -8,7 +8,7 @@ interface DQWindowProps {
   children: React.ReactNode;
   title?: string;
   style?: ViewStyle;
-  accessibilityLabel?: string; // Added accessibilityLabel
+  accessibilityLabel?: string;
 }
 
 export function DQWindow({ children, title, style, accessibilityLabel }: DQWindowProps) {
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     position: "absolute",
-    top: -FONT_SIZES.md / 2 - PIXEL_BORDER.borderWidth, // Adjust position based on font size and border
+    top: -FONT_SIZES.md / 2 - PIXEL_BORDER.borderWidth,
     backgroundColor: COLORS.bgCard,
     paddingHorizontal: SPACING.xs,
     zIndex: 1,

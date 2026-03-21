@@ -5,7 +5,7 @@ import { PixelCard } from "./PixelCard";
 import { SPACING, FONT_SIZES, COLORS } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
 import { getIsRTL } from "@/i18n";
-import { MESSAGE_TYPING_SPEED_MS } from "@/constants/game"; // Import from game constants
+import { MESSAGE_TYPING_SPEED_MS } from "@/constants/game";
 
 type DQMessageBoxProps = {
   text: string;

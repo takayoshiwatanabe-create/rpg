@@ -2,17 +2,19 @@ import { useCallback, useState } from "react";
 import {
   View,
   StyleSheet,
+  ImageBackground,
   Alert,
   Platform,
   ActivityIndicator,
 } from "react-native";
-import { router, Link } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { signInUser } from "@/lib/firebase"; // Corrected import
-import { PixelText, PixelButton, PixelInput } from "@/components/ui"; // Corrected import
+import { router } from "expo-router";
+import { useAuth } from "@/hooks/useAuth";
+import { PixelText, PixelButton, PixelInput, PixelCard } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
 import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme";
+import * as Haptics from "expo-haptics";
 
+const LOGIN_BG = require("@/assets/login_bg.png");
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
@@ -20,112 +22,140 @@ const FONT_FAMILY = Platform.select({
 });
 
 export default function LoginScreen() {
+  const { signIn, isLoading } = useAuth();
   const isRTL = getIsRTL();
-  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = useCallback(async () => {
     if (!email || !password) {
-      Alert.alert(t("common.error"), t("login.error.empty_fields"));
+      Alert.alert(t("common.error"), t("auth.error.email_password_required"));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
-    setIsLoading(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
+
     try {
-      await signInUser(email, password);
-      router.replace("/(app)"); // Redirect to app after successful login
+      await signIn(email, password);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/(app)");
     } catch (error: any) {
-      console.error("Login error:", error);
-      Alert.alert(t("common.error"), t("login.error.failed"));
-    } finally {
-      setIsLoading(false);
+      console.error("Login failed:", error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t("common.error"), error.message || t("auth.error.login_failed"));
     }
-  }, [email, password]);
+  }, [email, password, signIn]);
+
+  const handleRegister = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
+    router.push("/(auth)/register");
+  }, []);
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: insets.top + SPACING.md,
-          paddingBottom: insets.bottom + SPACING.md,
-          direction: isRTL ? "rtl" : "ltr",
-        },
-      ]}
-    >
-      <PixelText variant="heading" color="gold" style={styles.title}>
-        {t("login.title")}
-      </PixelText>
+    <ImageBackground source={LOGIN_BG} style={styles.background}>
+      <View style={[styles.overlay, { direction: isRTL ? "rtl" : "ltr" }]}>
+        <PixelCard variant="default" style={styles.loginCard}>
+          <PixelText variant="heading" color="gold" style={styles.title}>
+            {t("auth.login_title")}
+          </PixelText>
 
-      <View style={styles.form}>
-        <PixelInput
-          label={t("login.email")}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          placeholder={t("login.email_placeholder")}
-          editable={!isLoading}
-        />
-        <PixelInput
-          label={t("login.password")}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholder={t("login.password_placeholder")}
-          editable={!isLoading}
-        />
-
-        <PixelButton
-          label={isLoading ? t("common.loading") : t("login.login_button")}
-          onPress={handleLogin}
-          variant="primary"
-          size="lg"
-          style={styles.button}
-          disabled={isLoading}
-        >
-          {isLoading && <ActivityIndicator color={COLORS.white} size="small" />}
-        </PixelButton>
-
-        <Link href="/(auth)/register" asChild>
-          <PixelButton
-            label={t("login.register_link")}
-            variant="secondary"
-            size="md"
-            style={styles.registerButton}
-            disabled={isLoading}
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("auth.email")}
+          </PixelText>
+          <PixelInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder={t("auth.placeholder.email")}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={styles.input}
           />
-        </Link>
+
+          <PixelText variant="label" color="cream" style={styles.inputLabel}>
+            {t("auth.password")}
+          </PixelText>
+          <PixelInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder={t("auth.placeholder.password")}
+            secureTextEntry
+            style={styles.input}
+          />
+
+          <PixelButton
+            label={isLoading ? t("common.loading") : t("auth.login")}
+            variant="primary"
+            onPress={handleLogin}
+            disabled={isLoading}
+            style={styles.loginButton}
+          />
+
+          <PixelButton
+            label={t("auth.register_prompt")}
+            variant="secondary"
+            onPress={handleRegister}
+            disabled={isLoading}
+            style={styles.registerButton}
+          />
+        </PixelCard>
       </View>
-    </View>
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={COLORS.gold} />
+        </View>
+      )}
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
-    alignItems: "center",
+    resizeMode: "cover",
     justifyContent: "center",
-    paddingHorizontal: SPACING.md,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: SPACING.md,
+  },
+  loginCard: {
+    width: "90%",
+    maxWidth: 400,
+    padding: SPACING.lg,
+    gap: SPACING.sm,
   },
   title: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
     textAlign: "center",
   },
-  form: {
-    width: "100%",
-    maxWidth: 400,
-    gap: SPACING.md,
+  inputLabel: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
-  button: {
-    marginTop: SPACING.md,
+  input: {
+    backgroundColor: COLORS.darkGray,
+    color: COLORS.cream,
+    padding: SPACING.sm,
+    borderRadius: 4,
+    fontFamily: FONT_FAMILY,
+    fontSize: FONT_SIZES.body,
+  },
+  loginButton: {
+    marginTop: SPACING.lg,
   },
   registerButton: {
-    marginTop: SPACING.sm,
+    marginTop: SPACING.md,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

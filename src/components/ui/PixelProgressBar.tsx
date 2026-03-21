@@ -77,8 +77,8 @@ export function PixelProgressBar({
             {
               backgroundColor: (COLORS as Record<string, string>)[color] ?? COLORS.gold,
               width: barWidth,
-              left: isRTL ? undefined : 0, // Ensure fill starts from left for LTR
-              right: isRTL ? 0 : undefined, // Ensure fill starts from right for RTL
+              left: isRTL ? undefined : 0,
+              right: isRTL ? 0 : undefined,
             },
           ]}
         />
@@ -95,10 +95,10 @@ export function PixelProgressBar({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    marginBottom: SPACING.xs, // Added margin for spacing between progress bars
+    marginBottom: SPACING.xs,
   },
   label: {
-    marginBottom: SPACING.xxs, // Adjusted label spacing
+    marginBottom: SPACING.xxs,
   },
   progressBar: {
     height: 16,
@@ -112,7 +112,6 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: "100%",
     position: "absolute",
-    // left and right are handled dynamically based on RTL
   },
   valueText: {
     position: "absolute",

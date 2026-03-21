@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { PixelText, PixelCard, PixelProgressBar } from "@/components/ui";
 import { t } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme"; // Removed PIXEL_BORDER as it's not directly used here
+import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme";
 import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile } from "@/types";
 
@@ -30,7 +30,7 @@ export const HeroStatus = React.memo(
 
         {/* EXP bar */}
         <PixelProgressBar
-          label={t("hero.exp")} // Use translation for label
+          label={t("hero.exp")}
           value={expProgress.current}
           max={expProgress.required}
           color="exp"
@@ -39,7 +39,7 @@ export const HeroStatus = React.memo(
 
         {/* HP bar */}
         <PixelProgressBar
-          label={t("hero.hp")} // Use translation for label
+          label={t("hero.hp")}
           value={hero.hp}
           max={hero.maxHp}
           color="danger"
@@ -48,7 +48,7 @@ export const HeroStatus = React.memo(
 
         {/* MP bar */}
         <PixelProgressBar
-          label={t("hero.mp")} // Use translation for label
+          label={t("hero.mp")}
           value={hero.mp}
           max={hero.maxMp}
           color="info"
@@ -119,5 +119,4 @@ const styles = StyleSheet.create({
   goldValue: {
     fontSize: FONT_SIZES.lg,
   },
-  // Removed unused bar styles
 });

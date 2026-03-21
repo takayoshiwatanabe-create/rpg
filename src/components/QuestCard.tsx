@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   monsterEmoji: {
-    fontSize: FONT_SIZES.md, // Use FONT_SIZES.md for consistency
+    fontSize: FONT_SIZES.md,
     fontFamily: FONT_FAMILY_MAIN,
   },
 });

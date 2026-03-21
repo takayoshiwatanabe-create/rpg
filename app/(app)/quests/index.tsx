@@ -5,36 +5,34 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
+  Text,
 } from "react-native";
-import { router, Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
-import { subscribeToQuests } from "@/lib/firestore";
-import { PixelText, PixelButton, PixelCard } from "@/components/ui";
-import { t, getLang, getIsRTL } from "@/i18n";
+import { subscribeToActiveQuests } from "@/lib/firestore";
+import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
+import { t, getIsRTL } from "@/i18n";
 import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
-import type { Quest, QuestStatus } from "@/types";
+import { Quest, Subject, Difficulty, QuestStatus } from "@/types";
+import * as Haptics from "expo-haptics";
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
+const FONT_FAMILY = Platform.select({
+  ios: "Courier New",
+  android: "monospace",
+  default: "monospace",
+});
 
-type FilterKey = "all" | "active" | "completed";
+type FilterKey = "all" | "pending" | "inProgress" | "completed";
 
-const FILTERS: FilterKey[] = ["all", "active", "completed"];
-
-const ACTIVE_STATUSES: QuestStatus[] = ["pending", "inProgress"];
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const FILTERS: FilterKey[] = ["all", "pending", "inProgress", "completed"];
 
 function filterQuests(quests: Quest[], filter: FilterKey): Quest[] {
   switch (filter) {
-    case "active":
-      return quests.filter((q) => ACTIVE_STATUSES.includes(q.status));
+    case "pending":
+    case "inProgress":
     case "completed":
-      return quests.filter((q) => q.status === "completed");
+      return quests.filter((q) => q.status === filter);
     default:
       return quests;
   }
@@ -48,10 +46,6 @@ function formatDeadline(dateStr: string, locale: string): string {
   }).format(new Date(dateStr));
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
 type FilterTabsProps = {
   current: FilterKey;
   onChange: (f: FilterKey) => void;
@@ -60,22 +54,22 @@ type FilterTabsProps = {
 function FilterTabs({ current, onChange }: FilterTabsProps) {
   const filterLabel = (f: FilterKey) => {
     if (f === "all") return t("quest.filter.all");
-    if (f === "active") return t("quest.filter.active");
-    return t("quest.filter.completed");
+    if (f === "pending") return t("quest.status.pending");
+    if (f === "inProgress") return t("quest.status.inProgress");
+    return t("quest.completed");
   };
 
   return (
     <View style={tabStyles.row}>
       {FILTERS.map((f) => (
-        <PixelButton
+        <DQCommandMenu
           key={f}
-          label={filterLabel(f)}
-          variant={current === f ? "primary" : "secondary"}
-          size="sm"
-          onPress={() => onChange(f)}
-          style={tabStyles.tabButton}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: current === f }}
+          items={[{
+            label: filterLabel(f),
+            onPress: () => onChange(f),
+            accessibilityLabel: filterLabel(f),
+          }]}
+          style={current === f ? tabStyles.tabButtonActive : tabStyles.tabButton}
         />
       ))}
     </View>
@@ -87,92 +81,75 @@ const tabStyles = StyleSheet.create({
     flexDirection: "row",
     gap: SPACING.xs,
     justifyContent: "center",
+    flexWrap: "wrap",
   },
   tabButton: {
     flex: 1,
+    minWidth: 80,
+  },
+  tabButtonActive: {
+    flex: 1,
+    minWidth: 80,
+    backgroundColor: COLORS.primary, // Example active style
   },
 });
 
 type QuestCardProps = {
   quest: Quest;
+  onPress: (questId: string) => void;
   isRTL: boolean;
 };
 
-function QuestCard({ quest, isRTL }: QuestCardProps) {
+function QuestCard({ quest, onPress, isRTL }: QuestCardProps) {
   const subjectColor = COLORS[quest.subject as keyof typeof COLORS] ?? COLORS.other;
   const difficultyColor = COLORS[quest.difficulty as keyof typeof COLORS] ?? COLORS.normal;
-
-  const isCompleted = quest.status === "completed";
-  const isPending = quest.status === "pending";
-
-  const handlePressCard = useCallback(() => {
-    router.push(`/(app)/quests/${quest.id}`);
-  }, [quest.id]);
-
-  const handleStartBattle = useCallback(() => {
-    router.push(`/(app)/battle/${quest.id}`);
-  }, [quest.id]);
+  const statusColor =
+    quest.status === "pending"
+      ? COLORS.gold
+      : quest.status === "inProgress"
+      ? COLORS.primary
+      : COLORS.exp;
 
   return (
-    <PixelCard variant="default" style={questCardStyles.card}>
+    <DQWindow style={questCardStyles.card}>
       <View style={[questCardStyles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <View style={[questCardStyles.badge, { borderColor: subjectColor }]}>
-          <PixelText variant="caption" style={{ color: subjectColor }}>
+          <Text style={{ ...questCardStyles.badgeText, color: subjectColor }}>
             {t(`quest.subject.${quest.subject}`)}
-          </PixelText>
+          </Text>
         </View>
         <View style={[questCardStyles.badge, { borderColor: difficultyColor }]}>
-          <PixelText variant="caption" style={{ color: difficultyColor }}>
+          <Text style={{ ...questCardStyles.badgeText, color: difficultyColor }}>
             {t(`quest.difficulty.${quest.difficulty}`)}
-          </PixelText>
+          </Text>
         </View>
         <View style={questCardStyles.spacer} />
-        <PixelText variant="caption" color="gray">
-          {formatDeadline(quest.deadlineDate, getLang())}
-        </PixelText>
+        <Text style={questCardStyles.deadlineText}>
+          {formatDeadline(quest.deadlineDate, getIsRTL() ? "ar" : "ja")}
+        </Text>
       </View>
 
-      <PixelButton
-        label={quest.title}
-        variant="ghost"
-        onPress={handlePressCard}
-        style={questCardStyles.titleButton}
-        textStyle={questCardStyles.titleButtonText}
-        accessibilityLabel={t("quest.view_details", { title: quest.title })}
-      />
+      <Text style={questCardStyles.title}>{quest.title}</Text>
 
       <View style={[questCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="label" color="cream">
-          {t("quest.status")}:
-        </PixelText>
-        <PixelText
-          variant="body"
-          color={isCompleted ? "exp" : isPending ? "gold" : "primary"}
-        >
-          {t(`quest.status.${quest.status}`)}
-        </PixelText>
-      </View>
-
-      <View style={[questCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="label" color="cream">
-          {t("quest.estimated_minutes")}:
-        </PixelText>
-        <PixelText variant="body" color="cream">
+        <Text style={questCardStyles.detailLabel}>{t("quest.estimated_minutes")}:</Text>
+        <Text style={questCardStyles.detailValue}>
           {quest.estimatedMinutes} {t("common.minutes")}
-        </PixelText>
+        </Text>
       </View>
 
-      {!isCompleted && (
-        <PixelButton
-          label={t("dq.battle.fight")}
-          variant="primary"
-          size="lg"
-          onPress={handleStartBattle}
-          style={questCardStyles.battleButton}
-          accessibilityLabel={t("dq.battle.fight_quest", { title: quest.title })}
-        />
-      )}
-    </PixelCard>
+      <View style={[questCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <Text style={questCardStyles.detailLabel}>{t("quest.status")}:</Text>
+        <Text style={{ ...questCardStyles.detailValue, color: statusColor }}>
+          {t(`quest.status.${quest.status}`)}
+        </Text>
+      </View>
+
+      <DQCommandMenu
+        items={[{ label: t("common.view_details"), onPress: () => onPress(quest.id), accessibilityLabel: t("common.view_details") }]}
+        style={questCardStyles.viewDetailsButton}
+      />
+    </DQWindow>
   );
 }
 
@@ -191,29 +168,45 @@ const questCardStyles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
   },
+  badgeText: {
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_FAMILY,
+  },
   spacer: {
     flex: 1,
   },
-  titleButton: {
-    marginBottom: SPACING.sm,
+  deadlineText: {
+    color: COLORS.gray,
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_FAMILY,
   },
-  titleButtonText: {
-    fontSize: FONT_SIZES.title,
-    textAlign: "left",
+  title: {
+    color: COLORS.cream,
+    fontSize: FONT_SIZES.lg,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+    marginBottom: SPACING.sm,
   },
   detailRow: {
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: SPACING.xs,
   },
-  battleButton: {
+  detailLabel: {
+    color: COLORS.cream,
+    fontSize: FONT_SIZES.md,
+    fontFamily: FONT_FAMILY,
+  },
+  detailValue: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.md,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+  },
+  viewDetailsButton: {
     marginTop: SPACING.md,
   },
 });
-
-// ---------------------------------------------------------------------------
-// Main screen
-// ---------------------------------------------------------------------------
 
 export default function QuestsScreen() {
   const { user } = useAuth();
@@ -222,7 +215,7 @@ export default function QuestsScreen() {
 
   const [quests, setQuests] = useState<Quest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterKey>("active");
+  const [filter, setFilter] = useState<FilterKey>("pending");
 
   const heroId = user?.uid ?? "";
 
@@ -231,22 +224,28 @@ export default function QuestsScreen() {
       setIsLoading(false);
       return;
     }
-    const unsub = subscribeToQuests(heroId, (q: Quest[]) => {
+    const unsub = subscribeToActiveQuests(heroId, (q: Quest[]) => {
       setQuests(q);
       setIsLoading(false);
     });
     return unsub;
   }, [user, heroId]);
 
+  const handleViewQuestDetails = useCallback((questId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/(app)/quests/${questId}`);
+  }, []);
+
   const handleCreateNewQuest = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push("/(app)/quests/new");
   }, []);
 
-  const visibleQuests = filterQuests(quests, filter);
+  const filteredQuests = filterQuests(quests, filter);
 
   if (isLoading) {
     return (
-      <View style={styles.center} testID="activity-indicator">
+      <View style={styles.center}>
         <ActivityIndicator color={COLORS.gold} size="large" />
       </View>
     );
@@ -257,14 +256,7 @@ export default function QuestsScreen() {
       <Stack.Screen
         options={{
           title: t("nav.quests"),
-          headerRight: () => (
-            <PixelButton
-              label={t("quest.create_new_short")}
-              variant="ghost"
-              size="sm"
-              onPress={handleCreateNewQuest}
-            />
-          ),
+          headerShown: false, // Custom header for DQ style
         }}
       />
       <ScrollView
@@ -275,29 +267,32 @@ export default function QuestsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
-          {t("quest.quest_list")}
-        </PixelText>
+        <DQMessageBox text={t("dq.quests.message")} speed={40} />
 
-        <View style={styles.filterRow}>
+        <DQWindow title={t("quest.filter.label")}>
           <FilterTabs current={filter} onChange={setFilter} />
-        </View>
+        </DQWindow>
 
-        {visibleQuests.length === 0 ? (
-          <PixelCard variant="default">
-            <PixelText variant="body" color="gray" style={styles.emptyText}>
-              {t("quest.no_quests_found")}
-            </PixelText>
-            <PixelButton
-              label={t("quest.create_new")}
-              variant="primary"
-              onPress={handleCreateNewQuest}
-              style={styles.createButton}
-            />
-          </PixelCard>
+        {filteredQuests.length === 0 ? (
+          <DQWindow>
+            <Text style={styles.emptyText}>
+              {filter === "pending"
+                ? t("dq.quests.no_pending")
+                : t("dq.quests.no_quests_found")}
+            </Text>
+          </DQWindow>
         ) : (
-          visibleQuests.map((q) => <QuestCard key={q.id} quest={q} isRTL={isRTL} />)
+          filteredQuests.map((q) => (
+            <QuestCard key={q.id} quest={q} onPress={handleViewQuestDetails} isRTL={isRTL} />
+          ))
         )}
+
+        <DQCommandMenu
+          items={[
+            { label: t("dq.quests.create_new"), onPress: handleCreateNewQuest, accessibilityLabel: t("dq.quests.create_new") },
+            { label: t("common.back"), onPress: () => router.back(), accessibilityLabel: t("common.back") },
+          ]}
+        />
       </ScrollView>
     </>
   );
@@ -306,31 +301,23 @@ export default function QuestsScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: DQ_BG,
+    backgroundColor: COLORS.bgDark,
   },
   content: {
-    padding: SPACING.md,
-    gap: SPACING.lg,
+    padding: 16,
+    gap: 12,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: DQ_BG,
-  },
-  sectionTitle: {
-    marginBottom: SPACING.xs,
-    textAlign: "center",
-  },
-  filterRow: {
-    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.bgDark,
   },
   emptyText: {
+    color: COLORS.gray,
+    fontSize: FONT_SIZES.md,
+    fontFamily: FONT_FAMILY,
     textAlign: "center",
-    marginBottom: SPACING.md,
-  },
-  createButton: {
-    width: "100%",
   },
 });
 

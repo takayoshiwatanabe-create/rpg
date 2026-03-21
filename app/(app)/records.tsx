@@ -5,95 +5,85 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
+  Text,
 } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
-import { subscribeToBattleSessions } from "@/lib/firestore";
-import { PixelText, PixelCard } from "@/components/ui";
-import { t, getLang, getIsRTL } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme";
-import type { BattleSession } from "@/types";
+import { subscribeToBattleSessions, subscribeToQuests } from "@/lib/firestore";
+import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
+import { t, getIsRTL } from "@/i18n";
+import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
+import { BattleSession, Quest } from "@/types";
 
-const DQ_BG = "#000011";
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
   default: "monospace",
 });
 
-function formatDuration(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}${t("common.minutes")}${seconds}${t("common.seconds")}`;
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
-function formatSessionDate(dateStr: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(dateStr));
-}
-
-type BattleSessionCardProps = {
+type RecordCardProps = {
   session: BattleSession;
+  questTitle: string;
   isRTL: boolean;
 };
 
-function BattleSessionCard({ session, isRTL }: BattleSessionCardProps) {
-  const sessionDate = formatSessionDate(session.createdAt, getLang());
-  const duration = formatDuration(session.durationSeconds);
+function RecordCard({ session, questTitle, isRTL }: RecordCardProps) {
+  const sessionDate = new Date(session.startTime).toLocaleDateString(getIsRTL() ? "ar" : "ja", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 
   return (
-    <PixelCard variant="default" style={sessionCardStyles.card}>
-      <View style={[sessionCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="label" color="cream">
-          {t("records.session_date")}:
-        </PixelText>
-        <PixelText variant="body" color="gold">
-          {sessionDate}
-        </PixelText>
+    <DQWindow style={recordCardStyles.card}>
+      <View style={[recordCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <Text style={recordCardStyles.label}>{t("records.date")}:</Text>
+        <Text style={recordCardStyles.value}>{sessionDate}</Text>
       </View>
-      <View style={[sessionCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="label" color="cream">
-          {t("records.session_duration")}:
-        </PixelText>
-        <PixelText variant="body" color="cream">
-          {duration}
-        </PixelText>
+      <View style={[recordCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <Text style={recordCardStyles.label}>{t("records.quest_title")}:</Text>
+        <Text style={recordCardStyles.value}>{questTitle}</Text>
       </View>
-      <View style={[sessionCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="label" color="cream">
-          {t("records.session_rewards")}:
-        </PixelText>
-        <PixelText variant="body" color="exp">
+      <View style={[recordCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <Text style={recordCardStyles.label}>{t("records.duration")}:</Text>
+        <Text style={recordCardStyles.value}>{formatDuration(session.durationSeconds)}</Text>
+      </View>
+      <View style={[recordCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <Text style={recordCardStyles.label}>{t("records.rewards")}:</Text>
+        <Text style={recordCardStyles.value}>
           {session.rewards.exp} EXP, {session.rewards.gold} G
-        </PixelText>
+        </Text>
       </View>
-      <View style={[sessionCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="label" color="cream">
-          {t("records.session_status")}:
-        </PixelText>
-        <PixelText variant="body" color="primary">
-          {t(`quest.status.${session.status}`)}
-        </PixelText>
-      </View>
-    </PixelCard>
+    </DQWindow>
   );
 }
 
-const sessionCardStyles = StyleSheet.create({
+const recordCardStyles = StyleSheet.create({
   card: {
     marginBottom: SPACING.xs,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: SPACING.xs,
+  },
+  label: {
+    color: COLORS.cream,
+    fontSize: FONT_SIZES.md,
+    fontFamily: FONT_FAMILY,
+  },
+  value: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.md,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
   },
 });
 
@@ -103,6 +93,7 @@ export default function RecordsScreen() {
   const insets = useSafeAreaInsets();
 
   const [sessions, setSessions] = useState<BattleSession[]>([]);
+  const [questsMap, setQuestsMap] = useState<Map<string, Quest>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -110,16 +101,27 @@ export default function RecordsScreen() {
       setIsLoading(false);
       return;
     }
-    const unsub = subscribeToBattleSessions(user.uid, (s: BattleSession[]) => {
+
+    const unsubSessions = subscribeToBattleSessions(user.uid, (s: BattleSession[]) => {
       setSessions(s);
       setIsLoading(false);
     });
-    return unsub;
+
+    const unsubQuests = subscribeToQuests(user.uid, (q: Quest[]) => {
+      const map = new Map<string, Quest>();
+      q.forEach((quest) => map.set(quest.id, quest));
+      setQuestsMap(map);
+    });
+
+    return () => {
+      unsubSessions();
+      unsubQuests();
+    };
   }, [user]);
 
   if (isLoading) {
     return (
-      <View style={styles.center} testID="activity-indicator">
+      <View style={styles.center}>
         <ActivityIndicator color={COLORS.gold} size="large" />
       </View>
     );
@@ -127,7 +129,12 @@ export default function RecordsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t("nav.records") }} />
+      <Stack.Screen
+        options={{
+          title: t("nav.records"),
+          headerShown: false, // Custom header for DQ style
+        }}
+      />
       <ScrollView
         style={styles.root}
         contentContainerStyle={[
@@ -136,19 +143,26 @@ export default function RecordsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
-          {t("records.title")}
-        </PixelText>
+        <DQMessageBox text={t("dq.records.message")} speed={40} />
 
         {sessions.length === 0 ? (
-          <PixelCard variant="default">
-            <PixelText variant="body" color="gray" style={styles.emptyText}>
-              {t("records.no_records")}
-            </PixelText>
-          </PixelCard>
+          <DQWindow>
+            <Text style={styles.emptyText}>{t("dq.records.no_records")}</Text>
+          </DQWindow>
         ) : (
-          sessions.map((s) => <BattleSessionCard key={s.id} session={s} isRTL={isRTL} />)
+          sessions.map((session) => (
+            <RecordCard
+              key={session.id}
+              session={session}
+              questTitle={questsMap.get(session.questId)?.title || t("common.unknown_quest")}
+              isRTL={isRTL}
+            />
+          ))
         )}
+
+        <DQCommandMenu
+          items={[{ label: t("common.back"), onPress: () => router.back(), accessibilityLabel: t("common.back") }]}
+        />
       </ScrollView>
     </>
   );
@@ -157,23 +171,22 @@ export default function RecordsScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: DQ_BG,
+    backgroundColor: COLORS.bgDark,
   },
   content: {
-    padding: SPACING.md,
-    gap: SPACING.lg,
+    padding: 16,
+    gap: 12,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: DQ_BG,
-  },
-  sectionTitle: {
-    marginBottom: SPACING.xs,
-    textAlign: "center",
+    backgroundColor: COLORS.bgDark,
   },
   emptyText: {
+    color: COLORS.gray,
+    fontSize: FONT_SIZES.md,
+    fontFamily: FONT_FAMILY,
     textAlign: "center",
   },
 });
