@@ -8,10 +8,10 @@ import {
   subscribeToQuestsByParent,
   updateQuestStatus,
 } from "../../../src/lib/firestore";
-import { t } from "../../../src/i18"; // Corrected import path
+import { t } from "../../../src/i18n/i18n";
 import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "../../../src/types";
 import { Alert, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
-import { PixelText, PixelButton, PixelCard } from "../../../src/components/ui"; // Import Pixel components
+import { PixelText, PixelButton, PixelCard } from "../../../src/components/ui";
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -31,7 +31,7 @@ vi.mock("../../../src/lib/firestore", () => ({
   subscribeToQuestsByParent: vi.fn(),
   updateQuestStatus: vi.fn(),
 }));
-vi.mock("../../../src/i18", () => ({ // Corrected import path
+vi.mock("../../../src/i18n/i18n", () => ({
   t: vi.fn((key: string, params?: Record<string, any>) => {
     if (key === "parent.hero_summary")
       return `${params?.name}、レベル${params?.level}、ゴールド${params?.gold}`;
@@ -326,3 +326,4 @@ describe("ParentDashboardScreen", () => {
     );
   });
 });
+

@@ -4,7 +4,7 @@ import CampScreen from "./camp";
 import { router } from "expo-router";
 import { useAuth } from "../../../src/hooks/useAuth";
 import { subscribeToHero, subscribeToActiveQuests } from "../../../src/lib/firestore";
-import { t } from "../../../src/i18n/i18n"; // Corrected import path
+import { t } from "../../../src/i18n/i18n";
 import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "../../../src/types";
 import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
 
@@ -21,7 +21,7 @@ vi.mock("../../../src/lib/firestore", () => ({
   subscribeToHero: vi.fn(),
   subscribeToActiveQuests: vi.fn(),
 }));
-vi.mock("../../../src/i18n/i18n", () => ({ // Corrected import path
+vi.mock("../../../src/i18n/i18n", () => ({
   t: vi.fn((key: string, params?: Record<string, any>) => {
     if (key === "dq.camp.greeting") return `ようこそ、${params?.name}！`;
     if (key.startsWith("quest.subject.")) return key.split(".").pop();
@@ -76,7 +76,7 @@ vi.mock("../../../src/components/ui", () => ({
   DQMessageBox: ({ text }: { text: string }) => (
     <View>
       <Text>{text}</Text>
-    </DQMessageBox>
+    </View>
   ),
 }));
 vi.mock("react-native", async (importOriginal) => {

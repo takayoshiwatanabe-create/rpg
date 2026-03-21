@@ -4,10 +4,10 @@ import BattleResultScreen from "./result";
 import { router } from "expo-router";
 import { useAuth } from "../../../src/hooks/useAuth";
 import { subscribeToHero } from "../../../src/lib/firestore";
-import { t } from "../../../src/i18n/i18n"; // Corrected import path
+import { t } from "../../../src/i18n/i18n";
 import { HeroProfile } from "../../../src/types";
 import { useReducedMotion } from "../../../src/hooks/useReducedMotion";
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native"; // Added ActivityIndicator
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -32,7 +32,7 @@ vi.mock("../../../src/hooks/useAuth", () => ({
 vi.mock("../../../src/lib/firestore", () => ({
   subscribeToHero: vi.fn(),
 }));
-vi.mock("../../../src/i18n/i18n", () => ({ // Corrected import path
+vi.mock("../../../src/i18n/i18n", () => ({
   t: vi.fn((key: string, params?: Record<string, any>) => {
     if (key === "dq.result.levelup") return `レベルアップ！${params?.name}はLv.${params?.level}になった！`;
     if (key === "dq.result.exp") return `経験値を${params?.exp}獲得した！`;
@@ -79,7 +79,7 @@ vi.mock("react-native", async (importOriginal) => {
     View: actual.View,
     StyleSheet: actual.StyleSheet,
     TouchableOpacity: actual.TouchableOpacity,
-    ActivityIndicator: actual.ActivityIndicator, // Added ActivityIndicator
+    ActivityIndicator: actual.ActivityIndicator,
   };
 });
 vi.mock("../../../src/components/ui", () => ({
@@ -89,7 +89,7 @@ vi.mock("../../../src/components/ui", () => ({
       {children}
     </View>
   ),
-  DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void; accessibilityLabel: string }[] }) => ( // Added accessibilityLabel
+  DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void; accessibilityLabel: string }[] }) => (
     <View>
       {items.map((item) => (
         <TouchableOpacity key={item.label} onPress={item.onPress} accessibilityLabel={item.accessibilityLabel}>

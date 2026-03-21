@@ -9,10 +9,10 @@ import {
   updateHeroStats,
   createBattleSession,
 } from "../../../src/lib/firestore";
-import { t } from "../../../src/i18n/i18n"; // Corrected import path
+import { t } from "../../../src/i18n/i18n";
 import { QuestStatus, Difficulty, Subject } from "../../../src/types";
 import { useReducedMotion } from "../../../src/hooks/useReducedMotion";
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from "react-native"; // Added ActivityIndicator and Alert
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -35,7 +35,7 @@ vi.mock("../../../src/lib/firestore", () => ({
   updateHeroStats: vi.fn(),
   createBattleSession: vi.fn(),
 }));
-vi.mock("../../../src/i18n/i18n", () => ({ // Corrected import path
+vi.mock("../../../src/i18n/i18n", () => ({
   t: vi.fn((key: string) => key), // Mock t function to return the key
   getIsRTL: vi.fn(() => false),
 }));
@@ -72,14 +72,14 @@ vi.mock("react-native", async (importOriginal) => {
     Text: actual.Text,
     View: actual.View,
     StyleSheet: actual.StyleSheet,
-    ActivityIndicator: actual.ActivityIndicator, // Added ActivityIndicator
+    ActivityIndicator: actual.ActivityIndicator,
   };
 });
 vi.mock("../../../src/components/ui", () => ({
   DQWindow: ({ children }: { children: React.ReactNode }) => (
     <View>{children}</View>
   ),
-  DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void; accessibilityLabel: string }[] }) => ( // Added accessibilityLabel
+  DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void; accessibilityLabel: string }[] }) => (
     <View>
       {items.map((item) => (
         <TouchableOpacity key={item.label} onPress={item.onPress} accessibilityLabel={item.accessibilityLabel}>
