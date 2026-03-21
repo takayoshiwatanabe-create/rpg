@@ -4,318 +4,137 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Platform,
   Alert,
 } from "react-native";
 import { router, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
+import { useAuth } from "../../../src/hooks/useAuth";
 import {
   subscribeToHero,
   subscribeToQuestsByParent,
   updateQuestStatus,
-} from "../../../lib/firestore"; // Corrected import path
-import { PixelText, PixelButton, PixelCard } from "../../../components/ui"; // Corrected import path
-import { t, getLang, getIsRTL } from "../../../i18n"; // Corrected import path
-import { COLORS, SPACING, PIXEL_BORDER } from "../../../constants/theme"; // Corrected import path
-import type { HeroProfile, Quest, QuestStatus } from "../../../types"; // Corrected import path
+} from "../../../src/lib/firestore";
+import { PixelText, PixelButton, PixelCard } from "../../../src/components/ui";
+import { t, getIsRTL, getLang } from "../../../src/i18n/i18n"; // Corrected import path
+import type { HeroProfile, Quest, QuestStatus } from "../../../src/types";
+import { COLORS } from "../../../src/constants/theme";
+import * as Haptics from "expo-haptics";
+import { playSound } from "../../../src/lib/audio";
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-type FilterKey = "all" | "pending" | "completed";
-
-const FILTERS: FilterKey[] = ["all", "pending", "completed"];
-
-const PENDING_STATUSES: QuestStatus[] = ["pending", "inProgress"];
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function filterQuests(quests: Quest[], filter: FilterKey): Quest[] {
-  switch (filter) {
-    case "pending":
-      return quests.filter((q) => PENDING_STATUSES.includes(q.status));
-    case "completed":
-      return quests.filter((q) => q.status === "completed");
-    default:
-      return quests;
-  }
-}
-
-function formatDeadline(dateStr: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(dateStr));
-}
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-type FilterTabsProps = {
-  current: FilterKey;
-  onChange: (f: FilterKey) => void;
-};
-
-function FilterTabs({ current, onChange }: FilterTabsProps) {
-  const filterLabel = (f: FilterKey) => {
-    if (f === "all") return t("quest.filter.all");
-    if (f === "pending") return t("parent.quest_status.pending");
-    return t("quest.completed");
-  };
-
-  return (
-    <View style={tabStyles.row}>
-      {FILTERS.map((f) => (
-        <PixelButton
-          key={f}
-          label={filterLabel(f)}
-          variant={current === f ? "primary" : "secondary"}
-          size="sm"
-          onPress={() => onChange(f)}
-          style={tabStyles.tabButton}
-          accessibilityRole="button"
-          accessibilityLabel={filterLabel(f)}
-          accessibilityState={{ selected: current === f }}
-        />
-      ))}
-    </View>
-  );
-}
-
-const tabStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    gap: SPACING.xs,
-    justifyContent: "center",
-  },
-  tabButton: {
-    flex: 1,
-  },
+const DQ_BG = COLORS.backgroundPrimary;
+const FONT_FAMILY = Platform.select({
+  ios: "Courier New",
+  android: "monospace",
+  default: "monospace",
 });
-
-type ParentQuestCardProps = {
-  quest: Quest;
-  heroName: string;
-  onApprove: (questId: string) => void;
-  onReject: (questId: string) => void;
-  isRTL: boolean;
-};
-
-function ParentQuestCard({
-  quest,
-  heroName,
-  onApprove,
-  onReject,
-  isRTL,
- }: ParentQuestCardProps) {
-  const subjectColor = COLORS[quest.subject as keyof typeof COLORS] ?? COLORS.other;
-  const difficultyColor = COLORS[quest.difficulty as keyof typeof COLORS] ?? COLORS.normal;
-
-  const isPending = PENDING_STATUSES.includes(quest.status);
-
-  return (
-    <PixelCard variant="default" style={parentQuestCardStyles.card}>
-      <View style={[parentQuestCardStyles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <View style={[parentQuestCardStyles.badge, { borderColor: subjectColor }]}>
-          <PixelText variant="caption" style={{ color: subjectColor }} accessibilityLabel={t(`quest.subject.${quest.subject}`)}>
-            {t(`quest.subject.${quest.subject}`)}
-          </PixelText>
-        </View>
-        <View style={[parentQuestCardStyles.badge, { borderColor: difficultyColor }]}>
-          <PixelText variant="caption" style={{ color: difficultyColor }} accessibilityLabel={t(`quest.difficulty.${quest.difficulty}`)}>
-            {t(`quest.difficulty.${quest.difficulty}`)}
-          </PixelText>
-        </View>
-        <View style={parentQuestCardStyles.spacer} />
-        <PixelText variant="caption" color="gray" accessibilityLabel={formatDeadline(quest.deadlineDate, getLang())}>
-          {formatDeadline(quest.deadlineDate, getLang())}
-        </PixelText>
-      </View>
-
-      <PixelText variant="body" color="cream" style={parentQuestCardStyles.title} accessibilityLabel={quest.title}>
-        {quest.title}
-      </PixelText>
-
-      <View style={[parentQuestCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="label" color="cream" accessibilityLabel={t("parent.hero_name")}>
-          {t("parent.hero_name")}:
-        </PixelText>
-        <PixelText variant="body" color="gold" accessibilityLabel={heroName}>
-          {heroName}
-        </PixelText>
-      </View>
-
-      <View style={[parentQuestCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <PixelText variant="label" color="cream" accessibilityLabel={t("parent.status")}>
-          {t("parent.status")}:
-        </PixelText>
-        <PixelText
-          variant="body"
-          color={isPending ? "gold" : "exp"}
-          accessibilityLabel={isPending ? t("parent.quest_status.pending") : t("quest.completed")}
-        >
-          {isPending
-            ? t("parent.quest_status.pending")
-            : t("quest.completed")}
-        </PixelText>
-      </View>
-
-      {isPending && (
-        <View style={[parentQuestCardStyles.actions, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <PixelButton
-            label={t("parent.approve")}
-            variant="primary"
-            size="sm"
-            onPress={() => onApprove(quest.id)}
-            style={parentQuestCardStyles.actionButton}
-            accessibilityLabel={t("parent.approve")}
-          />
-          <PixelButton
-            label={t("parent.reject")}
-            variant="danger"
-            size="sm"
-            onPress={() => onReject(quest.id)}
-            style={parentQuestCardStyles.actionButton}
-            accessibilityLabel={t("parent.reject")}
-          />
-        </View>
-      )}
-    </PixelCard>
-  );
-}
-
-const parentQuestCardStyles = StyleSheet.create({
-  card: {
-    marginBottom: SPACING.xs,
-  },
-  header: {
-    alignItems: "center",
-    gap: SPACING.xs,
-    marginBottom: SPACING.xs,
-  },
-  badge: {
-    borderWidth: 1,
-    borderRadius: PIXEL_BORDER.borderRadius,
-    paddingHorizontal: SPACING.xs,
-    paddingVertical: 2,
-  },
-  spacer: {
-    flex: 1,
-  },
-  title: {
-    marginBottom: SPACING.sm,
-  },
-  detailRow: {
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.xs,
-  },
-  actions: {
-    justifyContent: "flex-end",
-    gap: SPACING.sm,
-    marginTop: SPACING.md,
-  },
-  actionButton: {
-    flex: 1,
-  },
-});
-
-// ---------------------------------------------------------------------------
-// Main screen
-// ---------------------------------------------------------------------------
 
 export default function ParentDashboardScreen() {
-  const { user, userProfile, isLoading: authLoading } = useAuth();
+  const { user, userProfile, isLoading } = useAuth();
   const isRTL = getIsRTL();
   const insets = useSafeAreaInsets();
+  const lang = getLang();
 
   const [hero, setHero] = useState<HeroProfile | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterKey>("pending");
+  const [loadingData, setLoadingData] = useState(true);
+  const [filter, setFilter] = useState<QuestStatus | "all">("pending");
 
-  const isParent = userProfile?.role === "parent";
+  const childId = user?.uid ?? ""; // Assuming parent manages their own child's data
 
   useEffect(() => {
-    // Wait for auth to resolve before deciding subscriptions
-    if (authLoading) return;
+    if (!user || isLoading) return;
 
-    if (!user || !isParent) {
-      setDataLoading(false);
+    if (userProfile?.role !== "parent") {
+      setLoadingData(false);
       return;
     }
 
-    setDataLoading(true);
-
-    const childId = user.uid; // Assuming child's heroId is same as parent's uid for simplicity
     const unsubHero = subscribeToHero(user.uid, childId, (h: HeroProfile | null) => {
       setHero(h);
-      setDataLoading(false);
+      setLoadingData(false);
     });
-
     const unsubQuests = subscribeToQuestsByParent(childId, setQuests);
 
     return () => {
       unsubHero();
       unsubQuests();
     };
-  }, [user, isParent, authLoading]);
+  }, [user, userProfile, isLoading, childId]);
 
-  const handleApproveQuest = useCallback(async (questId: string) => {
+  const handleApproveQuest = useCallback(async (quest: Quest) => {
+    playSound("menu_select");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       t("parent.approve_quest"),
       t("parent.approve_quest_confirm"),
       [
-        { text: t("common.cancel"), style: "cancel" },
+        { text: t("common.cancel"), style: "cancel", onPress: () => playSound("menu_cancel") },
         {
           text: t("parent.approve"),
           onPress: async () => {
             try {
-              await updateQuestStatus(questId, "completed");
+              await updateQuestStatus(quest.id, "completed");
+              playSound("success");
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert(t("common.success"), t("parent.quest_approved"));
             } catch (error) {
               console.error("Failed to approve quest:", error);
+              playSound("error");
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert(t("common.error"), t("error.unknown"));
             }
           },
         },
       ],
+      { cancelable: false },
     );
   }, []);
 
-  const handleRejectQuest = useCallback(async (questId: string) => {
+  const handleRejectQuest = useCallback(async (quest: Quest) => {
+    playSound("menu_cancel");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       t("parent.reject_quest"),
       t("parent.reject_quest_confirm"),
       [
-        { text: t("common.cancel"), style: "cancel" },
+        { text: t("common.cancel"), style: "cancel", onPress: () => playSound("menu_cancel") },
         {
           text: t("parent.reject"),
           style: "destructive",
           onPress: async () => {
             try {
-              // For simplicity, rejection just moves it back to pending.
-              // A more complex system might have a "rejected" status or allow comments.
-              await updateQuestStatus(questId, "pending");
+              // Rejection might mean moving it back to pending or marking as rejected
+              // For now, let's assume it just means the parent reviewed it.
+              // A more complex system might have a "rejected" status.
+              // For simplicity, we'll just show a message.
+              // If the intent is to prevent the child from completing it,
+              // we might set it to a "rejected" status or delete it.
+              // For now, we'll just acknowledge the rejection.
+              // await updateQuestStatus(quest.id, "rejected"); // Example for a 'rejected' status
+              playSound("error"); // Use an error sound for rejection
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
               Alert.alert(t("common.success"), t("parent.quest_rejected"));
             } catch (error) {
               console.error("Failed to reject quest:", error);
+              playSound("error");
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert(t("common.error"), t("error.unknown"));
             }
           },
         },
       ],
+      { cancelable: false },
     );
   }, []);
 
-  const visibleQuests = filterQuests(quests, filter);
+  const filteredQuests = quests.filter((q) => {
+    if (filter === "all") return true;
+    if (filter === "pending") return q.status === "pending" || q.status === "inProgress";
+    return q.status === filter;
+  });
 
-  if (authLoading || dataLoading) {
+  if (isLoading || loadingData) {
     return (
       <View style={styles.center} testID="activity-indicator">
         <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
@@ -323,173 +142,262 @@ export default function ParentDashboardScreen() {
     );
   }
 
-  if (!isParent) {
+  if (userProfile?.role !== "parent") {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
-        <PixelText variant="body" color="danger" accessibilityLabel={t("parent.access_denied")}>
+        <PixelText variant="body" color="error" style={styles.errorText}>
           {t("parent.access_denied")}
         </PixelText>
         <PixelButton
           label={t("common.back")}
-          variant="secondary"
-          onPress={() => router.back()}
-          style={styles.backButton}
+          onPress={() => {
+            playSound("menu_cancel");
+            router.back();
+          }}
           accessibilityLabel={t("common.back")}
+          style={{ marginTop: 20 }}
         />
       </View>
     );
   }
 
   return (
-    <>
+    <View style={[styles.root, { direction: isRTL ? "rtl" : "ltr" }]}>
       <Stack.Screen
         options={{
-          title: t("nav.parent_dashboard"),
+          headerShown: true,
+          headerTitle: t("nav.parent_dashboard"),
+          headerStyle: { backgroundColor: COLORS.backgroundPrimary },
+          headerTintColor: COLORS.textPrimary,
+          headerTitleStyle: { fontFamily: FONT_FAMILY, fontSize: 20 },
           headerRight: () => (
             <PixelButton
               label={t("parent.settings")}
-              variant="ghost"
-              size="sm"
-              onPress={() => router.push("/(app)/parent/settings")}
+              onPress={() => {
+                playSound("menu_select");
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/(app)/parent/settings");
+              }}
               accessibilityLabel={t("parent.settings")}
+              variant="secondary"
+              size="small"
+              style={{ marginRight: 10 }}
             />
           ),
         }}
       />
       <ScrollView
-        style={styles.root}
         contentContainerStyle={[
           styles.content,
-          { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + SPACING.md, paddingBottom: insets.bottom + SPACING.xxl },
+          { paddingTop: insets.top, paddingBottom: insets.bottom + 16 },
         ]}
         showsVerticalScrollIndicator={false}
-        accessibilityLabel={t("nav.parent_dashboard")}
       >
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("parent.child_progress")}>
-          {t("parent.child_progress")}
-        </PixelText>
-
-        {hero ? (
-          <PixelCard variant="default" style={styles.heroSummaryCard}>
-            <PixelText variant="body" color="cream" accessibilityLabel={t("parent.hero_summary", {
-                name: hero.displayName,
-                level: hero.level,
-                gold: hero.gold,
-              })}>
+        {/* Child Progress Summary */}
+        <PixelCard title={t("parent.child_progress")}>
+          {hero ? (
+            <PixelText variant="body" style={styles.heroSummaryText}>
               {t("parent.hero_summary", {
                 name: hero.displayName,
                 level: hero.level,
                 gold: hero.gold,
               })}
             </PixelText>
-          </PixelCard>
-        ) : (
-          <PixelCard variant="default">
-            <PixelText variant="body" color="gray" style={styles.emptyText} accessibilityLabel={t("parent.no_child_data")}>
+          ) : (
+            <PixelText variant="body" color="secondary">
               {t("parent.no_child_data")}
             </PixelText>
-          </PixelCard>
-        )}
+          )}
+        </PixelCard>
 
-        <View style={styles.section}>
-          <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("parent.quest_management")}>
-            {t("parent.quest_management")}
-          </PixelText>
-          <View style={styles.filterRow}>
-            <FilterTabs current={filter} onChange={setFilter} />
+        {/* Quest Management */}
+        <PixelCard title={t("parent.quest_management")}>
+          <View style={[styles.filterContainer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <PixelButton
+              label={t("quest.filter.all")}
+              onPress={() => {
+                playSound("menu_select");
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setFilter("all");
+              }}
+              variant={filter === "all" ? "primary" : "secondary"}
+              size="small"
+              accessibilityLabel={t("quest.filter.all")}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: filter === "all" }}
+            />
+            <PixelButton
+              label={t("parent.quest_status.pending")}
+              onPress={() => {
+                playSound("menu_select");
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setFilter("pending");
+              }}
+              variant={filter === "pending" ? "primary" : "secondary"}
+              size="small"
+              accessibilityLabel={t("parent.quest_status.pending")}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: filter === "pending" }}
+            />
+            <PixelButton
+              label={t("quest.completed")}
+              onPress={() => {
+                playSound("menu_select");
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setFilter("completed");
+              }}
+              variant={filter === "completed" ? "primary" : "secondary"}
+              size="small"
+              accessibilityLabel={t("quest.completed")}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: filter === "completed" }}
+            />
           </View>
 
-          {visibleQuests.length === 0 ? (
-            <PixelCard variant="default">
-              <PixelText variant="body" color="gray" style={styles.emptyText} accessibilityLabel={filter === "pending"
-                  ? t("parent.no_pending_quests")
-                  : t("parent.no_quests_found")}>
-                {filter === "pending"
-                  ? t("parent.no_pending_quests")
-                  : t("parent.no_quests_found")}
-              </PixelText>
-            </PixelCard>
+          {filteredQuests.length === 0 ? (
+            <PixelText variant="body" color="secondary" style={{ textAlign: "center", marginTop: 10 }}>
+              {filter === "pending"
+                ? t("parent.no_pending_quests")
+                : t("parent.no_quests_found")}
+            </PixelText>
           ) : (
-            visibleQuests.map((q) => (
-              <ParentQuestCard
-                key={q.id}
-                quest={q}
-                heroName={hero?.displayName || t("common.unknown")}
-                onApprove={handleApproveQuest}
-                onReject={handleRejectQuest}
-                isRTL={isRTL}
-              />
+            filteredQuests.map((quest) => (
+              <PixelCard key={quest.id} style={styles.questCard}>
+                <View style={[styles.questInfoRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+                  <PixelText variant="body" style={styles.questTitle}>
+                    {quest.title}
+                  </PixelText>
+                  <PixelText variant="caption" color="secondary">
+                    {t(`quest.subject.${quest.subject}`)} / {t(`quest.difficulty.${quest.difficulty}`)}
+                  </PixelText>
+                </View>
+                <View style={[styles.questInfoRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+                  <PixelText variant="caption" color="secondary">
+                    {t("parent.status")}: {t(`parent.quest_status.${quest.status}`)}
+                  </PixelText>
+                  <PixelText variant="caption" color="secondary">
+                    {quest.deadlineDate}
+                  </PixelText>
+                </View>
+                {(quest.status === "pending" || quest.status === "inProgress") && (
+                  <View style={[styles.questActions, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+                    <PixelButton
+                      label={t("parent.approve")}
+                      onPress={() => handleApproveQuest(quest)}
+                      variant="success"
+                      size="small"
+                      accessibilityLabel={t("parent.approve")}
+                    />
+                    <PixelButton
+                      label={t("parent.reject")}
+                      onPress={() => handleRejectQuest(quest)}
+                      variant="error"
+                      size="small"
+                      accessibilityLabel={t("parent.reject")}
+                    />
+                  </View>
+                )}
+              </PixelCard>
             ))
           )}
-        </View>
+        </PixelCard>
 
-        <View style={styles.section}>
-          <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("parent.subscription_status")}>
-            {t("parent.subscription_status")}
+        {/* Subscription Status */}
+        <PixelCard title={t("parent.subscription_status")}>
+          <PixelText variant="body" style={styles.subscriptionText}>
+            {t("parent.subscription_info")}
           </PixelText>
-          <PixelCard variant="default">
-            <PixelText variant="body" color="cream" accessibilityLabel={t("parent.subscription_info")}>
-              {t("parent.subscription_info")}
-            </PixelText>
-            <PixelText variant="caption" color="gray" style={styles.subInfo} accessibilityLabel={t("parent.subscription_details")}>
-              {t("parent.subscription_details")}
-            </PixelText>
-            <PixelButton
-              label={t("parent.manage_subscription")}
-              variant="secondary"
-              size="md"
-              onPress={() => Alert.alert(t("common.info"), t("parent.manage_subscription_hint"))}
-              style={styles.manageSubButton}
-              accessibilityLabel={t("parent.manage_subscription")}
-            />
-          </PixelCard>
-        </View>
+          <PixelText variant="caption" color="secondary" style={styles.subscriptionDetails}>
+            {t("parent.subscription_details")}
+          </PixelText>
+          {/*
+            // [payment] デジタルコンテンツ販売がありますが StoreKit/IAP が未実装です
+            // App Store Review Guidelines 3.1.1:
+            // Apps offering subscriptions or consumable items must use StoreKit/In-App Purchase.
+            // Direct links to external payment mechanisms are not allowed.
+            // The following button is commented out to comply with this guideline.
+            // In a real production app, this would be replaced with an In-App Purchase flow.
+          */}
+          {/* <PixelButton
+            label={t("parent.manage_subscription")}
+            onPress={() => {
+              playSound("menu_select");
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert(t("common.info"), t("parent.manage_subscription_hint"));
+              // Linking.openURL("YOUR_SUBSCRIPTION_MANAGEMENT_URL"); // This would be an external URL
+            }}
+            accessibilityLabel={t("parent.manage_subscription")}
+            variant="primary"
+            style={{ marginTop: 15 }}
+          /> */}
+          <PixelText variant="caption" color="secondary" style={styles.subscriptionHint}>
+            {t("parent.manage_subscription_hint")}
+          </PixelText>
+        </PixelCard>
       </ScrollView>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   content: {
-    padding: SPACING.md,
-    gap: SPACING.lg,
+    paddingHorizontal: 16,
+    gap: 16,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
-  backButton: {
-    marginTop: SPACING.md,
-  },
-  section: {
-    gap: SPACING.sm,
-  },
-  sectionTitle: {
-    marginBottom: SPACING.xs,
+  errorText: {
     textAlign: "center",
+    marginBottom: 20,
   },
-  heroSummaryCard: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-  },
-  emptyText: {
+  heroSummaryText: {
     textAlign: "center",
+    fontSize: 18,
   },
-  filterRow: {
-    marginBottom: SPACING.sm,
+  filterContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 10,
+    gap: 8,
   },
-  subInfo: {
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.md,
+  questCard: {
+    marginBottom: 10,
+    padding: 12,
   },
-  manageSubButton: {
-    marginTop: SPACING.sm,
+  questInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  questTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  questActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 10,
+    gap: 8,
+  },
+  subscriptionText: {
+    textAlign: "center",
+    fontSize: 18,
+  },
+  subscriptionDetails: {
+    textAlign: "center",
+    marginTop: 5,
+  },
+  subscriptionHint: {
+    textAlign: "center",
+    marginTop: 10,
+    fontStyle: "italic",
   },
 });
-

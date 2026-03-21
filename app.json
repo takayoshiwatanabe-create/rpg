@@ -4,7 +4,7 @@
     "slug": "rpg",
     "version": "1.1.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app_icon.png",
     "scheme": "rpg",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
@@ -12,8 +12,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zerocode.rpg",
+      "buildNumber": "1.1.0",
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "このアプリは位置情報を使用しません。",
+        "NSCameraUsageDescription": "このアプリはカメラを使用しません。",
+        "NSMicrophoneUsageDescription": "このアプリはマイクを使用しません。",
+        "NSPhotoLibraryUsageDescription": "このアプリは写真ライブラリを使用しません。"
       }
     },
     "android": {
@@ -21,7 +28,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.zerocode.rpg"
+      "package": "com.zerocode.rpg",
+      "versionCode": 110
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,6 +44,12 @@
       "eas": {
         "projectId": "YOUR_PROJECT_ID"
       }
-    }
+    },
+    "splash": {
+      "image": "./assets/ruok-splash.png",
+      "backgroundColor": "#FFFFFF",
+      "resizeMode": "contain"
+    },
+    "privacyPolicyUrl": "https://www.ruok.com/privacy"
   }
 }
