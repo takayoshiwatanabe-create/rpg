@@ -1,165 +1,113 @@
-/**
- * Game-related constants for Hero Homework Quest.
- * All values related to game mechanics, balance, and progression should be defined here.
- */
+import { Subject, Difficulty } from "@/types";
 
-import type { Difficulty } from "@/types";
-
-// ---------------------------------------------------------------------------
-// Hero Progression
-// ---------------------------------------------------------------------------
-
-/**
- * Defines the experience points required to reach each level.
- * Index 0 is level 1, index 1 is level 2, etc.
- * The value at index `n` is the total EXP needed to reach level `n+1`.
- * This array should be cumulative.
- */
-export const HERO_EXP_CURVE: number[] = [
-  0, // Level 1 (0 EXP to start)
-  100, // Level 2 (requires 100 total EXP)
-  250, // Level 3 (requires 250 total EXP)
-  450, // Level 4 (requires 450 total EXP)
-  700, // Level 5 (requires 700 total EXP)
-  1000, // Level 6 (requires 1000 total EXP)
-  1350, // Level 7 (requires 1350 total EXP)
-  1750, // Level 8 (requires 1750 total EXP)
-  2200, // Level 9 (requires 2200 total EXP)
-  2700, // Level 10 (requires 2700 total EXP)
-  3250, // Level 11 (requires 3250 total EXP)
-  3850, // Level 12 (requires 3850 total EXP)
-  4500, // Level 13 (requires 4500 total EXP)
-  5200, // Level 14 (requires 5200 total EXP)
-  6000, // Level 15 (requires 6000 total EXP to reach, which is MAX_LEVEL)
+export const QUEST_SUBJECTS: Subject[] = [
+  "math",
+  "japanese",
+  "english",
+  "science",
+  "social_studies",
+  "art",
+  "music",
+  "pe",
+  "other",
 ];
 
-/**
- * The maximum level a hero can reach.
- * This should correspond to the length of `HERO_EXP_CURVE`.
- */
-export const MAX_LEVEL: number = HERO_EXP_CURVE.length;
+export const QUEST_DIFFICULTIES: Difficulty[] = [
+  "easy",
+  "normal",
+  "hard",
+  "very_hard",
+];
 
-/**
- * Base HP growth per level.
- */
-export const BASE_HP_GROWTH: number = 10;
-
-/**
- * Base MP growth per level.
- */
-export const BASE_MP_GROWTH: number = 5;
-
-/**
- * Base Attack growth per level.
- */
-export const BASE_ATTACK_GROWTH: number = 2;
-
-/**
- * Base Defense growth per level.
- */
-export const BASE_DEFENSE_GROWTH: number = 1;
-
-/**
- * Defines how hero stats grow with each level.
- * This can be a simple multiplier or a more complex object per level.
- */
-export const HERO_STAT_GROWTH = {
-  hp: BASE_HP_GROWTH,
-  mp: BASE_MP_GROWTH,
-  attack: BASE_ATTACK_GROWTH,
-  defense: BASE_DEFENSE_GROWTH,
+// Base EXP and Gold rewards for each difficulty
+export const BASE_REWARDS = {
+  easy: { exp: 50, gold: 20 },
+  normal: { exp: 100, gold: 40 },
+  hard: { exp: 200, gold: 80 },
+  very_hard: { exp: 400, gold: 150 },
 };
 
-// ---------------------------------------------------------------------------
-// Quest Rewards & Penalties
-// ---------------------------------------------------------------------------
+// EXP required for each level
+// Level 1: 0 EXP
+// Level 2: 100 EXP
+// Level 3: 250 EXP
+// ...
+export const LEVEL_UP_REQUIREMENTS = [
+  0, // Level 1 (0 exp to reach)
+  100, // Level 2
+  250, // Level 3
+  500, // Level 4
+  1000, // Level 5
+  1800, // Level 6
+  2800, // Level 7
+  4000, // Level 8
+  5500, // Level 9
+  7500, // Level 10
+  // Add more levels as needed
+];
 
-/**
- * Default experience points awarded for quests based on difficulty.
- */
-export const DEFAULT_EXP_REWARDS: Record<Difficulty, number> = {
-  easy: 50,
-  normal: 100,
-  hard: 200,
-  very_hard: 300, // Added very_hard difficulty
-  boss: 400,
+// Overdue penalty percentage
+export const OVERDUE_PENALTY_PERCENTAGE = 0.2; // 20% penalty
+
+// Monster definitions
+export const MONSTERS = {
+  math: {
+    easy: { emoji: "➕", nameKey: "monster.math.easy" },
+    normal: { emoji: "➗", nameKey: "monster.math.normal" },
+    hard: { emoji: "✖️", nameKey: "monster.math.hard" },
+    very_hard: { emoji: "♾️", nameKey: "monster.math.very_hard" },
+  },
+  japanese: {
+    easy: { emoji: "📖", nameKey: "monster.japanese.easy" },
+    normal: { emoji: "✍️", nameKey: "monster.japanese.normal" },
+    hard: { emoji: "📜", nameKey: "monster.japanese.hard" },
+    very_hard: { emoji: "⛩️", nameKey: "monster.japanese.very_hard" },
+  },
+  english: {
+    easy: { emoji: "🅰️", nameKey: "monster.english.easy" },
+    normal: { emoji: "🗣️", nameKey: "monster.english.normal" },
+    hard: { emoji: "🇬🇧", nameKey: "monster.english.hard" },
+    very_hard: { emoji: "🇺🇸", nameKey: "monster.english.very_hard" },
+  },
+  science: {
+    easy: { emoji: "🧪", nameKey: "monster.science.easy" },
+    normal: { emoji: "⚛️", nameKey: "monster.science.normal" },
+    hard: { emoji: "🔬", nameKey: "monster.science.hard" },
+    very_hard: { emoji: "🔭", nameKey: "monster.science.very_hard" },
+  },
+  social_studies: {
+    easy: { emoji: "🗺️", nameKey: "monster.social_studies.easy" },
+    normal: { emoji: "🏛️", nameKey: "monster.social_studies.normal" },
+    hard: { emoji: "🌍", nameKey: "monster.social_studies.hard" },
+    very_hard: { emoji: "👑", nameKey: "monster.social_studies.very_hard" },
+  },
+  art: {
+    easy: { emoji: "🎨", nameKey: "monster.art.easy" },
+    normal: { emoji: "🖼️", nameKey: "monster.art.normal" },
+    hard: { emoji: "🖌️", nameKey: "monster.art.hard" },
+    very_hard: { emoji: "🎭", nameKey: "monster.art.very_hard" },
+  },
+  music: {
+    easy: { emoji: "🎵", nameKey: "monster.music.easy" },
+    normal: { emoji: "🎶", nameKey: "monster.music.normal" },
+    hard: { emoji: "🎼", nameKey: "monster.music.hard" },
+    very_hard: { emoji: "🎹", nameKey: "monster.music.very_hard" },
+  },
+  pe: {
+    easy: { emoji: "🏃", nameKey: "monster.pe.easy" },
+    normal: { emoji: "⛹️", nameKey: "monster.pe.normal" },
+    hard: { emoji: "🏋️", nameKey: "monster.pe.hard" },
+    very_hard: { emoji: "🏅", nameKey: "monster.pe.very_hard" },
+  },
+  other: {
+    easy: { emoji: "❓", nameKey: "monster.other.easy" },
+    normal: { emoji: "👻", nameKey: "monster.other.normal" },
+    hard: { emoji: "👾", nameKey: "monster.other.hard" },
+    very_hard: { emoji: "🐉", nameKey: "monster.other.very_hard" },
+  },
 };
 
-/**
- * Default gold awarded for quests based on difficulty.
- */
-export const DEFAULT_GOLD_REWARDS: Record<Difficulty, number> = {
-  easy: 20,
-  normal: 50,
-  hard: 100,
-  very_hard: 150, // Added very_hard difficulty
-  boss: 200,
-};
+export function getMonster(subject: Subject, difficulty: Difficulty) {
+  return MONSTERS[subject]?.[difficulty] || MONSTERS.other.easy;
+}
 
-/**
- * Penalty factor for EXP if a quest is completed overdue (e.g., 0.5 means 50% reduction).
- */
-export const EXP_PENALTY_FACTOR: number = 0.5;
-
-/**
- * Penalty factor for Gold if a quest is completed overdue (e.g., 0.5 means 50% reduction).
- */
-export const GOLD_PENALTY_FACTOR: number = 0.5;
-
-/**
- * Default estimated minutes for quests based on difficulty.
- */
-export const DEFAULT_ESTIMATED_MINUTES: Record<Difficulty, number> = {
-  easy: 15,
-  normal: 30,
-  hard: 60,
-  very_hard: 90, // Added very_hard difficulty
-  boss: 120,
-};
-
-// ---------------------------------------------------------------------------
-// Battle Mechanics
-// ---------------------------------------------------------------------------
-
-/**
- * Base damage calculation factor.
- */
-export const BASE_DAMAGE_FACTOR: number = 10;
-
-/**
- * Critical hit chance (e.g., 0.1 for 10%).
- */
-export const CRITICAL_HIT_CHANCE: number = 0.1;
-
-/**
- * Critical hit multiplier (e.g., 1.5 for 150% damage).
- */
-export const CRITICAL_HIT_MULTIPLIER: number = 1.5;
-
-// ---------------------------------------------------------------------------
-// Inventory & Shop
-// ---------------------------------------------------------------------------
-
-/**
- * Initial inventory size for a new hero.
- */
-export const INITIAL_INVENTORY_SIZE: number = 10;
-
-/**
- * Cost to expand inventory by one slot.
- */
-export const INVENTORY_EXPANSION_COST: number = 50;
-
-// ---------------------------------------------------------------------------
-// Other
-// ---------------------------------------------------------------------------
-
-/**
- * Default locale for new users if not detected.
- */
-export const DEFAULT_LOCALE: string = "ja";
-
-/**
- * Time in milliseconds for a message to display per character in DQMessageBox.
- */
-export const MESSAGE_TYPING_SPEED_MS: number = 50;

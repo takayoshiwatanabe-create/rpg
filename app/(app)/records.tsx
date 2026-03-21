@@ -1,21 +1,24 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
   Platform,
-  Text,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
-import { subscribeToBattleSessions, subscribeToQuests } from "@/lib/firestore";
-import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
-import { t, getIsRTL } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
-import { BattleSession, Quest } from "@/types";
+import {
+  subscribeToCompletedQuests, // Corrected import
+  subscribeToBattleSessions,
+} from "@/lib/firestore";
+import { PixelText, PixelButton, PixelCard, DQMessageBox } from "@/components/ui";
+import { t, getLang, getIsRTL } from "@/i18n";
+import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
+import type { Quest, BattleSession, Subject, Difficulty } from "@/types";
 
+const DQ_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
@@ -25,101 +28,153 @@ const FONT_FAMILY = Platform.select({
 function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+  return `${minutes}m ${remainingSeconds}s`;
 }
 
-type RecordCardProps = {
-  session: BattleSession;
-  questTitle: string;
-  isRTL: boolean;
-};
-
-function RecordCard({ session, questTitle, isRTL }: RecordCardProps) {
-  const sessionDate = new Date(session.startTime).toLocaleDateString(getIsRTL() ? "ar" : "ja", {
+function formatDateTime(isoString: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
-  });
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(isoString));
+}
+
+type RecordQuestCardProps = {
+  quest: Quest;
+  session?: BattleSession;
+  isRTL: boolean;
+};
+
+function RecordQuestCard({ quest, session, isRTL }: RecordQuestCardProps) {
+  const subjectColor = COLORS[quest.subject as keyof typeof COLORS] ?? COLORS.other;
+  const difficultyColor = COLORS[quest.difficulty as keyof typeof COLORS] ?? COLORS.normal;
 
   return (
-    <DQWindow style={recordCardStyles.card}>
-      <View style={[recordCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <Text style={recordCardStyles.label}>{t("records.date")}:</Text>
-        <Text style={recordCardStyles.value}>{sessionDate}</Text>
+    <PixelCard variant="default" style={recordQuestCardStyles.card}>
+      <View style={[recordQuestCardStyles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <View style={[recordQuestCardStyles.badge, { borderColor: subjectColor }]}>
+          <PixelText variant="caption" style={{ color: subjectColor }}>
+            {t(`quest.subject.${quest.subject}`)}
+          </PixelText>
+        </View>
+        <View style={[recordQuestCardStyles.badge, { borderColor: difficultyColor }]}>
+          <PixelText variant="caption" style={{ color: difficultyColor }}>
+            {t(`quest.difficulty.${quest.difficulty}`)}
+          </PixelText>
+        </View>
+        <View style={recordQuestCardStyles.spacer} />
+        <PixelText variant="caption" color="gray">
+          {formatDateTime(quest.createdAt, getLang())}
+        </PixelText>
       </View>
-      <View style={[recordCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <Text style={recordCardStyles.label}>{t("records.quest_title")}:</Text>
-        <Text style={recordCardStyles.value}>{questTitle}</Text>
+
+      <PixelText variant="body" color="cream" style={recordQuestCardStyles.title}>
+        {quest.title}
+      </PixelText>
+
+      <View style={[recordQuestCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <PixelText variant="label" color="cream">
+          {t("quest.rewards")}:
+        </PixelText>
+        <PixelText variant="body" color="gold">
+          ✨{quest.expReward} EXP, 💰{quest.goldReward} G
+        </PixelText>
       </View>
-      <View style={[recordCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <Text style={recordCardStyles.label}>{t("records.duration")}:</Text>
-        <Text style={recordCardStyles.value}>{formatDuration(session.durationSeconds)}</Text>
-      </View>
-      <View style={[recordCardStyles.row, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <Text style={recordCardStyles.label}>{t("records.rewards")}:</Text>
-        <Text style={recordCardStyles.value}>
-          {session.rewards.exp} EXP, {session.rewards.gold} G
-        </Text>
-      </View>
-    </DQWindow>
+
+      {session && (
+        <>
+          <View style={[recordQuestCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <PixelText variant="label" color="cream">
+              {t("records.study_time")}:
+            </PixelText>
+            <PixelText variant="body" color="gold">
+              {formatDuration(session.durationSeconds)}
+            </PixelText>
+          </View>
+          <View style={[recordQuestCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <PixelText variant="label" color="cream">
+              {t("records.completed_at")}:
+            </PixelText>
+            <PixelText variant="body" color="gold">
+              {formatDateTime(session.endTime, getLang())}
+            </PixelText>
+          </View>
+        </>
+      )}
+    </PixelCard>
   );
 }
 
-const recordCardStyles = StyleSheet.create({
+const recordQuestCardStyles = StyleSheet.create({
   card: {
     marginBottom: SPACING.xs,
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  header: {
+    alignItems: "center",
+    gap: SPACING.xs,
     marginBottom: SPACING.xs,
   },
-  label: {
-    color: COLORS.cream,
-    fontSize: FONT_SIZES.md,
-    fontFamily: FONT_FAMILY,
+  badge: {
+    borderWidth: 1,
+    borderRadius: PIXEL_BORDER.borderRadius,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
   },
-  value: {
-    color: COLORS.white,
-    fontSize: FONT_SIZES.md,
-    fontFamily: FONT_FAMILY,
-    fontWeight: "bold",
+  spacer: {
+    flex: 1,
+  },
+  title: {
+    marginBottom: SPACING.sm,
+  },
+  detailRow: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
   },
 });
 
 export default function RecordsScreen() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const isRTL = getIsRTL();
   const insets = useSafeAreaInsets();
 
-  const [sessions, setSessions] = useState<BattleSession[]>([]);
-  const [questsMap, setQuestsMap] = useState<Map<string, Quest>>(new Map());
-  const [isLoading, setIsLoading] = useState(true);
+  const [completedQuests, setCompletedQuests] = useState<Quest[]>([]);
+  const [battleSessions, setBattleSessions] = useState<BattleSession[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
-      setIsLoading(false);
+      setLoading(false);
       return;
     }
 
-    const unsubSessions = subscribeToBattleSessions(user.uid, (s: BattleSession[]) => {
-      setSessions(s);
-      setIsLoading(false);
+    setLoading(true);
+
+    const unsubQuests = subscribeToCompletedQuests(user.uid, (quests: Quest[]) => {
+      setCompletedQuests(quests);
+      setLoading(false);
     });
 
-    const unsubQuests = subscribeToQuests(user.uid, (q: Quest[]) => {
-      const map = new Map<string, Quest>();
-      q.forEach((quest) => map.set(quest.id, quest));
-      setQuestsMap(map);
+    const unsubSessions = subscribeToBattleSessions(user.uid, (sessions: BattleSession[]) => {
+      setBattleSessions(sessions);
     });
 
     return () => {
-      unsubSessions();
       unsubQuests();
+      unsubSessions();
     };
   }, [user]);
 
-  if (isLoading) {
+  const getSessionForQuest = useCallback(
+    (questId: string) => {
+      return battleSessions.find((session) => session.questId === questId);
+    },
+    [battleSessions],
+  );
+
+  if (authLoading || loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={COLORS.gold} size="large" />
@@ -132,7 +187,14 @@ export default function RecordsScreen() {
       <Stack.Screen
         options={{
           title: t("nav.records"),
-          headerShown: false, // Custom header for DQ style
+          headerLeft: () => (
+            <PixelButton
+              label={t("common.back")}
+              variant="ghost"
+              size="sm"
+              onPress={() => router.back()}
+            />
+          ),
         }}
       />
       <ScrollView
@@ -143,26 +205,24 @@ export default function RecordsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <DQMessageBox text={t("dq.records.message")} speed={40} />
+        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
+          {t("records.completed_quests")}
+        </PixelText>
 
-        {sessions.length === 0 ? (
-          <DQWindow>
-            <Text style={styles.emptyText}>{t("dq.records.no_records")}</Text>
-          </DQWindow>
+        {completedQuests.length === 0 ? (
+          <PixelCard variant="default">
+            <DQMessageBox text={t("records.no_completed_quests")} />
+          </PixelCard>
         ) : (
-          sessions.map((session) => (
-            <RecordCard
-              key={session.id}
-              session={session}
-              questTitle={questsMap.get(session.questId)?.title || t("common.unknown_quest")}
+          completedQuests.map((quest) => (
+            <RecordQuestCard
+              key={quest.id}
+              quest={quest}
+              session={getSessionForQuest(quest.id)}
               isRTL={isRTL}
             />
           ))
         )}
-
-        <DQCommandMenu
-          items={[{ label: t("common.back"), onPress: () => router.back(), accessibilityLabel: t("common.back") }]}
-        />
       </ScrollView>
     </>
   );
@@ -171,22 +231,20 @@ export default function RecordsScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   content: {
-    padding: 16,
-    gap: 12,
+    padding: SPACING.md,
+    gap: SPACING.md,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
-  emptyText: {
-    color: COLORS.gray,
-    fontSize: FONT_SIZES.md,
-    fontFamily: FONT_FAMILY,
+  sectionTitle: {
+    marginBottom: SPACING.xs,
     textAlign: "center",
   },
 });

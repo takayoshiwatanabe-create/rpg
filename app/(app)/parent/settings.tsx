@@ -5,55 +5,69 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
-import { router, Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useSettings, updateUserSettings } from "@/hooks/useSettings";
-import { PixelText, PixelButton, PixelCard } from "@/components/ui";
-import { t, getLang, setLang, getIsRTL, LANGUAGES } from "@/i18n";
+import { PixelText, PixelButton, PixelCard, DQMessageBox } from "@/components/ui";
+import { t, getLang, setLang, getIsRTL, LANGUAGES, Locale } from "@/i18n";
 import { COLORS, SPACING } from "@/constants/theme";
+import { useSettings } from "@/hooks/useSettings"; // Corrected import
 import * as Haptics from "expo-haptics";
 
-export default function ParentSettingsScreen() {
-  const { user, userProfile, isLoading: authLoading, signOut } = useAuth();
-  const { settings, isLoading: settingsLoading } = useSettings();
-  const isRTL = getIsRTL();
+const DQ_BG = COLORS.bgDark;
+const FONT_FAMILY = Platform.select({
+  ios: "Courier New",
+  android: "monospace",
+  default: "monospace",
+});
 
-  const [selectedLanguage, setSelectedLanguage] = useState(getLang());
+export default function ParentSettingsScreen() {
+  const { user, userProfile, isLoading: authLoading, signOut } = useAuth(); // Corrected signOut usage
+  const isRTL = getIsRTL();
+  const { settings, updateSetting, isLoading: settingsLoading } = useSettings();
+
+  const [currentLanguage, setCurrentLanguage] = useState<Locale>(getLang());
 
   useEffect(() => {
-    if (settings && settings.language && settings.language !== selectedLanguage) {
-      setSelectedLanguage(settings.language);
+    if (settings?.language && settings.language !== currentLanguage) {
+      setCurrentLanguage(settings.language);
     }
-  }, [settings, selectedLanguage]);
+  }, [settings?.language, currentLanguage]);
 
-  const handleLanguageChange = useCallback(async (lang: string) => {
-    setSelectedLanguage(lang);
-    setLang(lang); // Update i18n immediately
-    if (user?.uid) {
-      await updateUserSettings(user.uid, { language: lang });
-    }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [user?.uid]);
+  const handleLanguageChange = useCallback(async (lang: Locale) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
+    setCurrentLanguage(lang);
+    await setLang(lang);
+    await updateSetting("language", lang);
+  }, [updateSetting]);
 
   const handleSignOut = useCallback(async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert(
-      t("settings.logout_confirm_title"),
-      t("settings.logout_confirm_message"),
+      t("settings.sign_out_confirm_title"),
+      t("settings.sign_out_confirm_message"),
       [
         { text: t("common.cancel"), style: "cancel" },
         {
-          text: t("settings.logout"),
+          text: t("settings.sign_out"),
           style: "destructive",
           onPress: async () => {
             await signOut();
-            router.replace("/(auth)/login");
+            router.replace("/(auth)");
           },
         },
       ],
     );
   }, [signOut]);
+
+  const handleManageSubscription = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
+    Alert.alert(
+      t("common.info"),
+      t("parent.manage_subscription_hint"),
+    );
+  }, []);
 
   if (authLoading || settingsLoading) {
     return (
@@ -63,12 +77,10 @@ export default function ParentSettingsScreen() {
     );
   }
 
-  if (!user || userProfile?.role !== "parent") {
+  if (userProfile?.role !== "parent") {
     return (
       <View style={styles.center}>
-        <PixelText variant="body" color="danger">
-          {t("parent.access_denied")}
-        </PixelText>
+        <DQMessageBox text={t("parent.access_denied")} />
         <PixelButton
           label={t("common.back")}
           variant="secondary"
@@ -81,7 +93,19 @@ export default function ParentSettingsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t("nav.settings") }} />
+      <Stack.Screen
+        options={{
+          title: t("nav.settings"),
+          headerLeft: () => (
+            <PixelButton
+              label={t("common.back")}
+              variant="ghost"
+              size="sm"
+              onPress={() => router.back()}
+            />
+          ),
+        }}
+      />
       <ScrollView
         style={styles.root}
         contentContainerStyle={[
@@ -95,42 +119,52 @@ export default function ParentSettingsScreen() {
         </PixelText>
 
         <PixelCard variant="default">
-          <PixelText variant="label" color="cream" style={styles.settingLabel}>
+          <PixelText variant="body" color="cream" style={styles.settingLabel}>
             {t("settings.language")}
           </PixelText>
-          <View style={styles.languageOptions}>
-            {Object.entries(LANGUAGES).map(([key, value]) => (
+          <View style={styles.languageGrid}>
+            {Object.entries(LANGUAGES).map(([code, name]) => (
               <PixelButton
-                key={key}
-                label={value.nativeName}
-                variant={selectedLanguage === key ? "primary" : "secondary"}
+                key={code}
+                label={name}
+                variant={currentLanguage === code ? "primary" : "secondary"}
                 size="sm"
-                onPress={() => handleLanguageChange(key)}
+                onPress={() => handleLanguageChange(code as Locale)}
                 style={styles.languageButton}
-                accessibilityRole="radio" // Changed from "radio"
-                accessibilityState={{ selected: selectedLanguage === key }} // Changed from "checked"
+                accessibilityRole="radio"
+                accessibilityState={{ checked: currentLanguage === code }}
               />
             ))}
           </View>
         </PixelCard>
 
         <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
+          {t("parent.subscription_status")}
+        </PixelText>
+        <PixelCard variant="default">
+          <PixelText variant="body" color="cream">
+            {t("parent.subscription_info")}
+          </PixelText>
+          <PixelText variant="caption" color="gray" style={styles.subInfo}>
+            {t("parent.subscription_details")}
+          </PixelText>
+          <PixelButton
+            label={t("parent.manage_subscription")}
+            variant="secondary"
+            size="md"
+            onPress={handleManageSubscription}
+            style={styles.manageSubButton}
+          />
+        </PixelCard>
+
+        <PixelText variant="heading" color="gold" style={styles.sectionTitle}>
           {t("settings.account")}
         </PixelText>
-
         <PixelCard variant="default">
-          <PixelText variant="label" color="cream" style={styles.settingLabel}>
-            {t("settings.email")}
-          </PixelText>
-          <PixelText variant="body" color="gray">
-            {user.email}
-          </PixelText>
-
           <PixelButton
-            label={t("settings.logout")}
+            label={t("settings.sign_out")}
             variant="danger"
             onPress={handleSignOut}
-            style={styles.logoutButton}
           />
         </PixelCard>
       </ScrollView>
@@ -141,7 +175,7 @@ export default function ParentSettingsScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   content: {
     padding: SPACING.md,
@@ -152,7 +186,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   backButton: {
     marginTop: SPACING.md,
@@ -164,17 +198,22 @@ const styles = StyleSheet.create({
   settingLabel: {
     marginBottom: SPACING.sm,
   },
-  languageOptions: {
+  languageGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: SPACING.xs,
-    marginTop: SPACING.sm,
+    justifyContent: "center",
   },
   languageButton: {
+    flexBasis: "30%", // Roughly 3 items per row, adjust as needed
     minWidth: 80,
   },
-  logoutButton: {
-    marginTop: SPACING.lg,
+  subInfo: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  manageSubButton: {
+    marginTop: SPACING.sm,
   },
 });
 
