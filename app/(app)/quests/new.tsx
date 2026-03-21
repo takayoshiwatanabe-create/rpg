@@ -1,20 +1,29 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   Platform,
+  ActivityIndicator,
+  KeyboardAvoidingView,
 } from "react-native";
-import { router, useLocalSearchParams, Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
-import { createQuest, updateQuest } from "@/lib/firestore";
-import { PixelText, PixelButton, PixelCard, DQPicker, PixelInput } from "@/components/ui";
+import { createQuest, subscribeToHero } from "@/lib/firestore";
+import {
+  PixelText,
+  PixelButton,
+  PixelInput,
+  PixelCard,
+  PixelPicker,
+} from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
 import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
-import type { Subject, Difficulty } from "@/types";
+import type { Subject, Difficulty, HeroProfile } from "@/types";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import * as Haptics from "expo-haptics";
 
 const DQ_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
@@ -23,116 +32,132 @@ const FONT_FAMILY = Platform.select({
   default: "monospace",
 });
 
-const SUBJECT_OPTIONS: Subject[] = [
+const subjects: Subject[] = [
   "math",
   "japanese",
   "english",
   "science",
-  "social_studies",
+  "socialStudies",
   "programming",
   "art",
   "music",
   "other",
 ];
-
-const DIFFICULTY_OPTIONS: Difficulty[] = ["easy", "normal", "hard", "very_hard"];
+const difficulties: Difficulty[] = ["easy", "normal", "hard", "veryHard"];
 
 export default function NewQuestScreen() {
   const { user } = useAuth();
   const isRTL = getIsRTL();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams();
 
-  const isEditMode = !!params.questId;
-  const questId = typeof params.questId === "string" ? params.questId : undefined;
+  const [title, setTitle] = useState("");
+  const [subject, setSubject] = useState<Subject>("math");
+  const [difficulty, setDifficulty] = useState<Difficulty>("normal");
+  const [deadline, setDeadline] = useState(new Date());
+  const [estimatedMinutes, setEstimatedMinutes] = useState("30");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [hero, setHero] = useState<HeroProfile | null>(null);
+  const [heroLoading, setHeroLoading] = useState(true);
 
-  const [title, setTitle] = useState(
-    typeof params.title === "string" ? params.title : "",
-  );
-  const [subject, setSubject] = useState<Subject>(
-    (typeof params.subject === "string" ? params.subject : "math") as Subject,
-  );
-  const [difficulty, setDifficulty] = useState<Difficulty>(
-    (typeof params.difficulty === "string" ? params.difficulty : "easy") as Difficulty,
-  );
-  const [deadlineDate, setDeadlineDate] = useState(
-    typeof params.deadlineDate === "string"
-      ? params.deadlineDate
-      : new Date().toISOString().split("T")[0], // YYYY-MM-DD
-  );
-  const [estimatedMinutes, setEstimatedMinutes] = useState(
-    typeof params.estimatedMinutes === "string" ? params.estimatedMinutes : "30",
-  );
-  const [expReward, setExpReward] = useState(
-    typeof params.expReward === "string" ? params.expReward : "50",
-  );
-  const [goldReward, setGoldReward] = useState(
-    typeof params.goldReward === "string" ? params.goldReward : "20",
-  );
-
-  const [isSaving, setIsSaving] = useState(false);
-
-  const handleSaveQuest = useCallback(async () => {
+  useEffect(() => {
     if (!user) {
-      Alert.alert(t("common.error"), t("error.auth_required"));
+      setHeroLoading(false);
+      return;
+    }
+    const unsub = subscribeToHero(user.uid, user.uid, (h: HeroProfile | null) => {
+      setHero(h);
+      setHeroLoading(false);
+    });
+    return unsub;
+  }, [user]);
+
+  const onDateChange = useCallback(
+    (event: any, selectedDate?: Date) => {
+      setShowDatePicker(Platform.OS === "ios");
+      if (selectedDate) {
+        setDeadline(selectedDate);
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    [],
+  );
+
+  const handleCreateQuest = useCallback(async () => {
+    if (!user || !hero) {
+      Alert.alert(t("common.error"), t("error.auth_or_hero_missing"));
       return;
     }
     if (!title.trim()) {
       Alert.alert(t("common.error"), t("quest.error.title_required"));
       return;
     }
-    if (parseInt(estimatedMinutes, 10) <= 0) {
+    const minutes = parseInt(estimatedMinutes, 10);
+    if (isNaN(minutes) || minutes <= 0) {
       Alert.alert(t("common.error"), t("quest.error.estimated_minutes_invalid"));
       return;
     }
+    if (deadline < new Date()) {
+      Alert.alert(t("common.error"), t("quest.error.deadline_past"));
+      return;
+    }
 
-    setIsSaving(true);
+    setIsCreating(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     try {
-      const questData = {
-        userId: user.uid,
-        heroId: user.uid, // Assuming heroId is same as userId for simplicity
-        title: title.trim(),
+      await createQuest(user.uid, hero.id, {
+        title,
         subject,
         difficulty,
-        deadlineDate,
-        estimatedMinutes: parseInt(estimatedMinutes, 10),
-        expReward: parseInt(expReward, 10),
-        goldReward: parseInt(goldReward, 10),
-      };
-
-      if (isEditMode && questId) {
-        await updateQuest(questId, questData);
-        Alert.alert(t("common.success"), t("quest.updated_successfully"));
-        router.replace(`/(app)/quests/${questId}`);
-      } else {
-        const newQuestRef = await createQuest(questData);
-        Alert.alert(t("common.success"), t("quest.created_successfully"));
-        router.replace(`/(app)/quests/${newQuestRef.id}`);
-      }
+        deadlineDate: deadline.toISOString().split("T")[0], // YYYY-MM-DD
+        estimatedMinutes: minutes,
+      });
+      Alert.alert(t("common.success"), t("quest.new.success"));
+      router.back();
     } catch (error) {
-      console.error("Failed to save quest:", error);
+      console.error("Failed to create quest:", error);
       Alert.alert(t("common.error"), t("error.unknown"));
     } finally {
-      setIsSaving(false);
+      setIsCreating(false);
     }
-  }, [
-    user,
-    title,
-    subject,
-    difficulty,
-    deadlineDate,
-    estimatedMinutes,
-    expReward,
-    goldReward,
-    isEditMode,
-    questId,
-  ]);
+  }, [user, hero, title, subject, difficulty, deadline, estimatedMinutes]);
+
+  if (heroLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
+      </View>
+    );
+  }
+
+  if (!hero) {
+    return (
+      <View style={[styles.center, { paddingTop: insets.top }]}>
+        <PixelText variant="body" color="danger" accessibilityLabel={t("error.hero_not_found")}>
+          {t("error.hero_not_found")}
+        </PixelText>
+        <PixelButton
+          label={t("common.back")}
+          variant="secondary"
+          onPress={() => router.back()}
+          style={styles.backButton}
+          accessibilityLabel={t("common.back")}
+        />
+      </View>
+    );
+  }
 
   return (
-    <>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 44 : 0}
+    >
       <Stack.Screen
         options={{
-          title: isEditMode ? t("nav.edit_quest") : t("nav.create_quest"),
+          title: t("quest.new.title"),
+          headerBackTitleVisible: false,
         }}
       />
       <ScrollView
@@ -142,118 +167,104 @@ export default function NewQuestScreen() {
           { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + SPACING.md, paddingBottom: insets.bottom + SPACING.xxl },
         ]}
         showsVerticalScrollIndicator={false}
-        accessibilityLabel={isEditMode ? t("nav.edit_quest") : t("nav.create_quest")}
+        accessibilityLabel={t("quest.new.accessibility.screen")}
       >
-        <PixelText variant="heading" color="gold" style={styles.formTitle} accessibilityLabel={isEditMode ? t("nav.edit_quest") : t("nav.create_quest")}>
-          {isEditMode ? t("nav.edit_quest") : t("nav.create_quest")}
-        </PixelText>
-
         <PixelCard variant="default">
-          <PixelText variant="label" color="cream" style={styles.inputLabel} accessibilityLabel={t("quest.title_label")}>
-            {t("quest.title_label")}
+          <PixelText variant="body" color="cream" style={styles.formLabel} accessibilityLabel={t("quest.new.quest_title_label")}>
+            {t("quest.new.quest_title_label")}
           </PixelText>
           <PixelInput
             value={title}
             onChangeText={setTitle}
-            placeholder={t("quest.title_placeholder")}
-            accessibilityLabel={t("quest.title_label")}
-            editable={!isSaving}
+            placeholder={t("quest.new.quest_title_placeholder")}
+            accessibilityLabel={t("quest.new.quest_title_label")}
+            returnKeyType="next"
           />
 
-          <PixelText variant="label" color="cream" style={styles.inputLabel} accessibilityLabel={t("quest.subject_label")}>
-            {t("quest.subject_label")}
+          <PixelText variant="body" color="cream" style={styles.formLabel} accessibilityLabel={t("quest.new.subject_label")}>
+            {t("quest.new.subject_label")}
           </PixelText>
-          <DQPicker
+          <PixelPicker
             selectedValue={subject}
-            onValueChange={(itemValue: Subject) => setSubject(itemValue)}
-            items={SUBJECT_OPTIONS.map((s) => ({
+            onValueChange={(itemValue) => {
+              setSubject(itemValue as Subject);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            items={subjects.map((s) => ({
               label: t(`quest.subject.${s}`),
               value: s,
+              accessibilityLabel: t(`quest.subject.${s}`),
             }))}
-            accessibilityLabel={t("quest.subject_label")}
-            enabled={!isSaving}
+            accessibilityLabel={t("quest.new.subject_label")}
           />
 
-          <PixelText variant="label" color="cream" style={styles.inputLabel} accessibilityLabel={t("quest.difficulty_label")}>
-            {t("quest.difficulty_label")}
+          <PixelText variant="body" color="cream" style={styles.formLabel} accessibilityLabel={t("quest.new.difficulty_label")}>
+            {t("quest.new.difficulty_label")}
           </PixelText>
-          <DQPicker
+          <PixelPicker
             selectedValue={difficulty}
-            onValueChange={(itemValue: Difficulty) => setDifficulty(itemValue)}
-            items={DIFFICULTY_OPTIONS.map((d) => ({
+            onValueChange={(itemValue) => {
+              setDifficulty(itemValue as Difficulty);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            items={difficulties.map((d) => ({
               label: t(`quest.difficulty.${d}`),
               value: d,
+              accessibilityLabel: t(`quest.difficulty.${d}`),
             }))}
-            accessibilityLabel={t("quest.difficulty_label")}
-            enabled={!isSaving}
+            accessibilityLabel={t("quest.new.difficulty_label")}
           />
 
-          <PixelText variant="label" color="cream" style={styles.inputLabel} accessibilityLabel={t("quest.deadline_label")}>
-            {t("quest.deadline_label")}
+          <PixelText variant="body" color="cream" style={styles.formLabel} accessibilityLabel={t("quest.new.deadline_label")}>
+            {t("quest.new.deadline_label")}
           </PixelText>
-          <PixelInput
-            value={deadlineDate}
-            onChangeText={setDeadlineDate}
-            placeholder="YYYY-MM-DD"
-            keyboardType="numbers-and-punctuation"
-            accessibilityLabel={t("quest.deadline_label")}
-            editable={!isSaving}
+          <PixelButton
+            label={deadline.toLocaleDateString(getIsRTL() ? "ar" : "ja", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+            onPress={() => setShowDatePicker(true)}
+            variant="secondary"
+            style={styles.datePickerButton}
+            accessibilityLabel={t("quest.new.deadline_label")}
           />
+          {showDatePicker && (
+            <DateTimePicker
+              value={deadline}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={onDateChange}
+              minimumDate={new Date()}
+              locale={getIsRTL() ? "ar" : "ja"}
+            />
+          )}
 
-          <PixelText variant="label" color="cream" style={styles.inputLabel} accessibilityLabel={t("quest.estimated_time_label")}>
-            {t("quest.estimated_time_label")} ({t("quest.minutes_unit")})
+          <PixelText variant="body" color="cream" style={styles.formLabel} accessibilityLabel={t("quest.new.estimated_minutes_label")}>
+            {t("quest.new.estimated_minutes_label")}
           </PixelText>
           <PixelInput
             value={estimatedMinutes}
             onChangeText={setEstimatedMinutes}
             keyboardType="numeric"
-            accessibilityLabel={t("quest.estimated_time_label")}
-            editable={!isSaving}
+            placeholder="30"
+            accessibilityLabel={t("quest.new.estimated_minutes_label")}
+            returnKeyType="done"
           />
 
-          <PixelText variant="label" color="cream" style={styles.inputLabel} accessibilityLabel={t("quest.exp_reward_label")}>
-            {t("quest.exp_reward_label")}
-          </PixelText>
-          <PixelInput
-            value={expReward}
-            onChangeText={setExpReward}
-            keyboardType="numeric"
-            accessibilityLabel={t("quest.exp_reward_label")}
-            editable={!isSaving}
-          />
-
-          <PixelText variant="label" color="cream" style={styles.inputLabel} accessibilityLabel={t("quest.gold_reward_label")}>
-            {t("quest.gold_reward_label")}
-          </PixelText>
-          <PixelInput
-            value={goldReward}
-            onChangeText={setGoldReward}
-            keyboardType="numeric"
-            accessibilityLabel={t("quest.gold_reward_label")}
-            editable={!isSaving}
+          <PixelButton
+            label={t("quest.new.create_button")}
+            onPress={handleCreateQuest}
+            variant="primary"
+            size="lg"
+            style={styles.createButton}
+            disabled={isCreating}
+            accessibilityLabel={t("quest.new.create_button")}
+            accessibilityState={{ busy: isCreating }}
           />
         </PixelCard>
-
-        <PixelButton
-          label={isEditMode ? t("common.update") : t("common.create")}
-          variant="primary"
-          size="lg"
-          onPress={handleSaveQuest}
-          style={styles.saveButton}
-          accessibilityLabel={isEditMode ? t("common.update") : t("common.create")}
-          disabled={isSaving}
-        />
-
-        {isSaving && (
-          <View style={styles.savingIndicator}>
-            <ActivityIndicator color={COLORS.gold} size="small" />
-            <PixelText variant="caption" color="gray" accessibilityLabel={t("common.saving")}>
-              {t("common.saving")}...
-            </PixelText>
-          </View>
-        )}
       </ScrollView>
-    </>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -266,23 +277,24 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     gap: SPACING.lg,
   },
-  formTitle: {
-    textAlign: "center",
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: DQ_BG,
+  },
+  backButton: {
+    marginTop: SPACING.md,
+  },
+  formLabel: {
+    marginTop: SPACING.md,
+    marginBottom: SPACING.xs,
+  },
+  datePickerButton: {
+    marginTop: SPACING.xs,
     marginBottom: SPACING.md,
   },
-  inputLabel: {
-    marginBottom: SPACING.xs,
-    marginTop: SPACING.md,
-  },
-  saveButton: {
-    marginTop: SPACING.md,
-  },
-  savingIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-    justifyContent: "center",
-    marginTop: SPACING.sm,
+  createButton: {
+    marginTop: SPACING.xl,
   },
 });
-
