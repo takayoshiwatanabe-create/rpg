@@ -1,165 +1,170 @@
-import { useCallback, useState } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
   ImageBackground,
   Alert,
   Platform,
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  ScrollView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
-import { PixelText, PixelButton, PixelInput, PixelCard } from "@/components/ui";
+import { signUp } from "@/lib/auth";
+import { createUserProfile } from "@/lib/firestore";
+import { PixelText, PixelInput, PixelButton, PixelPicker } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES } from "@/constants/theme";
+import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
+import { FIREBASE_AUTH_ERRORS } from "@/constants/firebaseErrors";
 import * as Haptics from "expo-haptics";
+import type { UserRole } from "@/types";
 
-const REGISTER_BG = require("@/assets/register_bg.png");
-const FONT_FAMILY = Platform.select({
-  ios: "Courier New",
-  android: "monospace",
-  default: "monospace",
-});
+const AUTH_BG = require("@/assets/auth_bg.png");
 
 export default function RegisterScreen() {
-  const { register, isLoading } = useAuth();
+  const insets = useSafeAreaInsets();
   const isRTL = getIsRTL();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<"child" | "parent">("child");
+  const [role, setRole] = useState<UserRole>("child");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = useCallback(async () => {
-    if (!email || !password || !confirmPassword || !displayName) {
-      Alert.alert(t("common.error"), t("auth.error.all_fields_required"));
+    if (!email || !password || !confirmPassword || !role) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t("common.error"), t("quest.new.error.fields_required"));
       return;
     }
+
     if (password !== confirmPassword) {
-      Alert.alert(t("common.error"), t("auth.error.passwords_not_match"));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-    if (password.length < 6) {
-      Alert.alert(t("common.error"), t("auth.error.password_too_short"));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t("common.error"), t("auth.register.error.password_mismatch"));
       return;
     }
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
-
+    setIsLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      await register(email, password, displayName, role);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(t("common.success"), t("auth.register_success"));
-      router.replace("/(app)");
+      const userCredential = await signUp(email, password);
+      if (userCredential.user) {
+        await createUserProfile(userCredential.user.uid, email, role);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert(t("auth.register.success.title"), t("auth.register.success.message"));
+        router.replace("/(app)");
+      }
     } catch (error: any) {
-      console.error("Registration failed:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(t("common.error"), error.message || t("auth.error.register_failed"));
+      const errorMessage =
+        FIREBASE_AUTH_ERRORS[error.code as keyof typeof FIREBASE_AUTH_ERRORS] ||
+        t("auth.register.error.generic");
+      Alert.alert(t("common.error"), errorMessage);
+      console.error("Registration error:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [email, password, confirmPassword, displayName, role, register]);
+  }, [email, password, confirmPassword, role]);
 
-  const handleGoBack = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
-    router.back();
+  const handleLoginPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/(auth)/login");
   }, []);
 
   return (
-    <ImageBackground source={REGISTER_BG} style={styles.background}>
-      <View style={[styles.overlay, { direction: isRTL ? "rtl" : "ltr" }]}>
-        <PixelCard variant="default" style={styles.registerCard}>
-          <PixelText variant="heading" color="gold" style={styles.title}>
-            {t("auth.register_title")}
-          </PixelText>
+    <ImageBackground source={AUTH_BG} style={styles.background}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            styles.container,
+            { paddingTop: insets.top + SPACING.xl, paddingBottom: insets.bottom + SPACING.xl, direction: isRTL ? "rtl" : "ltr" },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          accessibilityLabel={t("auth.register.title")}
+        >
+          <View style={styles.card}>
+            <PixelText variant="heading" color="gold" style={styles.title} accessibilityLabel={t("auth.register.title")}>
+              {t("auth.register.title")}
+            </PixelText>
 
-          <PixelText variant="label" color="cream" style={styles.inputLabel}>
-            {t("auth.display_name")}
-          </PixelText>
-          <PixelInput
-            value={displayName}
-            onChangeText={setDisplayName}
-            placeholder={t("auth.placeholder.display_name")}
-            autoCapitalize="words"
-            style={styles.input}
-          />
-
-          <PixelText variant="label" color="cream" style={styles.inputLabel}>
-            {t("auth.email")}
-          </PixelText>
-          <PixelInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder={t("auth.placeholder.email")}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-          />
-
-          <PixelText variant="label" color="cream" style={styles.inputLabel}>
-            {t("auth.password")}
-          </PixelText>
-          <PixelInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t("auth.placeholder.password")}
-            secureTextEntry
-            style={styles.input}
-          />
-
-          <PixelText variant="label" color="cream" style={styles.inputLabel}>
-            {t("auth.confirm_password")}
-          </PixelText>
-          <PixelInput
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            placeholder={t("auth.placeholder.confirm_password")}
-            secureTextEntry
-            style={styles.input}
-          />
-
-          <PixelText variant="label" color="cream" style={styles.inputLabel}>
-            {t("auth.account_type")}
-          </PixelText>
-          <View style={styles.roleToggle}>
-            <PixelButton
-              label={t("auth.role_child")}
-              variant={role === "child" ? "primary" : "secondary"}
-              onPress={() => setRole("child")}
-              style={styles.roleButton}
+            <PixelInput
+              label={t("auth.register.email")}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder={t("auth.register.email")}
+              editable={!isLoading}
+              accessibilityLabel={t("auth.register.email")}
+              style={styles.input}
             />
-            <PixelButton
-              label={t("auth.role_parent")}
-              variant={role === "parent" ? "primary" : "secondary"}
-              onPress={() => setRole("parent")}
-              style={styles.roleButton}
+            <PixelInput
+              label={t("auth.register.password")}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              placeholder={t("auth.register.password")}
+              editable={!isLoading}
+              accessibilityLabel={t("auth.register.password")}
+              style={styles.input}
             />
+            <PixelInput
+              label={t("auth.register.confirm_password")}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              placeholder={t("auth.register.confirm_password")}
+              editable={!isLoading}
+              accessibilityLabel={t("auth.register.confirm_password")}
+              style={styles.input}
+            />
+
+            <PixelPicker
+              label={t("auth.register.role")}
+              selectedValue={role}
+              onValueChange={(itemValue) => setRole(itemValue as UserRole)}
+              items={[
+                { label: t("auth.register.role.child"), value: "child" },
+                { label: t("auth.register.role.parent"), value: "parent" },
+              ]}
+              enabled={!isLoading}
+              accessibilityLabel={t("auth.register.role")}
+              style={styles.input}
+            />
+
+            <PixelButton
+              label={t("auth.register.button")}
+              onPress={handleRegister}
+              isLoading={isLoading}
+              variant="primary"
+              size="lg"
+              style={styles.button}
+              accessibilityLabel={t("auth.register.button")}
+              accessibilityRole="button"
+              accessibilityState={{ busy: isLoading }}
+            />
+
+            <View style={[styles.loginPrompt, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+              <PixelText variant="body" color="cream" accessibilityLabel={t("auth.register.has_account")}>
+                {t("auth.register.has_account")}
+              </PixelText>
+              <PixelButton
+                label={t("auth.register.login_now")}
+                onPress={handleLoginPress}
+                variant="ghost"
+                size="sm"
+                style={styles.loginButton}
+                accessibilityLabel={t("auth.register.login_now")}
+                accessibilityRole="link"
+              />
+            </View>
           </View>
-
-          <PixelButton
-            label={isLoading ? t("common.loading") : t("auth.register")}
-            variant="primary"
-            onPress={handleRegister}
-            disabled={isLoading}
-            style={styles.registerButton}
-          />
-
-          <PixelButton
-            label={t("auth.back_to_login")}
-            variant="secondary"
-            onPress={handleGoBack}
-            disabled={isLoading}
-            style={styles.backButton}
-          />
-        </PixelCard>
-      </View>
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={COLORS.gold} />
-        </View>
-      )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ImageBackground>
   );
 }
@@ -170,55 +175,50 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
     justifyContent: "center",
   },
-  overlay: {
+  keyboardAvoidingView: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+  },
+  container: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
-  registerCard: {
-    width: "90%",
+  card: {
+    width: "100%",
     maxWidth: 400,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: PIXEL_BORDER.borderRadius,
+    borderWidth: PIXEL_BORDER.borderWidth,
+    borderColor: COLORS.border,
     padding: SPACING.lg,
-    gap: SPACING.sm,
+    alignItems: "center",
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.8,
+    shadowRadius: 0,
+    elevation: 8,
   },
   title: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xl,
     textAlign: "center",
   },
-  inputLabel: {
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.xs,
-  },
   input: {
-    backgroundColor: COLORS.darkGray,
-    color: COLORS.cream,
-    padding: SPACING.sm,
-    borderRadius: 4,
-    fontFamily: FONT_FAMILY,
-    fontSize: FONT_SIZES.body,
+    marginBottom: SPACING.md,
+    width: "100%",
   },
-  roleToggle: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: SPACING.sm,
-    gap: SPACING.md,
-  },
-  roleButton: {
-    flex: 1,
-  },
-  registerButton: {
-    marginTop: SPACING.lg,
-  },
-  backButton: {
+  button: {
     marginTop: SPACING.md,
+    width: "100%",
   },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "center",
+  loginPrompt: {
+    marginTop: SPACING.lg,
     alignItems: "center",
+    gap: SPACING.xs,
+  },
+  loginButton: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
 });
 

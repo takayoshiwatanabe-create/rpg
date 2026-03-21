@@ -6,7 +6,7 @@
      ...StyleSheet.absoluteFillObject,
      zIndex: 9999,
 -    backgroundColor: "#FFFFFF",
-+    backgroundColor: COLORS.white,
++    backgroundColor: COLORS.white, // Use COLORS.white from theme
      alignItems: "center",
      justifyContent: "center",
    },

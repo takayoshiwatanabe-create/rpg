@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "@vitest/globals";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react-native"; // Import fireEvent
 import BattleScreen from "./[questId]";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -75,21 +75,21 @@ vi.mock("react-native", async (importOriginal) => {
 });
 vi.mock("@/components/ui", () => ({
   DQWindow: ({ children }: { children: React.ReactNode }) => (
-    <actual.View>{children}</actual.View>
+    <View>{children}</View>
   ),
   DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void }[] }) => (
-    <actual.View>
+    <View>
       {items.map((item) => (
-        <actual.TouchableOpacity key={item.label} onPress={item.onPress}>
-          <actual.Text>{item.label}</actual.Text>
-        </actual.TouchableOpacity>
+        <TouchableOpacity key={item.label} onPress={item.onPress}>
+          <Text>{item.label}</Text>
+        </TouchableOpacity>
       ))}
-    </actual.View>
+    </View>
   ),
   DQMessageBox: ({ text, onComplete }: { text: string; onComplete?: () => void }) => (
-    <actual.View>
-      <actual.Text onPress={onComplete}>{text}</actual.Text>
-    </actual.View>
+    <View>
+      <Text onPress={onComplete}>{text}</Text>
+    </View>
   ),
 }));
 
@@ -244,3 +244,4 @@ describe("BattleScreen", () => {
     expect(require("react-native").Animated.Value().setValue).toHaveBeenCalledWith(1);
   });
 });
+

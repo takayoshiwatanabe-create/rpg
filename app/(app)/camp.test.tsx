@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { subscribeToHero, subscribeToActiveQuests } from "@/lib/firestore";
 import { t } from "@/i18n";
 import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "@/types";
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native"; // Import missing components
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -256,3 +257,4 @@ describe("CampScreen", () => {
     expect(router.push).toHaveBeenCalledWith("/(app)/parent/settings");
   });
 });
+

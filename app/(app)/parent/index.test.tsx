@@ -10,7 +10,7 @@ import {
 } from "@/lib/firestore";
 import { t } from "@/i18n";
 import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "@/types";
-import { Alert } from "react-native";
+import { Alert, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native"; // Import missing components
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -84,19 +84,20 @@ vi.mock("react-native", async (importOriginal) => {
     ScrollView: actual.ScrollView,
     StyleSheet: actual.StyleSheet,
     ActivityIndicator: actual.ActivityIndicator,
+    TouchableOpacity: actual.TouchableOpacity, // Ensure TouchableOpacity is mocked
   };
 });
 vi.mock("@/components/ui", () => ({
   PixelText: ({ children, variant, color, style, accessibilityLabel }: any) => (
-    <actual.Text style={style} accessibilityLabel={accessibilityLabel}>{children}</actual.Text>
+    <Text style={style} accessibilityLabel={accessibilityLabel}>{children}</Text>
   ),
   PixelButton: ({ label, onPress, variant, size, style, accessibilityLabel, accessibilityRole, accessibilityState }: any) => (
-    <actual.TouchableOpacity onPress={onPress} style={style} accessibilityLabel={accessibilityLabel} accessibilityRole={accessibilityRole} accessibilityState={accessibilityState}>
-      <actual.Text>{label}</actual.Text>
-    </actual.TouchableOpacity>
+    <TouchableOpacity onPress={onPress} style={style} accessibilityLabel={accessibilityLabel} accessibilityRole={accessibilityRole} accessibilityState={accessibilityState}>
+      <Text>{label}</Text>
+    </TouchableOpacity>
   ),
   PixelCard: ({ children, variant, style }: any) => (
-    <actual.View style={style}>{children}</actual.View>
+    <View style={style}>{children}</View>
   ),
 }));
 
@@ -323,4 +324,5 @@ describe("ParentDashboardScreen", () => {
     );
   });
 });
+
 

@@ -5,7 +5,7 @@
  import React, { useRef, useEffect, useCallback } from "react";
  import { View, Animated, StyleSheet, Text, Platform } from "react-native";
 -import { useReducedMotion } from "@/hooks/useReducedMotion";
-+import { useReducedMotion } from "@/hooks/useReducedMotion";
++import { useReducedMotion } from "@/hooks/useReducedMotion"; // Correct import path
  import { PIXEL_BORDER, FONT_FAMILY_MAIN, FONT_FAMILY_SUB, COLORS, FONT_SIZES, SPACING } from "@/constants/theme"; // Added SPACING
  import { t } from "@/i18n"; // Import t for i18n
  
@@ -17,7 +17,7 @@
  }
  
  const BattleScene: React.FC<BattleSceneProps> = ({
-@@ -28,7 +27,6 @@
+@@ -28,7 +26,6 @@
    monsterMaxHp,
    message,
    showAttackFlash = false,
@@ -25,7 +25,7 @@
  }) => {
    const reducedMotion = useReducedMotion();
  
-@@ -124,7 +122,7 @@
+@@ -124,7 +121,7 @@
    },
    flashOverlay: {
      ...StyleSheet.absoluteFillObject,
@@ -34,7 +34,7 @@
      zIndex: 10,
    },
    topPanel: {
-@@ -167,7 +165,7 @@
+@@ -167,7 +164,7 @@
      marginBottom: SPACING.xxs, // Use SPACING.xxs
    },
    hpBarLabel: {
@@ -43,7 +43,7 @@
      fontSize: FONT_SIZES.sm, // Use FONT_SIZES.sm
      fontFamily: FONT_FAMILY,
      width: 40, // Fixed width for label
-@@ -190,7 +188,7 @@
+@@ -190,7 +187,7 @@
      backgroundColor: COLORS.exp, // Green for hero HP
    },
    hpValue: {
@@ -52,7 +52,7 @@
      fontSize: FONT_SIZES.caption, // Use FONT_SIZES.caption
      fontFamily: FONT_FAMILY,
      width: 60, // Fixed width for HP value
-@@ -204,7 +202,7 @@
+@@ -204,7 +201,7 @@
      justifyContent: "center",
    },
    messageText: {

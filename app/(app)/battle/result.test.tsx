@@ -7,6 +7,7 @@ import { subscribeToHero } from "@/lib/firestore";
 import { t } from "@/i18n";
 import { HeroProfile } from "@/types";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { View, Text, TouchableOpacity } from "react-native"; // Import missing components
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -77,28 +78,29 @@ vi.mock("react-native", async (importOriginal) => {
     Text: actual.Text,
     View: actual.View,
     StyleSheet: actual.StyleSheet,
+    TouchableOpacity: actual.TouchableOpacity, // Ensure TouchableOpacity is mocked
   };
 });
 vi.mock("@/components/ui", () => ({
   DQWindow: ({ children, title }: { children: React.ReactNode; title?: string }) => (
-    <actual.View>
-      {title && <actual.Text>{title}</actual.Text>}
+    <View>
+      {title && <Text>{title}</Text>}
       {children}
-    </actual.View>
+    </View>
   ),
   DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void }[] }) => (
-    <actual.View>
+    <View>
       {items.map((item) => (
-        <actual.TouchableOpacity key={item.label} onPress={item.onPress}>
-          <actual.Text>{item.label}</actual.Text>
-        </actual.TouchableOpacity>
+        <TouchableOpacity key={item.label} onPress={item.onPress}>
+          <Text>{item.label}</Text>
+        </TouchableOpacity>
       ))}
-    </actual.View>
+    </View>
   ),
   DQMessageBox: ({ text, onComplete }: { text: string; onComplete?: () => void }) => (
-    <actual.View>
-      <actual.Text onPress={onComplete}>{text}</actual.Text>
-    </actual.View>
+    <View>
+      <Text onPress={onComplete}>{text}</Text>
+    </View>
   ),
 }));
 
@@ -203,4 +205,5 @@ describe("BattleResultScreen", () => {
     await waitFor(() => expect(screen.getByText("次へ")).toBeVisible());
   });
 });
+
 

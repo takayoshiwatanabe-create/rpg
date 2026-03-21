@@ -1,108 +1,54 @@
 ```diff
 --- a/src/hooks/useSettings.ts
 +++ b/src/hooks/useSettings.ts
-@@ -1,11 +1,13 @@
+@@ -1,6 +1,6 @@
  import { useState, useEffect, useCallback } from "react";
  import AsyncStorage from "@react-native-async-storage/async-storage";
- import { useAuth } from "./useAuth";
--import { Locale } from "@/i18n";
-+import { Locale, getIsRTL, setLang } from "@/i18n"; // Import setLang and getIsRTL
-+import { getUserSettings, updateUserSettings, createUserSettings } from "@/lib/firestore"; // Import Firestore functions
+-import { Appearance } from "react-native";
++import { Appearance, AccessibilityInfo } from "react-native"; // Import AccessibilityInfo
+ import * as Localization from "expo-localization";
+ import { setLocale, getIsRTL } from "@/i18n";
  
- export type UserSettings = {
-   language: Locale;
-   notificationsEnabled: boolean;
-+  prefersReducedMotion: boolean; // Added prefersReducedMotion setting
-   // Add other settings here
- };
- 
-@@ -15,46 +17,67 @@
- export function useSettings() {
-   const { user, isLoading: authLoading } = useAuth();
-   const [settings, setSettings] = useState<UserSettings | null>(null);
--  const [isLoading, setIsLoading] = useState(true);
-+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
- 
-   const settingsKey = user ? `${SETTINGS_KEY_PREFIX}${user.uid}` : null;
- 
-   const defaultSettings: UserSettings = {
-     language: "ja", // Default to Japanese
-     notificationsEnabled: true,
-+    prefersReducedMotion: false, // Default to false
-   };
- 
-   const loadSettings = useCallback(async () => {
--    if (!settingsKey) {
-+    if (!user) {
-+      // If no user, use default settings and stop loading
-       setSettings(defaultSettings);
--      setIsLoading(false);
-+      setIsLoadingSettings(false);
-       return;
-     }
+@@ -29,6 +29,14 @@
+         if (storedSettings) {
+           const parsedSettings: Settings = JSON.parse(storedSettings);
+           setSettings(parsedSettings);
++          // Ensure reducedMotion is loaded from system if not explicitly set
++          const systemReducedMotion = await AccessibilityInfo.isReduceMotionEnabled();
++          if (parsedSettings.reducedMotion === undefined) {
++            setSettings((prev) => ({ ...prev, reducedMotion: systemReducedMotion }));
++          }
+           setLocale(parsedSettings.language);
+         } else {
+           // If no settings, set default language based on device
+@@ -38,6 +46,10 @@
+             ? deviceLanguage
+             : "ja";
+           setSettings((prev) => ({ ...prev, language: defaultLanguage }));
++          // Also set initial reduced motion based on system
++          const systemReducedMotion = await AccessibilityInfo.isReduceMotionEnabled();
++          setSettings((prev) => ({ ...prev, reducedMotion: systemReducedMotion }));
 +
-     try {
--      const storedSettings = await AsyncStorage.getItem(settingsKey);
--      if (storedSettings) {
--        setSettings({ ...defaultSettings, ...JSON.parse(storedSettings) });
-+      // Try to load from Firestore first
-+      let firestoreSettings = await getUserSettings(user.uid);
-+
-+      if (firestoreSettings) {
-+        setSettings({ ...defaultSettings, ...firestoreSettings });
-       } else {
-+        // If no settings in Firestore, create them with defaults
-+        await createUserSettings(user.uid, defaultSettings);
-         setSettings(defaultSettings);
--        await AsyncStorage.setItem(settingsKey, JSON.stringify(defaultSettings));
-       }
-     } catch (error) {
--      console.error("Failed to load settings from AsyncStorage:", error);
-+      console.error("Failed to load or create settings from Firestore:", error);
-       setSettings(defaultSettings);
-     } finally {
--      setIsLoading(false);
-+      setIsLoadingSettings(false);
+           setLocale(defaultLanguage);
+         }
+       } catch (error) {
+@@ -54,6 +66,18 @@
+       );
+       setLocale(settings.language);
      }
--  }, [settingsKey]);
-+  }, [user]);
- 
-   useEffect(() => {
-     if (!authLoading) {
-       loadSettings();
-     }
-   }, [authLoading, loadSettings]);
++  }, [settings, isLoaded]);
 +
-+  // Apply language setting when it changes
++  // Listen for system reduced motion changes
 +  useEffect(() => {
-+    if (settings?.language && settings.language !== getLang()) {
-+      setLang(settings.language);
-+    }
-+  }, [settings?.language]);
- 
-   const updateSetting = useCallback(
-     async <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
--      if (!settingsKey) return;
-+      if (!user) {
-+        console.warn("Cannot update settings: User not authenticated.");
-+        return;
-+      }
++    const subscription = AccessibilityInfo.addEventListener(
++      "reduceMotionChanged",
++      (isReduced) => {
++        setSettings((prev) => ({ ...prev, reducedMotion: isReduced }));
++      },
++    );
 +
-       setSettings((prev) => {
-         const newSettings = { ...prev, [key]: value } as UserSettings;
--        AsyncStorage.setItem(settingsKey, JSON.stringify(newSettings)).catch(
--          (error) => console.error("Failed to save settings to AsyncStorage:", error),
--        );
-+        // Persist to Firestore
-+        updateUserSettings(user.uid, { [key]: value })
-+          .catch((error) => console.error("Failed to save settings to Firestore:", error));
-         return newSettings;
-       });
-     },
-     [settingsKey],
-   );
++    return () => subscription.remove();
+   }, [settings, isLoaded]);
  
--  return { settings, updateSetting, isLoading };
-+  return { settings, updateSetting, isLoading: isLoadingSettings };
- }
+   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
 ```

@@ -17,7 +17,7 @@
 -export const DQCommandMenu = React.memo(
 -  ({ items, style }: DQCommandMenuProps) => {
 +export const DQCommandMenu: React.FC<DQCommandMenuProps> = React.memo(
-+  ({ items, style }) => {
++  ({ items, style }) => { // Explicitly type FC props
      return (
 -      <PixelCard variant="default" style={[styles.container, style]}>
 +      <DQWindow style={[styles.container, style]}>

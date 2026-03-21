@@ -1,157 +1,186 @@
 import { useState, useCallback } from "react";
 import {
   View,
-  Text,
   StyleSheet,
-  ActivityIndicator,
+  ImageBackground,
   Alert,
   Platform,
+  KeyboardAvoidingView,
+  ScrollView,
 } from "react-native";
-import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/hooks/useAuth";
-import { PixelText, PixelButton, PixelInput } from "@/components/ui";
+import { router } from "expo-router";
+import { signIn } from "@/lib/auth";
+import { PixelText, PixelInput, PixelButton } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
-import { COLORS, SPACING } from "@/constants/theme";
+import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
+import { FIREBASE_AUTH_ERRORS } from "@/constants/firebaseErrors";
 import * as Haptics from "expo-haptics";
 
-const DQ_BG = COLORS.bgDark;
-const FONT_FAMILY = Platform.select({
-  ios: "Courier New",
-  android: "monospace",
-  default: "monospace",
-});
+const AUTH_BG = require("@/assets/auth_bg.png");
 
 export default function LoginScreen() {
-  const { signIn, isLoading } = useAuth();
-  const isRTL = getIsRTL();
   const insets = useSafeAreaInsets();
+  const isRTL = getIsRTL();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (!email || !password) {
-      Alert.alert(t("common.error"), t("login.error.empty_fields"));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t("common.error"), t("auth.login.error.invalid_credentials"));
       return;
     }
 
+    setIsLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await signIn(email, password);
-      // Auth hook handles redirection after successful login
+      router.replace("/(app)");
     } catch (error: any) {
-      console.error("Login failed:", error);
-      Alert.alert(t("common.error"), error.message || t("login.error.failed"));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const errorMessage =
+        FIREBASE_AUTH_ERRORS[error.code as keyof typeof FIREBASE_AUTH_ERRORS] ||
+        t("auth.login.error.generic");
+      Alert.alert(t("common.error"), errorMessage);
+      console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [email, password, signIn]);
+  }, [email, password]);
 
-  const handleGoToRegister = useCallback(() => {
+  const handleRegisterPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push("/(auth)/register");
   }, []);
 
-  if (isLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
-      </View>
-    );
-  }
-
   return (
-    <View
-      style={[
-        styles.root,
-        {
-          paddingTop: insets.top + SPACING.md,
-          paddingBottom: insets.bottom + SPACING.xxl,
-          direction: isRTL ? "rtl" : "ltr",
-        },
-      ]}
-      accessibilityLabel={t("login.accessibility.login_screen")}
-    >
-      <PixelText variant="heading" color="gold" style={styles.title} accessibilityLabel={t("login.title")}>
-        {t("login.title")}
-      </PixelText>
+    <ImageBackground source={AUTH_BG} style={styles.background}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            styles.container,
+            { paddingTop: insets.top + SPACING.xl, paddingBottom: insets.bottom + SPACING.xl, direction: isRTL ? "rtl" : "ltr" },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          accessibilityLabel={t("auth.login.title")}
+        >
+          <View style={styles.card}>
+            <PixelText variant="heading" color="gold" style={styles.title} accessibilityLabel={t("auth.login.title")}>
+              {t("auth.login.title")}
+            </PixelText>
 
-      <View style={styles.formContainer}>
-        <PixelText variant="label" color="cream" style={styles.inputLabel} accessibilityLabel={t("login.email_label")}>
-          {t("login.email_label")}
-        </PixelText>
-        <PixelInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder={t("login.email_placeholder")}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          accessibilityLabel={t("login.email_label")}
-        />
+            <PixelInput
+              label={t("auth.login.email")}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder={t("auth.login.email")}
+              editable={!isLoading}
+              accessibilityLabel={t("auth.login.email")}
+              style={styles.input}
+            />
+            <PixelInput
+              label={t("auth.login.password")}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              placeholder={t("auth.login.password")}
+              editable={!isLoading}
+              accessibilityLabel={t("auth.login.password")}
+              style={styles.input}
+            />
 
-        <PixelText variant="label" color="cream" style={styles.inputLabel} accessibilityLabel={t("login.password_label")}>
-          {t("login.password_label")}
-        </PixelText>
-        <PixelInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder={t("login.password_placeholder")}
-          secureTextEntry
-          accessibilityLabel={t("login.password_label")}
-        />
+            <PixelButton
+              label={t("auth.login.button")}
+              onPress={handleLogin}
+              isLoading={isLoading}
+              variant="primary"
+              size="lg"
+              style={styles.button}
+              accessibilityLabel={t("auth.login.button")}
+              accessibilityRole="button"
+              accessibilityState={{ busy: isLoading }}
+            />
 
-        <PixelButton
-          label={t("login.login_button")}
-          variant="primary"
-          size="lg"
-          onPress={handleLogin}
-          style={styles.loginButton}
-          accessibilityLabel={t("login.login_button")}
-        />
-
-        <PixelButton
-          label={t("login.register_prompt")}
-          variant="secondary"
-          size="md"
-          onPress={handleGoToRegister}
-          style={styles.registerButton}
-          accessibilityLabel={t("login.register_prompt")}
-        />
-      </View>
-    </View>
+            <View style={[styles.registerPrompt, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+              <PixelText variant="body" color="cream" accessibilityLabel={t("auth.login.no_account")}>
+                {t("auth.login.no_account")}
+              </PixelText>
+              <PixelButton
+                label={t("auth.login.register_now")}
+                onPress={handleRegisterPress}
+                variant="ghost"
+                size="sm"
+                style={styles.registerButton}
+                accessibilityLabel={t("auth.login.register_now")}
+                accessibilityRole="link"
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  background: {
     flex: 1,
-    backgroundColor: DQ_BG,
+    resizeMode: "cover",
+    justifyContent: "center",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  container: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: DQ_BG,
-  },
-  title: {
-    marginBottom: SPACING.xxl,
-    textAlign: "center",
-  },
-  formContainer: {
+  card: {
     width: "100%",
     maxWidth: 400,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: PIXEL_BORDER.borderRadius,
+    borderWidth: PIXEL_BORDER.borderWidth,
+    borderColor: COLORS.border,
+    padding: SPACING.lg,
+    alignItems: "center",
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.8,
+    shadowRadius: 0,
+    elevation: 8,
   },
-  inputLabel: {
-    marginBottom: SPACING.xs,
+  title: {
+    marginBottom: SPACING.xl,
+    textAlign: "center",
+  },
+  input: {
+    marginBottom: SPACING.md,
+    width: "100%",
+  },
+  button: {
     marginTop: SPACING.md,
+    width: "100%",
   },
-  loginButton: {
-    marginTop: SPACING.xxl,
+  registerPrompt: {
+    marginTop: SPACING.lg,
+    alignItems: "center",
+    gap: SPACING.xs,
   },
   registerButton: {
-    marginTop: SPACING.md,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
 });
 

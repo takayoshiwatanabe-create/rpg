@@ -7,10 +7,9 @@
  import { COLORS, PIXEL_BORDER, SPACING } from "@/constants/theme";
 -
 +// Removed PixelCardVariant and PixelCardProps as this component is no longer used directly in the UI,
-+// but rather as a base for DQWindow, which has its own variant logic.
+ // but rather as a base for DQWindow, which has its own variant logic.
  export type PixelCardVariant = "default" | "highlighted";
  
- type PixelCardProps = {
 @@ -11,15 +11,15 @@
  };
  
