@@ -11,25 +11,25 @@ import {
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
 import {
   subscribeToQuest,
   updateQuestStatus,
   updateHeroStats,
   createBattleSession,
-} from "@/lib/firestore";
+} from "../../../lib/firestore"; // Corrected import path
 import {
   isQuestOverdue,
   calculateQuestRewards,
   applyExpPenalty,
   applyGoldPenalty,
-} from "@/lib/gameLogic";
-import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
-import { t, getIsRTL } from "@/i18n";
-import { getMonster } from "@/constants/monsters";
-import type { Quest } from "@/types";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { COLORS } from "@/constants/theme";
+} from "../../../lib/gameLogic"; // Corrected import path
+import { DQWindow, DQCommandMenu, DQMessageBox } from "../../../components/ui"; // Corrected import path
+import { t, getIsRTL } from "../../../i18n"; // Corrected import path
+import { getMonster } from "../../../constants/monsters"; // Corrected import path
+import type { Quest } from "../../../types"; // Corrected import path
+import { useReducedMotion } from "../../../hooks/useReducedMotion"; // Corrected import path
+import { COLORS } from "../../../constants/theme"; // Corrected import path
 
 const DQ_BATTLE_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
@@ -546,5 +546,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
 

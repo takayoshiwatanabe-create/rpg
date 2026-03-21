@@ -2,14 +2,14 @@ import { describe, it, expect, beforeEach, vi } from "@vitest/globals";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import ParentDashboardScreen from "./index";
 import { router } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
 import {
   subscribeToHero,
   subscribeToQuestsByParent,
   updateQuestStatus,
-} from "@/lib/firestore";
-import { t } from "@/i18n";
-import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "@/types";
+} from "../../../lib/firestore"; // Corrected import path
+import { t } from "../../../i18n"; // Corrected import path
+import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "../../../types"; // Corrected import path
 import { Alert, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native"; // Import missing components
 
 // Mock necessary modules
@@ -22,16 +22,16 @@ vi.mock("expo-router", () => ({
     Screen: vi.fn(() => null),
   },
 }));
-vi.mock("@/hooks/useAuth", () => ({
+vi.mock("../../../hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
-vi.mock("@/lib/firestore", () => ({
+vi.mock("../../../lib/firestore", () => ({
   subscribeToHero: vi.fn(),
   subscribeToQuestsByParent: vi.fn(),
   updateQuestStatus: vi.fn(),
 }));
-vi.mock("@/i18n", () => ({
-  t: vi.fn((key, params) => {
+vi.mock("../../../i18n", () => ({
+  t: vi.fn((key: string, params?: Record<string, any>) => {
     if (key === "parent.hero_summary")
       return `${params?.name}、レベル${params?.level}、ゴールド${params?.gold}`;
     if (key.startsWith("quest.subject.")) return key.split(".").pop();
@@ -85,9 +85,10 @@ vi.mock("react-native", async (importOriginal) => {
     StyleSheet: actual.StyleSheet,
     ActivityIndicator: actual.ActivityIndicator,
     TouchableOpacity: actual.TouchableOpacity, // Ensure TouchableOpacity is mocked
+    Text: actual.Text, // Ensure Text is mocked
   };
 });
-vi.mock("@/components/ui", () => ({
+vi.mock("../../../components/ui", () => ({
   PixelText: ({ children, variant, color, style, accessibilityLabel }: any) => (
     <Text style={style} accessibilityLabel={accessibilityLabel}>{children}</Text>
   ),
@@ -176,11 +177,11 @@ describe("ParentDashboardScreen", () => {
       userProfile: { role: "parent" },
       isLoading: false,
     });
-    (subscribeToHero as vi.Mock).mockImplementation((_userId, _heroId, callback) => {
+    (subscribeToHero as vi.Mock).mockImplementation((_userId: string, _heroId: string, callback: (hero: HeroProfile | null) => void) => {
       callback(mockHero);
       return vi.fn();
     });
-    (subscribeToQuestsByParent as vi.Mock).mockImplementation((_childId, callback) => {
+    (subscribeToQuestsByParent as vi.Mock).mockImplementation((_childId: string, callback: (quests: Quest[]) => void) => {
       callback(mockQuests);
       return vi.fn();
     });
@@ -324,5 +325,4 @@ describe("ParentDashboardScreen", () => {
     );
   });
 });
-
 

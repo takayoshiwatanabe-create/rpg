@@ -1,14 +1,59 @@
-```diff
---- a/package.json
-+++ b/package.json
-@@ -34,7 +34,7 @@
-     "eslint": "^8.57.0",
-     "eslint-config-prettier": "^9.1.0",
-     "eslint-plugin-prettier": "^5.1.3",
--    "postcss": "^8.4.38",
--    "postcss": "^8.4.39",
-+    "postcss": "^8.4.39", 
-     "prettier": "^3.3.2",
-     "tailwindcss": "4.0.0-alpha.13",
-     "typescript": "^5.9.3"
-```
+{
+  "name": "rpg",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "test": "jest",
+    "lint": "eslint .",
+    "prettier": "prettier --write ."
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-firebase/app": "^19.2.2",
+    "@react-native-firebase/auth": "^19.2.2",
+    "@react-native-firebase/firestore": "^19.2.2",
+    "@react-native-firebase/storage": "^19.2.2",
+    "@react-navigation/native": "^6.0.2",
+    "@react-navigation/stack": "^6.0.7",
+    "@tanstack/react-query": "^5.45.1",
+    "expo": "~51.0.14",
+    "expo-av": "~14.0.5",
+    "expo-haptics": "~12.8.1",
+    "expo-localization": "~11.0.6",
+    "expo-router": "~3.5.16",
+    "expo-status-bar": "~1.12.1",
+    "expo-store-review": "~13.0.1",
+    "firebase": "^10.12.2",
+    "framer-motion": "^11.2.10",
+    "next-auth": "^5.0.0-beta.19",
+    "next-intl": "^3.15.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-native": "0.74.2",
+    "react-native-gesture-handler": "~2.16.1",
+    "react-native-safe-area-context": "4.10.1",
+    "react-native-screens": "3.31.1",
+    "react-native-web": "~0.19.10",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "@types/jest": "^29.5.12",
+    "@types/react": "~18.2.45",
+    "@types/react-native": "^0.73.0",
+    "@typescript-eslint/eslint-plugin": "^7.13.0",
+    "@typescript-eslint/parser": "^7.13.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "postcss": "^8.4.39",
+    "prettier": "^3.3.2",
+    "tailwindcss": "4.0.0-alpha.13",
+    "typescript": "^5.9.3"
+  },
+  "private": true
+}

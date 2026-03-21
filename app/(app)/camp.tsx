@@ -9,16 +9,16 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth"; // Corrected import path
 import {
   subscribeToHero,
   subscribeToActiveQuests,
-} from "@/lib/firestore";
-import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
-import { t, getIsRTL } from "@/i18n";
-import { expProgressInCurrentLevel } from "@/lib/expCalculator";
-import type { HeroProfile, Quest } from "@/types";
-import { COLORS } from "@/constants/theme";
+} from "../../lib/firestore"; // Corrected import path
+import { DQWindow, DQCommandMenu, DQMessageBox } from "../../components/ui"; // Corrected import path
+import { t, getIsRTL } from "../../i18n"; // Corrected import path
+import { expProgressInCurrentLevel } from "../../lib/expCalculator"; // Corrected import path
+import type { HeroProfile, Quest } from "../../types"; // Corrected import path
+import { COLORS } from "../../constants/theme"; // Corrected import path
 
 const DQ_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
@@ -289,3 +289,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+

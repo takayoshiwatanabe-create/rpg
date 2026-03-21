@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
-import { COLORS } from "@/constants/theme";
+import { useAuth } from "../../hooks/useAuth"; // Corrected import path
+import { COLORS } from "../../constants/theme"; // Corrected import path
 
 /**
  * Index route for the authenticated group.

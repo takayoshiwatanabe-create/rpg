@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "@vitest/globals";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import BattleResultScreen from "./result";
 import { router } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
-import { subscribeToHero } from "@/lib/firestore";
-import { t } from "@/i18n";
-import { HeroProfile } from "@/types";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
+import { subscribeToHero } from "../../../lib/firestore"; // Corrected import path
+import { t } from "../../../i18n"; // Corrected import path
+import { HeroProfile } from "../../../types"; // Corrected import path
+import { useReducedMotion } from "../../../hooks/useReducedMotion"; // Corrected import path
 import { View, Text, TouchableOpacity } from "react-native"; // Import missing components
 
 // Mock necessary modules
@@ -26,14 +26,14 @@ vi.mock("expo-router", () => ({
     Screen: vi.fn(() => null),
   },
 }));
-vi.mock("@/hooks/useAuth", () => ({
+vi.mock("../../../hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
-vi.mock("@/lib/firestore", () => ({
+vi.mock("../../../lib/firestore", () => ({
   subscribeToHero: vi.fn(),
 }));
-vi.mock("@/i18n", () => ({
-  t: vi.fn((key, params) => {
+vi.mock("../../../i18n", () => ({
+  t: vi.fn((key: string, params?: Record<string, any>) => {
     if (key === "dq.result.levelup") return `レベルアップ！${params?.name}はLv.${params?.level}になった！`;
     if (key === "dq.result.exp") return `経験値を${params?.exp}獲得した！`;
     if (key === "dq.result.gold") return `ゴールドを${params?.gold}獲得した！`;
@@ -52,7 +52,7 @@ vi.mock("@/i18n", () => ({
   }),
   getIsRTL: vi.fn(() => false),
 }));
-vi.mock("@/hooks/useReducedMotion", () => ({
+vi.mock("../../../hooks/useReducedMotion", () => ({
   useReducedMotion: vi.fn(() => false), // Default to no reduced motion
 }));
 vi.mock("react-native", async (importOriginal) => {
@@ -73,7 +73,7 @@ vi.mock("react-native", async (importOriginal) => {
       })),
     },
     Platform: {
-      select: vi.fn((options) => options.default),
+      select: vi.fn((options: { default: any }) => options.default),
     },
     Text: actual.Text,
     View: actual.View,
@@ -81,7 +81,7 @@ vi.mock("react-native", async (importOriginal) => {
     TouchableOpacity: actual.TouchableOpacity, // Ensure TouchableOpacity is mocked
   };
 });
-vi.mock("@/components/ui", () => ({
+vi.mock("../../../components/ui", () => ({
   DQWindow: ({ children, title }: { children: React.ReactNode; title?: string }) => (
     <View>
       {title && <Text>{title}</Text>}
@@ -130,7 +130,7 @@ describe("BattleResultScreen", () => {
       user: { uid: "user-123" },
       isLoading: false,
     });
-    (subscribeToHero as vi.Mock).mockImplementation((_userId, _heroId, callback) => {
+    (subscribeToHero as vi.Mock).mockImplementation((_userId: string, _heroId: string, callback: (hero: HeroProfile | null) => void) => {
       callback({ ...mockHero, totalExp: 100, gold: 50, level: 2, displayName: "テスト勇者" }); // Simulate updated hero
       return vi.fn();
     });
@@ -156,7 +156,7 @@ describe("BattleResultScreen", () => {
   });
 
   it("handles hero not found error", async () => {
-    (subscribeToHero as vi.Mock).mockImplementation((_userId, _heroId, callback) => {
+    (subscribeToHero as vi.Mock).mockImplementation((_userId: string, _heroId: string, callback: (hero: HeroProfile | null) => void) => {
       callback(null);
       return vi.fn();
     });
@@ -205,5 +205,4 @@ describe("BattleResultScreen", () => {
     await waitFor(() => expect(screen.getByText("次へ")).toBeVisible());
   });
 });
-
 

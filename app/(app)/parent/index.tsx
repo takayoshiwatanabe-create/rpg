@@ -8,16 +8,16 @@ import {
 } from "react-native";
 import { router, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
 import {
   subscribeToHero,
   subscribeToQuestsByParent,
   updateQuestStatus,
-} from "@/lib/firestore";
-import { PixelText, PixelButton, PixelCard } from "@/components/ui";
-import { t, getLang, getIsRTL } from "@/i18n";
-import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
-import type { HeroProfile, Quest, QuestStatus } from "@/types";
+} from "../../../lib/firestore"; // Corrected import path
+import { PixelText, PixelButton, PixelCard } from "../../../components/ui"; // Corrected import path
+import { t, getLang, getIsRTL } from "../../../i18n"; // Corrected import path
+import { COLORS, SPACING, PIXEL_BORDER } from "../../../constants/theme"; // Corrected import path
+import type { HeroProfile, Quest, QuestStatus } from "../../../types"; // Corrected import path
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -492,3 +492,4 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
 });
+

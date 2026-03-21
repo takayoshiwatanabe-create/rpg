@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { View, StyleSheet, ActivityIndicator, I18nManager } from "react-native";
 import { Stack, router } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
-import { getIsRTL } from "@/i18n";
-import { COLORS } from "@/constants/theme";
+import { useAuth } from "../../hooks/useAuth"; // Corrected import path
+import { getIsRTL } from "../../i18n"; // Corrected import path
+import { COLORS } from "../../constants/theme"; // Corrected import path
 
 const DQ_BG = COLORS.bgDark;
 
@@ -72,3 +72,4 @@ const styles = StyleSheet.create({
     backgroundColor: DQ_BG,
   },
 });
+

@@ -1,21 +1,41 @@
-```diff
---- a/app.json
-+++ b/app.json
-@@ -1,6 +1,6 @@
- {
-   "expo": {
--    "name": "シュクダイ・クエスト 〜勇者の宿題なぎ倒しRPG〜",
-+    "name": "勇者の宿題帳",
-     "slug": "rpg",
-     "version": "1.1.0",
-     "orientation": "portrait",
-@@ -8,7 +8,7 @@
-     "scheme": "rpg",
-     "userInterfaceStyle": "automatic",
-     "newArchEnabled": false,
--    "description": "「シュクダイ・クエスト」は、子供たちの毎日の宿題をRPGの冒険に変える画期的なアプリです。宿題をクリアすると経験値やゴールドを獲得し、勇者をレベルアップさせ、新たなスキルを習得できます。保護者も進捗を管理でき、子供の学習意欲を自然に引き出します。さあ、宿題を倒して世界を救う勇者になろう！日々の学習が、ワクワクする冒険に変わる！退屈な勉強時間を、ワクワクする冒険の時間に変えましょう！このアプリは、子供たちが自ら進んで学習に取り組むためのモチベーションを提供し、保護者も安心して見守れる機能が充実しています。毎日の学習が、忘れられない冒険の物語へと変わります。",
-+    "description": "「勇者の宿題帳」は、子供たちの毎日の宿題をRPGの冒険に変える画期的なアプリです。宿題をクリアすると経験値やゴールドを獲得し、勇者をレベルアップさせ、新たなスキルを習得できます。保護者も進捗を管理でき、子供の学習意欲を自然に引き出します。さあ、宿題を倒して世界を救う勇者になろう！日々の学習が、ワクワクする冒険に変わる！退屈な勉強時間を、ワクワクする冒険の時間に変えましょう！このアプリは、子供たちが自ら進んで学習に取り組むためのモチベーションを提供し、保護者も安心して見守れる機能が充実しています。毎日の学習が、忘れられない冒険の物語へと変わります。",
-     "ios": {
-       "supportsTablet": true,
-       "bundleIdentifier": "com.zerocode.rpg",
-```
+{
+  "expo": {
+    "name": "勇者の宿題帳",
+    "slug": "rpg",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "rpg",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "description": "「勇者の宿題帳」は、子供たちの毎日の宿題をRPGの冒険に変える画期的なアプリです。宿題をクリアすると経験値やゴールドを獲得し、勇者をレベルアップさせ、新たなスキルを習得できます。保護者も進捗を管理でき、子供の学習意欲を自然に引き出します。さあ、宿題を倒して世界を救う勇者になろう！日々の学習が、ワクワクする冒険に変わる！退屈な勉強時間を、ワクワクする冒険の時間に変えましょう！このアプリは、子供たちが自ら進んで学習に取り組むためのモチベーションを提供し、保護者も安心して見守れる機能が充実しています。毎日の学習が、忘れられない冒険の物語へと変わります。",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.zerocode.rpg",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.zerocode.rpg"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "YOUR_PROJECT_ID"
+      }
+    }
+  }
+}

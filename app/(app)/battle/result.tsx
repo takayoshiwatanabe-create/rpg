@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, View, Text, Platform } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/hooks/useAuth";
-import { subscribeToHero } from "@/lib/firestore";
-import { DQMessageBox, DQCommandMenu, DQWindow } from "@/components/ui";
-import { t, getIsRTL } from "@/i18n";
-import { expProgressInCurrentLevel } from "@/lib/expCalculator";
-import type { HeroProfile } from "@/types";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { COLORS } from "@/constants/theme";
+import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
+import { subscribeToHero } from "../../../lib/firestore"; // Corrected import path
+import { DQMessageBox, DQCommandMenu, DQWindow } from "../../../components/ui"; // Corrected import path
+import { t, getIsRTL } from "../../../i18n"; // Corrected import path
+import { expProgressInCurrentLevel } from "../../../lib/expCalculator"; // Corrected import path
+import type { HeroProfile } from "../../../types"; // Corrected import path
+import { useReducedMotion } from "../../../hooks/useReducedMotion"; // Corrected import path
+import { COLORS } from "../../../constants/theme"; // Corrected import path
 
 const DQ_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
@@ -329,5 +329,4 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 });
-
 

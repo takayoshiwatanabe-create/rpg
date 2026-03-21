@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach, vi } from "@vitest/globals";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import CampScreen from "./camp";
 import { router } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
-import { subscribeToHero, subscribeToActiveQuests } from "@/lib/firestore";
-import { t } from "@/i18n";
-import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "@/types";
+import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
+import { subscribeToHero, subscribeToActiveQuests } from "../../../lib/firestore"; // Corrected import path
+import { t } from "../../../i18n"; // Corrected import path
+import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "../../../types"; // Corrected import path
 import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native"; // Import missing components
 
 // Mock necessary modules
@@ -14,15 +14,15 @@ vi.mock("expo-router", () => ({
     push: vi.fn(),
   },
 }));
-vi.mock("@/hooks/useAuth", () => ({
+vi.mock("../../../hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
-vi.mock("@/lib/firestore", () => ({
+vi.mock("../../../lib/firestore", () => ({
   subscribeToHero: vi.fn(),
   subscribeToActiveQuests: vi.fn(),
 }));
-vi.mock("@/i18n", () => ({
-  t: vi.fn((key, params) => {
+vi.mock("../../../i18n", () => ({
+  t: vi.fn((key: string, params?: Record<string, any>) => {
     if (key === "dq.camp.greeting") return `ようこそ、${params?.name}！`;
     if (key.startsWith("quest.subject.")) return key.split(".").pop();
     if (key.startsWith("quest.difficulty.")) return key.split(".").pop();
@@ -57,7 +57,7 @@ vi.mock("@/i18n", () => ({
   }),
   getIsRTL: vi.fn(() => false),
 }));
-vi.mock("@/components/ui", () => ({
+vi.mock("../../../components/ui", () => ({
   DQWindow: ({ children, title }: { children: React.ReactNode; title?: string }) => (
     <View>
       {title && <Text>{title}</Text>}
@@ -84,7 +84,7 @@ vi.mock("react-native", async (importOriginal) => {
   return {
     ...actual,
     Platform: {
-      select: vi.fn((options) => options.default),
+      select: vi.fn((options: { default: any }) => options.default),
     },
     Text: actual.Text,
     View: actual.View,
@@ -154,11 +154,11 @@ describe("CampScreen", () => {
       user: { uid: "user-123" },
       isLoading: false,
     });
-    (subscribeToHero as vi.Mock).mockImplementation((_userId, _heroId, callback) => {
+    (subscribeToHero as vi.Mock).mockImplementation((_userId: string, _heroId: string, callback: (hero: HeroProfile | null) => void) => {
       callback(mockHero);
       return vi.fn();
     });
-    (subscribeToActiveQuests as vi.Mock).mockImplementation((_heroId, callback) => {
+    (subscribeToActiveQuests as vi.Mock).mockImplementation((_heroId: string, callback: (quests: Quest[]) => void) => {
       callback(mockQuests);
       return vi.fn();
     });
@@ -190,7 +190,7 @@ describe("CampScreen", () => {
   });
 
   it("does not render active quests count when no active quests", async () => {
-    (subscribeToActiveQuests as vi.Mock).mockImplementation((_heroId, callback) => {
+    (subscribeToActiveQuests as vi.Mock).mockImplementation((_heroId: string, callback: (quests: Quest[]) => void) => {
       callback([]);
       return vi.fn();
     });

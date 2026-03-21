@@ -2,16 +2,17 @@ import { describe, it, expect, beforeEach, vi } from "@vitest/globals";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react-native"; // Import fireEvent
 import BattleScreen from "./[questId]";
 import { router } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
 import {
   subscribeToQuest,
   updateQuestStatus,
   updateHeroStats,
   createBattleSession,
-} from "@/lib/firestore";
-import { t } from "@/i18n";
-import { QuestStatus, Difficulty, Subject } from "@/types";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
+} from "../../../lib/firestore"; // Corrected import path
+import { t } from "../../../i18n"; // Corrected import path
+import { QuestStatus, Difficulty, Subject } from "../../../types"; // Corrected import path
+import { useReducedMotion } from "../../../hooks/useReducedMotion"; // Corrected import path
+import { View, Text, TouchableOpacity } from "react-native"; // Explicitly import from react-native
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -25,20 +26,20 @@ vi.mock("expo-router", () => ({
     Screen: vi.fn(() => null),
   },
 }));
-vi.mock("@/hooks/useAuth", () => ({
+vi.mock("../../../hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
-vi.mock("@/lib/firestore", () => ({
+vi.mock("../../../lib/firestore", () => ({
   subscribeToQuest: vi.fn(),
   updateQuestStatus: vi.fn(),
   updateHeroStats: vi.fn(),
   createBattleSession: vi.fn(),
 }));
-vi.mock("@/i18n", () => ({
-  t: vi.fn((key) => key), // Mock t function to return the key
+vi.mock("../../../i18n", () => ({
+  t: vi.fn((key: string) => key), // Mock t function to return the key
   getIsRTL: vi.fn(() => false),
 }));
-vi.mock("@/hooks/useReducedMotion", () => ({
+vi.mock("../../../hooks/useReducedMotion", () => ({
   useReducedMotion: vi.fn(() => false), // Default to no reduced motion
 }));
 vi.mock("react-native", async (importOriginal) => {
@@ -65,7 +66,7 @@ vi.mock("react-native", async (importOriginal) => {
       addEventListener: vi.fn(() => ({ remove: vi.fn() })),
     },
     Platform: {
-      select: vi.fn((options) => options.default),
+      select: vi.fn((options: { default: any }) => options.default),
     },
     TouchableOpacity: actual.TouchableOpacity,
     Text: actual.Text,
@@ -73,7 +74,7 @@ vi.mock("react-native", async (importOriginal) => {
     StyleSheet: actual.StyleSheet,
   };
 });
-vi.mock("@/components/ui", () => ({
+vi.mock("../../../components/ui", () => ({
   DQWindow: ({ children }: { children: React.ReactNode }) => (
     <View>{children}</View>
   ),
@@ -116,7 +117,7 @@ describe("BattleScreen", () => {
       user: { uid: "user-123" },
       isLoading: false,
     });
-    (subscribeToQuest as vi.Mock).mockImplementation((_id, callback) => {
+    (subscribeToQuest as vi.Mock).mockImplementation((_id: string, callback: (quest: typeof mockQuest | null) => void) => {
       callback(mockQuest);
       return vi.fn();
     });
@@ -136,7 +137,7 @@ describe("BattleScreen", () => {
   });
 
   it("handles quest not found error", async () => {
-    (subscribeToQuest as vi.Mock).mockImplementation((_id, callback) => {
+    (subscribeToQuest as vi.Mock).mockImplementation((_id: string, callback: (quest: typeof mockQuest | null) => void) => {
       callback(null);
       return vi.fn();
     });
