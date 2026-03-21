@@ -1,21 +1,23 @@
-```diff
---- a/tsconfig.json
-+++ b/tsconfig.json
-@@ -1,6 +1,5 @@
- {
-   "compilerOptions": {
--    "extends": "expo/tsconfig.base",
-     "strict": true,
-     "module": "esnext",
-     "moduleResolution": "bundler",
-@@ -15,7 +14,8 @@
-     "baseUrl": ".",
-     "paths": {
-       "@/*": ["."]
--    },
-+    }
-+    ,
-     "isolatedModules": true,
-     "noEmit": true,
-     "forceConsistentCasingInFileNames": true
-```
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "es2020",
+    "lib": ["es2020", "dom", "dom.iterable"],
+    "jsx": "react-native",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["."]
+    },
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "exclude": ["node_modules", "dist"]
+}

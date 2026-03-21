@@ -7,52 +7,121 @@ import {
   Alert,
   Platform,
 } from "react-native";
-import { router, Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
-import { updateUserProfile, signOutUser } from "@/lib/firestore";
-import { PixelText, PixelButton, PixelCard, DQPicker } from "@/components/ui";
-import { t, getIsRTL, changeLanguage, SUPPORTED_LANGUAGES, LanguageCode } from "@/i18n";
+import {
+  updateUserProfile,
+  updateHeroProfile,
+  subscribeToHero,
+} from "@/lib/firestore";
+import {
+  PixelText,
+  PixelButton,
+  PixelCard,
+  DQMessageBox,
+  DQTextInput,
+  DQPicker,
+} from "@/components/ui";
+import { t, getLang, setLang, getIsRTL } from "@/i18n";
 import { COLORS, SPACING } from "@/constants/theme";
+import type { UserProfile, HeroProfile } from "@/types";
+import * as Haptics from "expo-haptics";
 
+const DQ_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
   default: "monospace",
 });
 
+const SUPPORTED_LANGUAGES = [
+  { label: "日本語", value: "ja" },
+  { label: "English", value: "en" },
+  { label: "中文", value: "zh" },
+  { label: "한국어", value: "ko" },
+  { label: "Español", value: "es" },
+  { label: "Français", value: "fr" },
+  { label: "Deutsch", value: "de" },
+  { label: "Português", value: "pt" },
+  { label: "العربية", value: "ar" },
+  { label: "हिन्दी", value: "hi" },
+];
+
 export default function ParentSettingsScreen() {
-  const { user, userProfile, isLoading: authLoading } = useAuth();
+  const { user, userProfile, isLoading: authLoading, signOut } = useAuth();
   const isRTL = getIsRTL();
   const insets = useSafeAreaInsets();
 
-  const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("ja");
+  const [hero, setHero] = useState<HeroProfile | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [displayName, setDisplayName] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState(getLang());
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isParent = userProfile?.role === "parent";
 
   useEffect(() => {
-    if (userProfile?.language) {
-      setCurrentLanguage(userProfile.language as LanguageCode);
+    if (authLoading) return;
+
+    if (!user || !isParent) {
+      setDataLoading(false);
+      return;
     }
-  }, [userProfile]);
 
-  const handleLanguageChange = useCallback(async (lang: LanguageCode) => {
-    if (!user || !userProfile) return;
+    setDataLoading(true);
+    const childId = user.uid; // Assuming child's heroId is same as parent's uid for simplicity
 
-    setCurrentLanguage(lang);
+    const unsubHero = subscribeToHero(user.uid, childId, (h: HeroProfile | null) => {
+      if (h) {
+        setHero(h);
+        setDisplayName(h.displayName);
+      } else {
+        setError(t("error.hero_not_found"));
+      }
+      setDataLoading(false);
+    });
+
+    setSelectedLanguage(getLang()); // Ensure language is up-to-date
+
+    return () => {
+      unsubHero();
+    };
+  }, [user, isParent, authLoading]);
+
+  const handleSaveSettings = useCallback(async () => {
+    if (!user || !hero || isSaving) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsSaving(true);
+    setError(null);
+
     try {
-      await updateUserProfile(user.uid, { language: lang });
-      await changeLanguage(lang);
-      Alert.alert(t("common.success"), t("settings.language_saved"));
-    } catch (error) {
-      console.error("Failed to update language:", error);
-      Alert.alert(t("common.error"), t("error.unknown"));
+      // Update hero display name
+      if (displayName !== hero.displayName) {
+        await updateHeroProfile(user.uid, hero.id, { displayName });
+      }
+
+      // Update user profile language setting
+      if (selectedLanguage !== getLang()) {
+        await updateUserProfile(user.uid, { language: selectedLanguage });
+        setLang(selectedLanguage); // Update i18n instance immediately
+        Alert.alert(t("common.success"), t("settings.language_updated_restart"));
+      } else {
+        Alert.alert(t("common.success"), t("settings.saved_successfully"));
+      }
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+      setError(t("error.unknown"));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsSaving(false);
     }
-  }, [user, userProfile]);
+  }, [user, hero, displayName, selectedLanguage, isSaving]);
 
   const handleSignOut = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
       t("settings.sign_out_confirm_title"),
       t("settings.sign_out_confirm_message"),
@@ -62,33 +131,27 @@ export default function ParentSettingsScreen() {
           text: t("settings.sign_out"),
           style: "destructive",
           onPress: async () => {
-            try {
-              await signOutUser();
-              router.replace("/(auth)");
-            } catch (error) {
-              console.error("Failed to sign out:", error);
-              Alert.alert(t("common.error"), t("error.unknown"));
-            }
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            await signOut();
+            router.replace("/(auth)");
           },
         },
       ],
     );
-  }, []);
+  }, [signOut]);
 
-  if (authLoading) {
+  if (authLoading || dataLoading) {
     return (
-      <View style={styles.center}>
+      <View style={styles.center} testID="activity-indicator">
         <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
       </View>
     );
   }
 
-  if (!user || userProfile?.role !== "parent") {
+  if (!isParent) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
-        <PixelText variant="body" color="danger" accessibilityLabel={t("parent.access_denied")}>
-          {t("parent.access_denied")}
-        </PixelText>
+        <DQMessageBox text={t("parent.access_denied")} />
         <PixelButton
           label={t("common.back")}
           variant="secondary"
@@ -104,7 +167,8 @@ export default function ParentSettingsScreen() {
     <>
       <Stack.Screen
         options={{
-          title: t("nav.parent_settings"),
+          title: t("nav.settings"),
+          headerShown: false, // Custom header for DQ style
         }}
       />
       <ScrollView
@@ -114,57 +178,70 @@ export default function ParentSettingsScreen() {
           { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + SPACING.md, paddingBottom: insets.bottom + SPACING.xxl },
         ]}
         showsVerticalScrollIndicator={false}
-        accessibilityLabel={t("nav.parent_settings")}
+        accessibilityLabel={t("nav.settings")}
       >
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("settings.general")}>
-          {t("settings.general")}
-        </PixelText>
+        <DQMessageBox text={t("settings.welcome_message")} />
 
-        <PixelCard variant="default">
-          <PixelText variant="label" color="cream" style={styles.settingLabel} accessibilityLabel={t("settings.language")}>
-            {t("settings.language")}
+        {error && (
+          <DQMessageBox text={error} variant="danger" />
+        )}
+
+        {/* Hero Settings */}
+        <PixelCard variant="default" style={styles.sectionCard}>
+          <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("settings.hero_settings")}>
+            {t("settings.hero_settings")}
           </PixelText>
-          <DQPicker
-            selectedValue={currentLanguage}
-            onValueChange={(itemValue: LanguageCode) => handleLanguageChange(itemValue)}
-            items={SUPPORTED_LANGUAGES.map((lang) => ({
-              label: t(`language.${lang}`),
-              value: lang,
-            }))}
-            accessibilityLabel={t("settings.select_language")}
-            enabled={!isSaving}
+          <PixelText variant="label" color="cream" style={styles.label} accessibilityLabel={t("settings.hero_name_label")}>
+            {t("settings.hero_name_label")}
+          </PixelText>
+          <DQTextInput
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder={t("settings.hero_name_placeholder")}
+            maxLength={20}
+            style={styles.input}
+            accessibilityLabel={t("settings.hero_name_label")}
           />
-          {isSaving && (
-            <View style={styles.savingIndicator}>
-              <ActivityIndicator color={COLORS.gold} size="small" />
-              <PixelText variant="caption" color="gray" accessibilityLabel={t("common.saving")}>
-                {t("common.saving")}...
-              </PixelText>
-            </View>
-          )}
         </PixelCard>
 
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("settings.account")}>
-          {t("settings.account")}
-        </PixelText>
-
-        <PixelCard variant="default">
-          <PixelText variant="label" color="cream" style={styles.settingLabel} accessibilityLabel={t("settings.email")}>
-            {t("settings.email")}:
+        {/* Language Settings */}
+        <PixelCard variant="default" style={styles.sectionCard}>
+          <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("settings.language_settings")}>
+            {t("settings.language_settings")}
           </PixelText>
-          <PixelText variant="body" color="white" style={styles.settingValue} accessibilityLabel={user.email || t("common.not_set")}>
-            {user.email || t("common.not_set")}
+          <PixelText variant="label" color="cream" style={styles.label} accessibilityLabel={t("settings.app_language_label")}>
+            {t("settings.app_language_label")}
           </PixelText>
+          <DQPicker
+            selectedValue={selectedLanguage}
+            onValueChange={(itemValue) => setSelectedLanguage(itemValue as string)}
+            items={SUPPORTED_LANGUAGES}
+            accessibilityLabel={t("settings.app_language_label")}
+          />
+        </PixelCard>
 
+        {/* Action Buttons */}
+        <View style={styles.buttonGroup}>
+          <PixelButton
+            label={t("common.save")}
+            variant="primary"
+            onPress={handleSaveSettings}
+            disabled={isSaving}
+            accessibilityLabel={t("common.save")}
+          />
           <PixelButton
             label={t("settings.sign_out")}
             variant="danger"
-            size="md"
             onPress={handleSignOut}
-            style={styles.signOutButton}
             accessibilityLabel={t("settings.sign_out")}
           />
-        </PixelCard>
+          <PixelButton
+            label={t("common.back")}
+            variant="secondary"
+            onPress={() => router.back()}
+            accessibilityLabel={t("common.back")}
+          />
+        </View>
       </ScrollView>
     </>
   );
@@ -173,7 +250,7 @@ export default function ParentSettingsScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   content: {
     padding: SPACING.md,
@@ -183,30 +260,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   backButton: {
     marginTop: SPACING.md,
   },
+  sectionCard: {
+    padding: SPACING.md,
+  },
   sectionTitle: {
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.md,
     textAlign: "center",
   },
-  settingLabel: {
+  label: {
     marginBottom: SPACING.xs,
   },
-  settingValue: {
+  input: {
     marginBottom: SPACING.md,
-    fontFamily: FONT_FAMILY,
   },
-  signOutButton: {
+  buttonGroup: {
+    gap: SPACING.sm,
     marginTop: SPACING.md,
   },
-  savingIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-    marginTop: SPACING.sm,
-  },
 });
-

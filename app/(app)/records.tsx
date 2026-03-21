@@ -5,16 +5,20 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
+  Text,
 } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
-import { subscribeToBattleSessions, subscribeToQuests } from "@/lib/firestore";
-import { PixelText, PixelCard } from "@/components/ui";
+import {
+  subscribeToHero,
+  subscribeToQuests,
+  subscribeToBattleSessions,
+} from "@/lib/firestore";
+import { DQWindow, DQMessageBox, DQCommandMenu } from "@/components/ui";
 import { t, getLang, getIsRTL } from "@/i18n";
+import type { HeroProfile, Quest, BattleSession } from "@/types";
 import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
-import type { BattleSession, Quest } from "@/types";
-import { Timestamp } from "firebase/firestore";
 
 const DQ_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
@@ -23,72 +27,73 @@ const FONT_FAMILY = Platform.select({
   default: "monospace",
 });
 
+// Helper to format date for display
+function formatDate(dateString: string, locale: string): string {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+// Helper to format duration for display
 function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
-function formatDate(date: string | Timestamp | Date, locale: string): string {
-  let d: Date;
-  if (typeof date === 'string') {
-    d = new Date(date);
-  } else if (date instanceof Timestamp) {
-    d = date.toDate();
-  } else {
-    d = date;
-  }
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
-}
-
 export default function RecordsScreen() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
   const isRTL = getIsRTL();
+  const locale = getLang();
   const insets = useSafeAreaInsets();
 
-  const [battleSessions, setBattleSessions] = useState<BattleSession[]>([]);
+  const [hero, setHero] = useState<HeroProfile | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [battleSessions, setBattleSessions] = useState<BattleSession[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading || !user) {
-      setDataLoading(false);
+    if (!user) {
+      setError(t("error.auth_required"));
+      setIsLoading(false);
       return;
     }
 
-    setDataLoading(true);
+    const heroId = user.uid; // Assuming heroId is the same as userId for simplicity
 
-    const unsubSessions = subscribeToBattleSessions(user.uid, (sessions) => {
-      setBattleSessions(sessions);
-      setDataLoading(false);
+    const unsubHero = subscribeToHero(user.uid, heroId, (h: HeroProfile | null) => {
+      if (h) {
+        setHero(h);
+      } else {
+        setError(t("error.hero_not_found"));
+      }
+      setIsLoading(false);
     });
 
-    const unsubQuests = subscribeToQuests(user.uid, (q) => {
+    const unsubQuests = subscribeToQuests(heroId, (q: Quest[]) => {
       setQuests(q);
-      setDataLoading(false);
+    });
+
+    const unsubBattleSessions = subscribeToBattleSessions(heroId, (bs: BattleSession[]) => {
+      setBattleSessions(bs);
     });
 
     return () => {
-      unsubSessions();
+      unsubHero();
       unsubQuests();
+      unsubBattleSessions();
     };
-  }, [user, authLoading]);
+  }, [user]);
 
-  const getQuestTitle = useCallback(
-    (questId: string) => {
-      const quest = quests.find((q) => q.id === questId);
-      return quest ? quest.title : t("records.unknown_quest");
-    },
-    [quests],
-  );
+  const handleBackToCamp = useCallback(() => {
+    router.replace("/(app)/camp");
+  }, []);
 
-  if (authLoading || dataLoading) {
+  if (isLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
@@ -96,21 +101,39 @@ export default function RecordsScreen() {
     );
   }
 
-  if (!user) {
+  if (error) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
-        <PixelText variant="body" color="danger" accessibilityLabel={t("error.auth_required")}>
-          {t("error.auth_required")}
-        </PixelText>
+        <DQMessageBox text={error} />
+        <DQCommandMenu
+          items={[{ label: t("common.back"), onPress: handleBackToCamp, accessibilityLabel: t("common.back") }]}
+          style={{ marginTop: SPACING.md }}
+        />
       </View>
     );
   }
+
+  if (!hero) {
+    return (
+      <View style={[styles.center, { paddingTop: insets.top }]}>
+        <DQMessageBox text={t("error.hero_not_found")} />
+        <DQCommandMenu
+          items={[{ label: t("common.back"), onPress: handleBackToCamp, accessibilityLabel: t("common.back") }]}
+          style={{ marginTop: SPACING.md }}
+        />
+      </View>
+    );
+  }
+
+  const completedQuests = quests.filter((q) => q.status === "completed");
+  const totalStudyTime = battleSessions.reduce((sum, session) => sum + (session.durationSeconds || 0), 0);
 
   return (
     <>
       <Stack.Screen
         options={{
           title: t("nav.records"),
+          headerShown: false, // Custom header for DQ style
         }}
       />
       <ScrollView
@@ -122,61 +145,102 @@ export default function RecordsScreen() {
         showsVerticalScrollIndicator={false}
         accessibilityLabel={t("nav.records")}
       >
-        <PixelText variant="heading" color="gold" style={styles.sectionTitle} accessibilityLabel={t("records.battle_history")}>
-          {t("records.battle_history")}
-        </PixelText>
+        <DQWindow title={t("records.hero_summary")}>
+          <View style={[styles.summaryRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <Text style={styles.summaryLabel} accessibilityLabel={t("hero.name_label", { name: hero.displayName })}>
+              {t("hero.name_label", { name: hero.displayName })}
+            </Text>
+            <Text style={styles.summaryValue} accessibilityLabel={hero.displayName}>
+              {hero.displayName}
+            </Text>
+          </View>
+          <View style={[styles.summaryRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <Text style={styles.summaryLabel} accessibilityLabel={t("hero.level_label", { level: hero.level })}>
+              {t("hero.level_label", { level: hero.level })}
+            </Text>
+            <Text style={styles.summaryValue} accessibilityLabel={`Lv.${hero.level}`}>
+              Lv.{hero.level}
+            </Text>
+          </View>
+          <View style={[styles.summaryRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <Text style={styles.summaryLabel} accessibilityLabel={t("hero.total_exp_label")}>
+              {t("hero.total_exp_label")}
+            </Text>
+            <Text style={styles.summaryValue} accessibilityLabel={`${hero.totalExp} EXP`}>
+              {hero.totalExp} EXP
+            </Text>
+          </View>
+          <View style={[styles.summaryRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <Text style={styles.summaryLabel} accessibilityLabel={t("hero.gold_label")}>
+              {t("hero.gold_label")}
+            </Text>
+            <Text style={styles.summaryValue} accessibilityLabel={`${hero.gold} G`}>
+              {hero.gold} G
+            </Text>
+          </View>
+        </DQWindow>
 
-        {battleSessions.length === 0 ? (
-          <PixelCard variant="default">
-            <PixelText variant="body" color="gray" style={styles.emptyText} accessibilityLabel={t("records.no_records")}>
-              {t("records.no_records")}
-            </PixelText>
-          </PixelCard>
-        ) : (
-          battleSessions.map((session) => (
-            <PixelCard key={session.id} variant="default" style={styles.recordCard}>
-              <PixelText variant="body" color="cream" style={styles.recordTitle} accessibilityLabel={getQuestTitle(session.questId)}>
-                {getQuestTitle(session.questId)}
-              </PixelText>
+        <DQWindow title={t("records.quest_stats")}>
+          <View style={[styles.summaryRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <Text style={styles.summaryLabel} accessibilityLabel={t("records.total_quests")}>
+              {t("records.total_quests")}
+            </Text>
+            <Text style={styles.summaryValue} accessibilityLabel={`${quests.length} ${t("records.count_unit")}`}>
+              {quests.length} {t("records.count_unit")}
+            </Text>
+          </View>
+          <View style={[styles.summaryRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <Text style={styles.summaryLabel} accessibilityLabel={t("records.completed_quests")}>
+              {t("records.completed_quests")}
+            </Text>
+            <Text style={styles.summaryValue} accessibilityLabel={`${completedQuests.length} ${t("records.count_unit")}`}>
+              {completedQuests.length} {t("records.count_unit")}
+            </Text>
+          </View>
+          <View style={[styles.summaryRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <Text style={styles.summaryLabel} accessibilityLabel={t("records.total_study_time")}>
+              {t("records.total_study_time")}
+            </Text>
+            <Text style={styles.summaryValue} accessibilityLabel={formatDuration(totalStudyTime)}>
+              {formatDuration(totalStudyTime)}
+            </Text>
+          </View>
+        </DQWindow>
 
-              <View style={[styles.recordRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-                <PixelText variant="label" color="gray" accessibilityLabel={t("records.date")}>
-                  {t("records.date")}:
-                </PixelText>
-                <PixelText variant="body" color="white" accessibilityLabel={formatDate(session.endTime, getLang())}>
-                  {formatDate(session.endTime, getLang())}
-                </PixelText>
-              </View>
+        <DQWindow title={t("records.battle_history")}>
+          {battleSessions.length === 0 ? (
+            <Text style={styles.emptyText} accessibilityLabel={t("records.no_battles")}>
+              {t("records.no_battles")}
+            </Text>
+          ) : (
+            battleSessions
+              .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+              .map((session, index) => (
+                <View
+                  key={session.id}
+                  style={[styles.battleEntry, { flexDirection: isRTL ? "row-reverse" : "row" }]}
+                  accessibilityLabel={`${formatDate(session.startTime, locale)}: ${t("records.duration")}: ${formatDuration(session.durationSeconds || 0)}, ${t("hero.exp")}: ${session.rewards?.exp || 0}, ${t("hero.gold")}: ${session.rewards?.gold || 0}`}
+                >
+                  <Text style={styles.battleDate}>{formatDate(session.startTime, locale)}</Text>
+                  <View style={styles.battleDetails}>
+                    <Text style={styles.battleDetailText}>
+                      {t("records.duration")}: {formatDuration(session.durationSeconds || 0)}
+                    </Text>
+                    <Text style={styles.battleDetailText}>
+                      {t("hero.exp")}: {session.rewards?.exp || 0}
+                    </Text>
+                    <Text style={styles.battleDetailText}>
+                      {t("hero.gold")}: {session.rewards?.gold || 0}
+                    </Text>
+                  </View>
+                </View>
+              ))
+          )}
+        </DQWindow>
 
-              <View style={[styles.recordRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-                <PixelText variant="label" color="gray" accessibilityLabel={t("records.duration")}>
-                  {t("records.duration")}:
-                </PixelText>
-                <PixelText variant="body" color="white" accessibilityLabel={formatDuration(session.durationSeconds)}>
-                  {formatDuration(session.durationSeconds)}
-                </PixelText>
-              </View>
-
-              <View style={[styles.recordRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-                <PixelText variant="label" color="gray" accessibilityLabel={t("hero.exp")}>
-                  {t("hero.exp")}:
-                </PixelText>
-                <PixelText variant="body" color="exp" accessibilityLabel={t("hero.exp_value", { exp: session.rewards.exp })}>
-                  {session.rewards.exp} {t("hero.exp_unit")}
-                </PixelText>
-              </View>
-
-              <View style={[styles.recordRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-                <PixelText variant="label" color="gray" accessibilityLabel={t("hero.gold")}>
-                  {t("hero.gold")}:
-                </PixelText>
-                <PixelText variant="body" color="gold" accessibilityLabel={t("hero.gold_value", { gold: session.rewards.gold })}>
-                  {session.rewards.gold} {t("hero.gold_unit")}
-                </PixelText>
-              </View>
-            </PixelCard>
-          ))
-        )}
+        <DQCommandMenu
+          items={[{ label: t("common.back"), onPress: handleBackToCamp, accessibilityLabel: t("common.back") }]}
+        />
       </ScrollView>
     </>
   );
@@ -197,25 +261,57 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: DQ_BG,
   },
-  sectionTitle: {
-    marginBottom: SPACING.xs,
-    textAlign: "center",
+  loadingText: {
+    color: COLORS.cream,
+    fontSize: 18,
+    fontFamily: FONT_FAMILY,
   },
-  emptyText: {
-    textAlign: "center",
-  },
-  recordCard: {
-    marginBottom: SPACING.xs,
-  },
-  recordTitle: {
-    marginBottom: SPACING.sm,
-    fontWeight: "bold",
-  },
-  recordRow: {
+  summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: SPACING.xs,
   },
+  summaryLabel: {
+    color: COLORS.cream,
+    fontSize: 18,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+  },
+  summaryValue: {
+    color: COLORS.gold,
+    fontSize: 18,
+    fontFamily: FONT_FAMILY,
+  },
+  emptyText: {
+    color: COLORS.gray,
+    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+    textAlign: "center",
+    paddingVertical: SPACING.md,
+  },
+  battleEntry: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: SPACING.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.darkGray,
+  },
+  battleDate: {
+    color: COLORS.cream,
+    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+    flex: 1,
+  },
+  battleDetails: {
+    flex: 2,
+    alignItems: "flex-end",
+  },
+  battleDetailText: {
+    color: COLORS.lightGray,
+    fontSize: 14,
+    fontFamily: FONT_FAMILY,
+  },
 });
-
