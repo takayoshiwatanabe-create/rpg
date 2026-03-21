@@ -15,6 +15,10 @@ import {
   AccessibilityRole,
   AccessibilityState,
   Switch,
+  ViewStyle,
+  TextStyle,
+  TextInputProps,
+  TextProps,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Audio } from "expo-av";
@@ -32,7 +36,9 @@ type PixelTextVariant =
   | "caption"
   | "title"
   | "subheading"
-  | "subtitle";
+  | "subtitle"
+  | "stat"; // Added 'stat' variant as per PixelText.tsx
+
 type PixelTextColor =
   | "primary"
   | "secondary"
@@ -56,10 +62,11 @@ type PixelTextColor =
   | "info"
   | "exp"
   | "hp"
-  | "mp";
+  | "mp"
+  | "battleBackground"; // Added 'battleBackground' as per BattleScene.tsx
 
 // --- PixelText Component ---
-interface PixelTextProps extends Text["props"] {
+interface PixelTextProps extends TextProps {
   variant?: PixelTextVariant;
   color?: PixelTextColor;
   children: React.ReactNode;
@@ -109,8 +116,8 @@ interface PixelButtonProps {
   children: React.ReactNode;
   variant?: ButtonVariant;
   disabled?: boolean;
-  style?: View["props"]["style"];
-  textStyle?: Text["props"]["style"];
+  style?: ViewStyle;
+  textStyle?: TextStyle;
   accessibilityLabel?: string;
   accessibilityHint?: string;
 }
@@ -157,7 +164,7 @@ export const PixelButton: React.FC<PixelButtonProps> = ({
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled }}
-      accessibilityLabel={accessibilityLabel || (typeof children === "string" ? children : "Button")}
+      accessibilityLabel={accessibilityLabel || (typeof children === "string" ? children : undefined)}
       accessibilityHint={accessibilityHint}
     >
       {typeof children === "string" ? (
@@ -170,11 +177,11 @@ export const PixelButton: React.FC<PixelButtonProps> = ({
 };
 
 // --- PixelInput Component ---
-interface PixelInputProps extends TextInput["props"] {
+interface PixelInputProps extends TextInputProps {
   label?: string;
   error?: string;
-  style?: TextInput["props"]["style"];
-  inputStyle?: TextInput["props"]["style"];
+  style?: ViewStyle; // Changed to ViewStyle for the container
+  inputStyle?: TextStyle; // Changed to TextStyle for the TextInput
   accessibilityLabel?: string;
   accessibilityHint?: string;
 }
@@ -225,7 +232,7 @@ interface PixelProgressBarProps {
   max: number;
   color?: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "exp" | "hp";
   height?: number;
-  style?: View["props"]["style"];
+  style?: ViewStyle;
   showValues?: boolean;
 }
 
@@ -268,7 +275,7 @@ type PixelCardVariant = "default" | "highlighted";
 interface PixelCardProps {
   children: React.ReactNode;
   variant?: PixelCardVariant;
-  style?: View["props"]["style"];
+  style?: ViewStyle;
 }
 
 export const PixelCard: React.FC<PixelCardProps> = ({ children, variant = "default", style }) => {
@@ -284,7 +291,7 @@ export const PixelCard: React.FC<PixelCardProps> = ({ children, variant = "defau
 interface DQWindowProps {
   children: React.ReactNode;
   title?: string;
-  style?: View["props"]["style"];
+  style?: ViewStyle;
 }
 
 export const DQWindow: React.FC<DQWindowProps> = ({ children, title, style }) => {
@@ -409,7 +416,7 @@ export type MenuItem = {
 
 interface DQCommandMenuProps {
   items: MenuItem[];
-  style?: View["props"]["style"];
+  style?: ViewStyle;
 }
 
 export const DQCommandMenu: React.FC<DQCommandMenuProps> = React.memo(
@@ -424,6 +431,7 @@ export const DQCommandMenu: React.FC<DQCommandMenuProps> = React.memo(
               variant={item.variant || "primary"}
               disabled={item.disabled}
               style={styles.commandMenuButton}
+              accessibilityLabel={item.label} // Added accessibilityLabel
             >
               {item.label}
             </PixelButton>
@@ -446,8 +454,8 @@ interface PixelPickerProps<T> {
   onValueChange: (value: T) => void;
   placeholder?: string;
   label?: string;
-  style?: View["props"]["style"];
-  itemTextStyle?: Text["props"]["style"];
+  style?: ViewStyle;
+  itemTextStyle?: TextStyle;
   accessibilityLabel?: string;
   accessibilityHint?: string;
 }
@@ -591,7 +599,7 @@ interface PixelSwitchProps {
   value: boolean;
   onValueChange: (newValue: boolean) => void;
   disabled?: boolean;
-  style?: StyleProp<ViewStyle>;
+  style?: ViewStyle;
   accessibilityLabel?: string;
   accessibilityHint?: string;
 }
@@ -677,6 +685,10 @@ const styles = StyleSheet.create({
   caption: {
     fontSize: FONT_SIZES.caption,
     lineHeight: FONT_SIZES.caption * 1.2,
+  },
+  stat: { // Added stat variant style
+    fontSize: FONT_SIZES.md,
+    lineHeight: FONT_SIZES.md * 1.2,
   },
 
   // PixelButton styles

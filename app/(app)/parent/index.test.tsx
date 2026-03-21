@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeEach, vi } from "@vitest/globals";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import ParentDashboardScreen from "./index";
 import { router } from "expo-router";
-import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
+import { useAuth } from "../../../src/hooks/useAuth";
 import {
   subscribeToHero,
   subscribeToQuestsByParent,
   updateQuestStatus,
-} from "../../../lib/firestore"; // Corrected import path
-import { t } from "../../../i18n"; // Corrected import path
-import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "../../../types"; // Corrected import path
-import { Alert, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native"; // Import missing components
+} from "../../../src/lib/firestore";
+import { t } from "../../../src/i18n/i18n"; // Corrected import path
+import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "../../../src/types";
+import { Alert, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -22,15 +22,15 @@ vi.mock("expo-router", () => ({
     Screen: vi.fn(() => null),
   },
 }));
-vi.mock("../../../hooks/useAuth", () => ({
+vi.mock("../../../src/hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
-vi.mock("../../../lib/firestore", () => ({
+vi.mock("../../../src/lib/firestore", () => ({
   subscribeToHero: vi.fn(),
   subscribeToQuestsByParent: vi.fn(),
   updateQuestStatus: vi.fn(),
 }));
-vi.mock("../../../i18n", () => ({
+vi.mock("../../../src/i18n/i18n", () => ({ // Corrected import path
   t: vi.fn((key: string, params?: Record<string, any>) => {
     if (key === "parent.hero_summary")
       return `${params?.name}、レベル${params?.level}、ゴールド${params?.gold}`;
@@ -84,11 +84,11 @@ vi.mock("react-native", async (importOriginal) => {
     ScrollView: actual.ScrollView,
     StyleSheet: actual.StyleSheet,
     ActivityIndicator: actual.ActivityIndicator,
-    TouchableOpacity: actual.TouchableOpacity, // Ensure TouchableOpacity is mocked
-    Text: actual.Text, // Ensure Text is mocked
+    TouchableOpacity: actual.TouchableOpacity,
+    Text: actual.Text,
   };
 });
-vi.mock("../../../components/ui", () => ({
+vi.mock("../../../src/components/ui", () => ({
   PixelText: ({ children, variant, color, style, accessibilityLabel }: any) => (
     <Text style={style} accessibilityLabel={accessibilityLabel}>{children}</Text>
   ),
@@ -266,7 +266,7 @@ describe("ParentDashboardScreen", () => {
     );
 
     // Simulate pressing the 'Approve' button in the alert
-    const approveAction = (Alert.alert as vi.Mock).mock.calls[0][2].find(
+    const approveAction = (Alert.alert as typeof Alert.alert).mock.calls[0][2].find(
       (action: any) => action.text === "承認",
     );
     await approveAction.onPress();
@@ -288,7 +288,7 @@ describe("ParentDashboardScreen", () => {
     );
 
     // Simulate pressing the 'Reject' button in the alert
-    const rejectAction = (Alert.alert as vi.Mock).mock.calls[0][2].find(
+    const rejectAction = (Alert.alert as typeof Alert.alert).mock.calls[0][2].find(
       (action: any) => action.text === "却下",
     );
     await rejectAction.onPress();

@@ -1,18 +1,18 @@
-import { describe, it, expect, beforeEach, vi } from "@vitest/globals";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react-native"; // Import fireEvent
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import BattleScreen from "./[questId]";
 import { router } from "expo-router";
-import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
+import { useAuth } from "../../../src/hooks/useAuth";
 import {
   subscribeToQuest,
   updateQuestStatus,
   updateHeroStats,
   createBattleSession,
-} from "../../../lib/firestore"; // Corrected import path
-import { t } from "../../../i18n"; // Corrected import path
-import { QuestStatus, Difficulty, Subject } from "../../../types"; // Corrected import path
-import { useReducedMotion } from "../../../hooks/useReducedMotion"; // Corrected import path
-import { View, Text, TouchableOpacity } from "react-native"; // Explicitly import from react-native
+} from "../../../src/lib/firestore";
+import { t } from "../../../src/i18n/i18n"; // Corrected import path
+import { QuestStatus, Difficulty, Subject } from "../../../src/types";
+import { useReducedMotion } from "../../../src/hooks/useReducedMotion";
+import { View, Text, TouchableOpacity } from "react-native";
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -26,20 +26,20 @@ vi.mock("expo-router", () => ({
     Screen: vi.fn(() => null),
   },
 }));
-vi.mock("../../../hooks/useAuth", () => ({
+vi.mock("../../../src/hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
-vi.mock("../../../lib/firestore", () => ({
+vi.mock("../../../src/lib/firestore", () => ({
   subscribeToQuest: vi.fn(),
   updateQuestStatus: vi.fn(),
   updateHeroStats: vi.fn(),
   createBattleSession: vi.fn(),
 }));
-vi.mock("../../../i18n", () => ({
+vi.mock("../../../src/i18n/i18n", () => ({ // Corrected import path
   t: vi.fn((key: string) => key), // Mock t function to return the key
   getIsRTL: vi.fn(() => false),
 }));
-vi.mock("../../../hooks/useReducedMotion", () => ({
+vi.mock("../../../src/hooks/useReducedMotion", () => ({
   useReducedMotion: vi.fn(() => false), // Default to no reduced motion
 }));
 vi.mock("react-native", async (importOriginal) => {
@@ -74,14 +74,14 @@ vi.mock("react-native", async (importOriginal) => {
     StyleSheet: actual.StyleSheet,
   };
 });
-vi.mock("../../../components/ui", () => ({
+vi.mock("../../../src/components/ui", () => ({
   DQWindow: ({ children }: { children: React.ReactNode }) => (
     <View>{children}</View>
   ),
-  DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void }[] }) => (
+  DQCommandMenu: ({ items }: { items: { label: string; onPress: () => void; accessibilityLabel: string }[] }) => ( // Added accessibilityLabel
     <View>
       {items.map((item) => (
-        <TouchableOpacity key={item.label} onPress={item.onPress}>
+        <TouchableOpacity key={item.label} onPress={item.onPress} accessibilityLabel={item.accessibilityLabel}>
           <Text>{item.label}</Text>
         </TouchableOpacity>
       ))}
@@ -208,7 +208,7 @@ describe("BattleScreen", () => {
 
     // Simulate hardware back press
     const backHandler = (
-      require("react-native").BackHandler.addEventListener as vi.Mock
+      require("react-native").BackHandler.addEventListener as typeof vi.fn
     ).mock.calls[0][1];
     expect(backHandler()).toBe(true); // Should prevent default
 
@@ -228,7 +228,7 @@ describe("BattleScreen", () => {
     await waitFor(() => screen.getByText("dq.battle.done"));
 
     // Simulate pressing the 'Exit' button in the alert
-    const exitAction = (require("react-native").Alert.alert as vi.Mock).mock
+    const exitAction = (require("react-native").Alert.alert as typeof vi.fn).mock
       .calls[0][2][1].onPress;
     exitAction();
 
@@ -236,7 +236,7 @@ describe("BattleScreen", () => {
   });
 
   it("applies reduced motion preference", async () => {
-    (useReducedMotion as vi.Mock).mockReturnValue(true);
+    (useReducedMotion as typeof vi.fn).mockReturnValue(true);
     render(<BattleScreen />);
     await waitFor(() => {
       expect(screen.getByText("dq.battle.fight")).toBeVisible();

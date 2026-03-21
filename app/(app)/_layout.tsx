@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { View, StyleSheet, ActivityIndicator, I18nManager } from "react-native";
 import { Stack, router } from "expo-router";
-import { useAuth } from "../../hooks/useAuth"; // Corrected import path
-import { getIsRTL } from "../../i18n"; // Corrected import path
-import { COLORS } from "../../constants/theme"; // Corrected import path
+import { useAuth } from "../../src/hooks/useAuth";
+import { getIsRTL } from "../../src/i18n/i18n"; // Corrected import path
+import { COLORS } from "../../src/constants/theme";
 
-const DQ_BG = COLORS.bgDark;
+const DQ_BG = COLORS.bgPrimary; // Corrected property name
 
 export default function AppLayout() {
   const { user, isLoading } = useAuth();

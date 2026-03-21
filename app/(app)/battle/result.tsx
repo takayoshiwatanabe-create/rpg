@@ -2,16 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, View, Text, Platform } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
-import { subscribeToHero } from "../../../lib/firestore"; // Corrected import path
-import { DQMessageBox, DQCommandMenu, DQWindow } from "../../../components/ui"; // Corrected import path
-import { t, getIsRTL } from "../../../i18n"; // Corrected import path
-import { expProgressInCurrentLevel } from "../../../lib/expCalculator"; // Corrected import path
-import type { HeroProfile } from "../../../types"; // Corrected import path
-import { useReducedMotion } from "../../../hooks/useReducedMotion"; // Corrected import path
-import { COLORS } from "../../../constants/theme"; // Corrected import path
+import { useAuth } from "../../../src/hooks/useAuth";
+import { subscribeToHero } from "../../../src/lib/firestore";
+import { DQMessageBox, DQCommandMenu, DQWindow } from "../../../src/components/ui";
+import { t, getIsRTL } from "../../../src/i18n/i18n"; // Corrected import path
+import { expProgressInCurrentLevel } from "../../../src/lib/expCalculator";
+import type { HeroProfile } from "../../../src/types";
+import { useReducedMotion } from "../../../src/hooks/useReducedMotion";
+import { COLORS } from "../../../src/constants/theme";
 
-const DQ_BG = COLORS.bgDark;
+const DQ_BG = COLORS.bgPrimary; // Corrected property name
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",

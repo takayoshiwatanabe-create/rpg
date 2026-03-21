@@ -9,18 +9,20 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "../../hooks/useAuth"; // Corrected import path
+import { useAuth } from "../../src/hooks/useAuth";
 import {
   subscribeToHero,
   subscribeToActiveQuests,
-} from "../../lib/firestore"; // Corrected import path
-import { DQWindow, DQCommandMenu, DQMessageBox } from "../../components/ui"; // Corrected import path
-import { t, getIsRTL } from "../../i18n"; // Corrected import path
-import { expProgressInCurrentLevel } from "../../lib/expCalculator"; // Corrected import path
-import type { HeroProfile, Quest } from "../../types"; // Corrected import path
-import { COLORS } from "../../constants/theme"; // Corrected import path
+} from "../../src/lib/firestore";
+import { DQWindow, DQCommandMenu, DQMessageBox } from "../../src/components/ui";
+import { t, getIsRTL } from "../../src/i18n/i18n"; // Corrected import path
+import { expProgressInCurrentLevel } from "../../src/lib/expCalculator";
+import type { HeroProfile, Quest } from "../../src/types";
+import { COLORS } from "../../src/constants/theme";
+import * as Haptics from "expo-haptics";
+import { playSound } from "../../src/lib/audio";
 
-const DQ_BG = COLORS.bgDark;
+const DQ_BG = COLORS.bgPrimary; // Corrected property name
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
@@ -56,22 +58,32 @@ export default function CampScreen() {
   }, [user, heroId]);
 
   const handleGoQuest = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    playSound("menu_select");
     router.push("/(app)/quests");
   }, []);
 
   const handleCreateQuest = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    playSound("menu_select");
     router.push("/(app)/quests/new");
   }, []);
 
   const handleViewStatus = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    playSound("menu_select");
     setShowExtendedStatus((prev) => !prev);
   }, []);
 
   const handleRecords = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    playSound("menu_select");
     router.push("/(app)/records");
   }, []);
 
   const handleSettings = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    playSound("menu_select");
     router.push("/(app)/parent/settings");
   }, []);
 

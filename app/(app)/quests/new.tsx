@@ -1,29 +1,29 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
-  Alert,
-  Platform,
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TextInput,
+  Alert,
 } from "react-native";
-import { Stack, router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/hooks/useAuth";
-import { createQuest, subscribeToHero } from "@/lib/firestore";
+import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
 import {
-  PixelText,
-  PixelButton,
-  PixelInput,
-  PixelCard,
-  PixelPicker,
-} from "@/components/ui";
-import { t, getIsRTL } from "@/i18n";
-import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
-import type { Subject, Difficulty, HeroProfile } from "@/types";
-import DateTimePicker from "@react-native-community/datetimepicker";
+  createQuest,
+  updateQuest,
+  subscribeToQuest,
+} from "../../../lib/firestore"; // Corrected import path
+import { DQWindow, DQCommandMenu, DQMessageBox } from "../../../components/ui"; // Corrected import path
+import { t, getIsRTL } from "../../../i18n"; // Corrected import path
+import type { Quest, Subject, Difficulty } from "../../../types"; // Corrected import path
+import { getMonster } from "../../../constants/monsters"; // Corrected import path
+import { COLORS } from "../../../constants/theme"; // Corrected import path
 import * as Haptics from "expo-haptics";
+import { playSound } from "../../../lib/audio"; // Corrected import path
 
 const DQ_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
@@ -32,98 +32,123 @@ const FONT_FAMILY = Platform.select({
   default: "monospace",
 });
 
-const subjects: Subject[] = [
+const SUBJECT_OPTIONS: Subject[] = [
   "math",
   "japanese",
   "english",
   "science",
-  "socialStudies",
-  "programming",
+  "social_studies",
   "art",
   "music",
+  "pe",
   "other",
 ];
-const difficulties: Difficulty[] = ["easy", "normal", "hard", "veryHard"];
+const DIFFICULTY_OPTIONS: Difficulty[] = ["easy", "normal", "hard", "very_hard"];
 
 export default function NewQuestScreen() {
+  const { questId: questIdParam } = useLocalSearchParams();
+  const questId = typeof questIdParam === "string" ? questIdParam : undefined;
+
   const { user } = useAuth();
   const isRTL = getIsRTL();
   const insets = useSafeAreaInsets();
 
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState<Subject>("math");
-  const [difficulty, setDifficulty] = useState<Difficulty>("normal");
-  const [deadline, setDeadline] = useState(new Date());
+  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [deadlineDate, setDeadlineDate] = useState(""); // YYYY-MM-DD
   const [estimatedMinutes, setEstimatedMinutes] = useState("30");
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [hero, setHero] = useState<HeroProfile | null>(null);
-  const [heroLoading, setHeroLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(!!questId);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      setHeroLoading(false);
-      return;
+    if (questId && user) {
+      const unsub = subscribeToQuest(questId, (q: Quest | null) => {
+        if (q) {
+          setTitle(q.title);
+          setSubject(q.subject);
+          setDifficulty(q.difficulty);
+          setDeadlineDate(q.deadlineDate);
+          setEstimatedMinutes(String(q.estimatedMinutes));
+        } else {
+          setError(t("quest.error.not_found"));
+        }
+        setInitialLoading(false);
+      });
+      return unsub;
+    } else {
+      setInitialLoading(false);
     }
-    const unsub = subscribeToHero(user.uid, user.uid, (h: HeroProfile | null) => {
-      setHero(h);
-      setHeroLoading(false);
-    });
-    return unsub;
-  }, [user]);
+  }, [questId, user]);
 
-  const onDateChange = useCallback(
-    (event: any, selectedDate?: Date) => {
-      setShowDatePicker(Platform.OS === "ios");
-      if (selectedDate) {
-        setDeadline(selectedDate);
-      }
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    },
-    [],
-  );
-
-  const handleCreateQuest = useCallback(async () => {
-    if (!user || !hero) {
-      Alert.alert(t("common.error"), t("error.auth_or_hero_missing"));
-      return;
-    }
+  const validateForm = useCallback(() => {
     if (!title.trim()) {
       Alert.alert(t("common.error"), t("quest.error.title_required"));
-      return;
+      return false;
+    }
+    if (!deadlineDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      Alert.alert(t("common.error"), t("quest.error.deadline_invalid"));
+      return false;
     }
     const minutes = parseInt(estimatedMinutes, 10);
     if (isNaN(minutes) || minutes <= 0) {
       Alert.alert(t("common.error"), t("quest.error.estimated_minutes_invalid"));
-      return;
+      return false;
     }
-    if (deadline < new Date()) {
-      Alert.alert(t("common.error"), t("quest.error.deadline_past"));
+    return true;
+  }, [title, deadlineDate, estimatedMinutes]);
+
+  const handleSubmit = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    playSound("menu_confirm");
+
+    if (!user || !validateForm()) {
       return;
     }
 
-    setIsCreating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setLoading(true);
+    setError(null);
 
     try {
-      await createQuest(user.uid, hero.id, {
+      const questData = {
         title,
         subject,
         difficulty,
-        deadlineDate: deadline.toISOString().split("T")[0], // YYYY-MM-DD
-        estimatedMinutes: minutes,
-      });
-      Alert.alert(t("common.success"), t("quest.new.success"));
-      router.back();
-    } catch (error) {
-      console.error("Failed to create quest:", error);
-      Alert.alert(t("common.error"), t("error.unknown"));
-    } finally {
-      setIsCreating(false);
-    }
-  }, [user, hero, title, subject, difficulty, deadline, estimatedMinutes]);
+        deadlineDate,
+        estimatedMinutes: parseInt(estimatedMinutes, 10),
+      };
 
-  if (heroLoading) {
+      if (questId) {
+        await updateQuest(questId, questData);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        playSound("item_get");
+        Alert.alert(t("common.success"), t("quest.update_success"));
+      } else {
+        await createQuest(user.uid, user.uid, questData);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        playSound("item_get");
+        Alert.alert(t("common.success"), t("quest.create_success"));
+      }
+      router.replace("/(app)/quests");
+    } catch (err) {
+      console.error("Failed to save quest:", err);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      playSound("error");
+      setError(t("error.failed_to_save_quest"));
+      Alert.alert(t("common.error"), t("error.failed_to_save_quest"));
+    } finally {
+      setLoading(false);
+    }
+  }, [user, validateForm, title, subject, difficulty, deadlineDate, estimatedMinutes, questId]);
+
+  const handleCancel = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    playSound("menu_back");
+    router.back();
+  }, []);
+
+  if (initialLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
@@ -131,140 +156,120 @@ export default function NewQuestScreen() {
     );
   }
 
-  if (!hero) {
-    return (
-      <View style={[styles.center, { paddingTop: insets.top }]}>
-        <PixelText variant="body" color="danger" accessibilityLabel={t("error.hero_not_found")}>
-          {t("error.hero_not_found")}
-        </PixelText>
-        <PixelButton
-          label={t("common.back")}
-          variant="secondary"
-          onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel={t("common.back")}
-        />
-      </View>
-    );
-  }
+  const currentMonster = getMonster(subject, difficulty);
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 44 : 0}
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16, direction: isRTL ? "rtl" : "ltr" },
+      ]}
+      showsVerticalScrollIndicator={false}
+      accessibilityLabel={questId ? t("quest.edit_quest_screen") : t("quest.create_quest_screen")}
     >
-      <Stack.Screen
-        options={{
-          title: t("quest.new.title"),
-          headerBackTitleVisible: false,
-        }}
-      />
-      <ScrollView
-        style={styles.root}
-        contentContainerStyle={[
-          styles.content,
-          { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + SPACING.md, paddingBottom: insets.bottom + SPACING.xxl },
-        ]}
-        showsVerticalScrollIndicator={false}
-        accessibilityLabel={t("quest.new.accessibility.screen")}
-      >
-        <PixelCard variant="default">
-          <PixelText variant="body" color="cream" style={styles.formLabel} accessibilityLabel={t("quest.new.quest_title_label")}>
-            {t("quest.new.quest_title_label")}
-          </PixelText>
-          <PixelInput
+      <DQWindow title={questId ? t("quest.edit_quest") : t("quest.create_new")}>
+        {error && <DQMessageBox text={error} />}
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>{t("quest.title")}</Text>
+          <TextInput
+            style={styles.input}
             value={title}
             onChangeText={setTitle}
-            placeholder={t("quest.new.quest_title_placeholder")}
-            accessibilityLabel={t("quest.new.quest_title_label")}
-            returnKeyType="next"
+            placeholder={t("quest.placeholder.title")}
+            placeholderTextColor={COLORS.textSecondary}
+            accessibilityLabel={t("quest.title_input_label")}
           />
+        </View>
 
-          <PixelText variant="body" color="cream" style={styles.formLabel} accessibilityLabel={t("quest.new.subject_label")}>
-            {t("quest.new.subject_label")}
-          </PixelText>
-          <PixelPicker
-            selectedValue={subject}
-            onValueChange={(itemValue) => {
-              setSubject(itemValue as Subject);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-            items={subjects.map((s) => ({
-              label: t(`quest.subject.${s}`),
-              value: s,
-              accessibilityLabel: t(`quest.subject.${s}`),
-            }))}
-            accessibilityLabel={t("quest.new.subject_label")}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>{t("quest.subject")}</Text>
+          <View style={[styles.optionContainer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            {SUBJECT_OPTIONS.map((opt) => (
+              <DQCommandMenu.Item
+                key={opt}
+                label={t(`quest.subject.${opt}`)}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); playSound("menu_select"); setSubject(opt); }}
+                isActive={subject === opt}
+                accessibilityLabel={t(`quest.subject.${opt}`)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>{t("quest.difficulty")}</Text>
+          <View style={[styles.optionContainer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            {DIFFICULTY_OPTIONS.map((opt) => (
+              <DQCommandMenu.Item
+                key={opt}
+                label={t(`quest.difficulty.${opt}`)}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); playSound("menu_select"); setDifficulty(opt); }}
+                isActive={difficulty === opt}
+                accessibilityLabel={t(`quest.difficulty.${opt}`)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>{t("quest.deadline")}</Text>
+          <TextInput
+            style={styles.input}
+            value={deadlineDate}
+            onChangeText={setDeadlineDate}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={COLORS.textSecondary}
+            keyboardType="numbers-and-punctuation"
+            accessibilityLabel={t("quest.deadline_input_label")}
           />
+        </View>
 
-          <PixelText variant="body" color="cream" style={styles.formLabel} accessibilityLabel={t("quest.new.difficulty_label")}>
-            {t("quest.new.difficulty_label")}
-          </PixelText>
-          <PixelPicker
-            selectedValue={difficulty}
-            onValueChange={(itemValue) => {
-              setDifficulty(itemValue as Difficulty);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-            items={difficulties.map((d) => ({
-              label: t(`quest.difficulty.${d}`),
-              value: d,
-              accessibilityLabel: t(`quest.difficulty.${d}`),
-            }))}
-            accessibilityLabel={t("quest.new.difficulty_label")}
-          />
-
-          <PixelText variant="body" color="cream" style={styles.formLabel} accessibilityLabel={t("quest.new.deadline_label")}>
-            {t("quest.new.deadline_label")}
-          </PixelText>
-          <PixelButton
-            label={deadline.toLocaleDateString(getIsRTL() ? "ar" : "ja", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-            onPress={() => setShowDatePicker(true)}
-            variant="secondary"
-            style={styles.datePickerButton}
-            accessibilityLabel={t("quest.new.deadline_label")}
-          />
-          {showDatePicker && (
-            <DateTimePicker
-              value={deadline}
-              mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={onDateChange}
-              minimumDate={new Date()}
-              locale={getIsRTL() ? "ar" : "ja"}
-            />
-          )}
-
-          <PixelText variant="body" color="cream" style={styles.formLabel} accessibilityLabel={t("quest.new.estimated_minutes_label")}>
-            {t("quest.new.estimated_minutes_label")}
-          </PixelText>
-          <PixelInput
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>{t("quest.estimated_minutes")}</Text>
+          <TextInput
+            style={styles.input}
             value={estimatedMinutes}
             onChangeText={setEstimatedMinutes}
-            keyboardType="numeric"
             placeholder="30"
-            accessibilityLabel={t("quest.new.estimated_minutes_label")}
-            returnKeyType="done"
+            placeholderTextColor={COLORS.textSecondary}
+            keyboardType="numeric"
+            accessibilityLabel={t("quest.estimated_minutes_input_label")}
           />
+        </View>
+      </DQWindow>
 
-          <PixelButton
-            label={t("quest.new.create_button")}
-            onPress={handleCreateQuest}
-            variant="primary"
-            size="lg"
-            style={styles.createButton}
-            disabled={isCreating}
-            accessibilityLabel={t("quest.new.create_button")}
-            accessibilityState={{ busy: isCreating }}
-          />
-        </PixelCard>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <DQWindow title={t("quest.monster_preview")}>
+        <View style={styles.monsterPreview}>
+          <Text style={styles.monsterEmoji}>{currentMonster.emoji}</Text>
+          <Text style={styles.monsterName}>{t(currentMonster.nameKey)}</Text>
+        </View>
+      </DQWindow>
+
+      <DQCommandMenu
+        items={[
+          {
+            label: questId ? t("common.update") : t("common.create"),
+            onPress: handleSubmit,
+            isDisabled: loading,
+            accessibilityLabel: questId ? t("common.update") : t("common.create"),
+          },
+          {
+            label: t("common.cancel"),
+            onPress: handleCancel,
+            isDisabled: loading,
+            accessibilityLabel: t("common.cancel"),
+          },
+        ]}
+      />
+
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.saving")} />
+        </View>
+      )}
+    </ScrollView>
   );
 }
 
@@ -274,8 +279,8 @@ const styles = StyleSheet.create({
     backgroundColor: DQ_BG,
   },
   content: {
-    padding: SPACING.md,
-    gap: SPACING.lg,
+    padding: 16,
+    gap: 12,
   },
   center: {
     flex: 1,
@@ -283,18 +288,54 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: DQ_BG,
   },
-  backButton: {
-    marginTop: SPACING.md,
+  formGroup: {
+    marginBottom: 12,
   },
-  formLabel: {
-    marginTop: SPACING.md,
-    marginBottom: SPACING.xs,
+  label: {
+    color: COLORS.textPrimary,
+    fontSize: 18,
+    fontFamily: FONT_FAMILY,
+    marginBottom: 8,
   },
-  datePickerButton: {
-    marginTop: SPACING.xs,
-    marginBottom: SPACING.md,
+  input: {
+    backgroundColor: COLORS.inputBackground,
+    color: COLORS.textPrimary,
+    fontSize: 18,
+    fontFamily: FONT_FAMILY,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
+    borderRadius: 4,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
   },
-  createButton: {
-    marginTop: SPACING.xl,
+  optionContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  monsterPreview: {
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  monsterEmoji: {
+    fontSize: 60,
+    marginBottom: 10,
+  },
+  monsterName: {
+    color: COLORS.textPrimary,
+    fontSize: 24,
+    fontFamily: FONT_FAMILY,
+    fontWeight: "bold",
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
   },
 });

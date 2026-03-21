@@ -28,6 +28,7 @@ export const DQCommandMenu: React.FC<DQCommandMenuProps> = React.memo(
               variant={item.variant || "primary"}
               disabled={item.disabled}
               style={styles.menuButton}
+              accessibilityLabel={item.label}
             >
               {item.label}
             </PixelButton>

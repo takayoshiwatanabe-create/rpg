@@ -4,6 +4,7 @@ import { DQWindow } from "./DQWindow";
 import { PixelText } from "./PixelText";
 import { COLORS, FONT_SIZES, SPACING } from "@/constants/theme";
 import { useIsRTL } from "@/hooks/useIsRTL";
+import { useSound } from "@/hooks/useSound"; // Import useSound
 
 interface DQMessageBoxProps {
   message: string;
@@ -25,6 +26,7 @@ export const DQMessageBox: React.FC<DQMessageBoxProps> = ({
   const isTypingComplete = useRef(false);
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isRTL = useIsRTL();
+  const { play } = useSound(); // Initialize useSound
 
   const startTyping = useCallback(() => {
     isTypingComplete.current = false;
@@ -47,10 +49,11 @@ export const DQMessageBox: React.FC<DQMessageBoxProps> = ({
           return prevIndex;
         }
         setDisplayedText(message.substring(0, nextIndex));
+        play("messageAdvance"); // Play sound for each character
         return nextIndex;
       });
     }, typingSpeed);
-  }, [message, typingSpeed, onFinishTyping]);
+  }, [message, typingSpeed, onFinishTyping, play]); // Add play to dependencies
 
   useEffect(() => {
     startTyping();
@@ -70,6 +73,7 @@ export const DQMessageBox: React.FC<DQMessageBoxProps> = ({
       isTypingComplete.current = true;
       onFinishTyping?.();
     } else if (isTypingComplete.current) {
+      play("confirm"); // Play confirm sound when message is complete and tapped
       onPress?.();
     }
   };

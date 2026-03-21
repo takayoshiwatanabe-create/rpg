@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from "@vitest/globals";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import CampScreen from "./camp";
 import { router } from "expo-router";
-import { useAuth } from "../../../hooks/useAuth"; // Corrected import path
-import { subscribeToHero, subscribeToActiveQuests } from "../../../lib/firestore"; // Corrected import path
-import { t } from "../../../i18n"; // Corrected import path
-import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "../../../types"; // Corrected import path
-import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native"; // Import missing components
+import { useAuth } from "../../../src/hooks/useAuth";
+import { subscribeToHero, subscribeToActiveQuests } from "../../../src/lib/firestore";
+import { t } from "../../../src/i18n/i18n"; // Corrected import path
+import { HeroProfile, Quest, Subject, Difficulty, QuestStatus } from "../../../src/types";
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -14,14 +14,14 @@ vi.mock("expo-router", () => ({
     push: vi.fn(),
   },
 }));
-vi.mock("../../../hooks/useAuth", () => ({
+vi.mock("../../../src/hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
-vi.mock("../../../lib/firestore", () => ({
+vi.mock("../../../src/lib/firestore", () => ({
   subscribeToHero: vi.fn(),
   subscribeToActiveQuests: vi.fn(),
 }));
-vi.mock("../../../i18n", () => ({
+vi.mock("../../../src/i18n/i18n", () => ({ // Corrected import path
   t: vi.fn((key: string, params?: Record<string, any>) => {
     if (key === "dq.camp.greeting") return `ようこそ、${params?.name}！`;
     if (key.startsWith("quest.subject.")) return key.split(".").pop();
@@ -57,7 +57,7 @@ vi.mock("../../../i18n", () => ({
   }),
   getIsRTL: vi.fn(() => false),
 }));
-vi.mock("../../../components/ui", () => ({
+vi.mock("../../../src/components/ui", () => ({
   DQWindow: ({ children, title }: { children: React.ReactNode; title?: string }) => (
     <View>
       {title && <Text>{title}</Text>}

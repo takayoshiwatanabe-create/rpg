@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
-import { useAuth } from "../../hooks/useAuth"; // Corrected import path
-import { COLORS } from "../../constants/theme"; // Corrected import path
+import { useAuth } from "../../src/hooks/useAuth";
+import { COLORS } from "../../src/constants/theme";
 
 /**
  * Index route for the authenticated group.
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: COLORS.bgPrimary, // Corrected property name
   },
 });
 

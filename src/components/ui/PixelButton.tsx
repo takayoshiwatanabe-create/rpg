@@ -72,7 +72,7 @@ export const PixelButton: React.FC<PixelButtonProps> = ({
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled }}
-      accessibilityLabel={accessibilityLabel || (typeof children === "string" ? children : "Button")}
+      accessibilityLabel={accessibilityLabel || (typeof children === "string" ? children : undefined)}
       accessibilityHint={accessibilityHint}
     >
       {typeof children === "string" ? (
