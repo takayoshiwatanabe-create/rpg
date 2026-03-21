@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, View, Text, Platform } from "react-native";
+import { Animated, StyleSheet, View, Text, Platform, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../../src/hooks/useAuth";
@@ -10,8 +10,10 @@ import { expProgressInCurrentLevel } from "../../../src/lib/expCalculator";
 import type { HeroProfile } from "../../../src/types";
 import { useReducedMotion } from "../../../src/hooks/useReducedMotion";
 import { COLORS } from "../../../src/constants/theme";
+import * as Haptics from "expo-haptics";
+import { playSound } from "../../../src/lib/audio";
 
-const DQ_BG = COLORS.bgPrimary; // Corrected property name
+const DQ_BG = COLORS.backgroundPrimary;
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
@@ -85,6 +87,8 @@ export default function BattleResultScreen() {
   }, [user, fadeAnim, expBarAnim, reducedMotion]);
 
   const handleReturnToCamp = () => {
+    playSound("menu_select");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.replace("/(app)/camp");
   };
 
@@ -102,6 +106,8 @@ export default function BattleResultScreen() {
 
   const handleMessageComplete = () => {
     if (!isLastMessage) {
+      playSound("menu_select");
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setMessageStep((prev) => prev + 1);
     }
   };
@@ -109,7 +115,7 @@ export default function BattleResultScreen() {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <Text style={styles.loadingText}>{t("common.loading")}...</Text>
+        <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
       </View>
     );
   }

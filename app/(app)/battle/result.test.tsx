@@ -7,7 +7,7 @@ import { subscribeToHero } from "../../../src/lib/firestore";
 import { t } from "../../../src/i18n/i18n"; // Corrected import path
 import { HeroProfile } from "../../../src/types";
 import { useReducedMotion } from "../../../src/hooks/useReducedMotion";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native"; // Added ActivityIndicator
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -79,6 +79,7 @@ vi.mock("react-native", async (importOriginal) => {
     View: actual.View,
     StyleSheet: actual.StyleSheet,
     TouchableOpacity: actual.TouchableOpacity,
+    ActivityIndicator: actual.ActivityIndicator, // Added ActivityIndicator
   };
 });
 vi.mock("../../../src/components/ui", () => ({
@@ -100,7 +101,7 @@ vi.mock("../../../src/components/ui", () => ({
   DQMessageBox: ({ text, onComplete }: { text: string; onComplete?: () => void }) => (
     <View>
       <Text onPress={onComplete}>{text}</Text>
-    </View>
+    </DQMessageBox>
   ),
 }));
 
@@ -139,7 +140,7 @@ describe("BattleResultScreen", () => {
   it("renders loading state initially", () => {
     (subscribeToHero as vi.Mock).mockReturnValueOnce(vi.fn()); // Prevent immediate callback
     render(<BattleResultScreen />);
-    expect(screen.getByText("読み込み中")).toBeVisible();
+    expect(screen.getByLabelText("読み込み中")).toBeVisible();
   });
 
   it("renders reward details and hero stats", async () => {

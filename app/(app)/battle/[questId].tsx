@@ -8,6 +8,7 @@ import {
   Text,
   Platform,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,8 +31,10 @@ import { getMonster } from "../../../src/constants/monsters"; // Corrected impor
 import type { Quest } from "../../../src/types";
 import { useReducedMotion } from "../../../src/hooks/useReducedMotion";
 import { COLORS } from "../../../src/constants/theme";
+import * as Haptics from "expo-haptics";
+import { playSound } from "../../../src/lib/audio";
 
-const DQ_BATTLE_BG = COLORS.bgPrimary; // Corrected property name
+const DQ_BATTLE_BG = COLORS.backgroundPrimary;
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
@@ -81,12 +84,16 @@ export default function BattleScreen() {
   useEffect(() => {
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
       if (battleState === "inProgress") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         Alert.alert(
           t("battle.exit_confirm_title"),
           t("battle.exit_confirm_message"),
           [
             { text: t("common.cancel"), style: "cancel" },
-            { text: t("common.exit"), style: "destructive", onPress: () => router.back() },
+            { text: t("common.exit"), style: "destructive", onPress: () => {
+              playSound("menu_cancel");
+              router.back();
+            }},
           ],
           { cancelable: false },
         );
@@ -166,6 +173,9 @@ export default function BattleScreen() {
       return;
     }
 
+    playSound("attack");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     // Show attack message
     const msgKey = ATTACK_MESSAGES[attackMsgIndex.current % ATTACK_MESSAGES.length]!;
     attackMsgIndex.current++;
@@ -200,6 +210,9 @@ export default function BattleScreen() {
 
   const handleStartBattle = useCallback(async () => {
     if (!quest || !user) return;
+    playSound("battle_start");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
     setBattleState("inProgress");
     setIsTimerRunning(true);
     setElapsedSeconds(0);
@@ -237,6 +250,9 @@ export default function BattleScreen() {
 
   const handleCompleteQuest = useCallback(async () => {
     if (!quest || !user || !battleStartTime.current) return;
+
+    playSound("battle_win");
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     setIsTimerRunning(false);
     setBattleState("completed");
@@ -279,7 +295,7 @@ export default function BattleScreen() {
   if (battleState === "loading") {
     return (
       <View style={styles.center}>
-        <Text style={styles.loadingText}>{t("common.loading")}...</Text>
+        <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
       </View>
     );
   }
@@ -289,7 +305,10 @@ export default function BattleScreen() {
       <View style={[styles.center, { paddingTop: insets.top }]}>
         <DQMessageBox text={t("battle.error.notFound")} />
         <DQCommandMenu
-          items={[{ label: t("common.back"), onPress: () => router.back(), accessibilityLabel: t("common.back") }]}
+          items={[{ label: t("common.back"), onPress: () => {
+            playSound("menu_cancel");
+            router.back();
+          }, accessibilityLabel: t("common.back") }]}
           style={{ marginTop: 16 }}
         />
       </View>
@@ -321,7 +340,10 @@ export default function BattleScreen() {
         <DQCommandMenu
           items={[
             { label: t("dq.battle.fight"), onPress: handleStartBattle, accessibilityLabel: t("dq.battle.fight") },
-            { label: t("dq.battle.run"), onPress: () => router.back(), accessibilityLabel: t("dq.battle.run") },
+            { label: t("dq.battle.run"), onPress: () => {
+              playSound("menu_cancel");
+              router.back();
+            }, accessibilityLabel: t("dq.battle.run") },
           ]}
         />
       </View>
@@ -419,7 +441,10 @@ export default function BattleScreen() {
         </View>
         <DQMessageBox text={t("common.error")} speed={60} />
         <DQCommandMenu
-          items={[{ label: t("common.back"), onPress: () => router.replace("/(app)/camp"), accessibilityLabel: t("common.back") }]}
+          items={[{ label: t("common.back"), onPress: () => {
+            playSound("menu_cancel");
+            router.replace("/(app)/camp");
+          }, accessibilityLabel: t("common.back") }]}
         />
       </View>
     );
@@ -428,7 +453,7 @@ export default function BattleScreen() {
   // --- COMPLETED state (redirect should happen, but fallback) ---
   return (
     <View style={styles.center}>
-      <Text style={styles.loadingText}>{t("common.loading")}...</Text>
+      <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
     </View>
   );
 }

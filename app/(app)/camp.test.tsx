@@ -76,7 +76,7 @@ vi.mock("../../../src/components/ui", () => ({
   DQMessageBox: ({ text }: { text: string }) => (
     <View>
       <Text>{text}</Text>
-    </View>
+    </DQMessageBox>
   ),
 }));
 vi.mock("react-native", async (importOriginal) => {
@@ -185,7 +185,7 @@ describe("CampScreen", () => {
   it("renders active quests count", async () => {
     render(<CampScreen />);
     await waitFor(() => {
-      expect(screen.getByText("アクティブクエスト: 2")).toBeVisible();
+      expect(screen.getByText("⚔️ アクティブクエスト: 2")).toBeVisible();
     });
   });
 
@@ -214,7 +214,7 @@ describe("CampScreen", () => {
     await waitFor(() => {
       expect(screen.getByText("攻撃力")).toBeVisible();
       expect(screen.getByText("防御力")).toBeVisible();
-      expect(screen.getByText("経験値")).toBeVisible(); // Total EXP
+      expect(screen.getByText("総経験値")).toBeVisible(); // Total EXP
     });
 
     // Press "詳細ステータス" again to hide

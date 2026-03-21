@@ -5,7 +5,7 @@ import { useAuth } from "../../src/hooks/useAuth";
 import { getIsRTL } from "../../src/i18n/i18n"; // Corrected import path
 import { COLORS } from "../../src/constants/theme";
 
-const DQ_BG = COLORS.bgPrimary; // Corrected property name
+const DQ_BG = COLORS.backgroundPrimary; // Corrected property name
 
 export default function AppLayout() {
   const { user, isLoading } = useAuth();

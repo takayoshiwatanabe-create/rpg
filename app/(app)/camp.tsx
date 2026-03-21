@@ -22,7 +22,7 @@ import { COLORS } from "../../src/constants/theme";
 import * as Haptics from "expo-haptics";
 import { playSound } from "../../src/lib/audio";
 
-const DQ_BG = COLORS.bgPrimary; // Corrected property name
+const DQ_BG = COLORS.backgroundPrimary; // Corrected property name
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",

@@ -12,7 +12,7 @@ import {
 import { t } from "../../../src/i18n/i18n"; // Corrected import path
 import { QuestStatus, Difficulty, Subject } from "../../../src/types";
 import { useReducedMotion } from "../../../src/hooks/useReducedMotion";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from "react-native"; // Added ActivityIndicator and Alert
 
 // Mock necessary modules
 vi.mock("expo-router", () => ({
@@ -72,6 +72,7 @@ vi.mock("react-native", async (importOriginal) => {
     Text: actual.Text,
     View: actual.View,
     StyleSheet: actual.StyleSheet,
+    ActivityIndicator: actual.ActivityIndicator, // Added ActivityIndicator
   };
 });
 vi.mock("../../../src/components/ui", () => ({
@@ -90,7 +91,7 @@ vi.mock("../../../src/components/ui", () => ({
   DQMessageBox: ({ text, onComplete }: { text: string; onComplete?: () => void }) => (
     <View>
       <Text onPress={onComplete}>{text}</Text>
-    </View>
+    </DQMessageBox>
   ),
 }));
 
@@ -126,7 +127,7 @@ describe("BattleScreen", () => {
   it("renders loading state initially", () => {
     (subscribeToQuest as vi.Mock).mockReturnValueOnce(vi.fn()); // Prevent immediate callback
     render(<BattleScreen />);
-    expect(screen.getByText("common.loading")).toBeVisible();
+    expect(screen.getByLabelText("common.loading")).toBeVisible();
   });
 
   it("renders quest details when loaded", async () => {
@@ -228,7 +229,7 @@ describe("BattleScreen", () => {
     await waitFor(() => screen.getByText("dq.battle.done"));
 
     // Simulate pressing the 'Exit' button in the alert
-    const exitAction = (require("react-native").Alert.alert as typeof vi.fn).mock
+    const exitAction = (require("react-native").Alert.alert as typeof Alert.alert).mock
       .calls[0][2][1].onPress;
     exitAction();
 
@@ -236,7 +237,7 @@ describe("BattleScreen", () => {
   });
 
   it("applies reduced motion preference", async () => {
-    (useReducedMotion as typeof vi.fn).mockReturnValue(true);
+    (useReducedMotion as vi.Mock).mockReturnValue(true);
     render(<BattleScreen />);
     await waitFor(() => {
       expect(screen.getByText("dq.battle.fight")).toBeVisible();
