@@ -20,6 +20,10 @@ export default function AppLayout() {
   useEffect(() => {
     if (I18nManager.isRTL !== isRTL) {
       I18nManager.forceRTL(isRTL);
+      // On web, we might need to re-render the whole app or refresh
+      // For native, I18nManager.forceRTL usually takes effect on next layout pass
+      // For Expo Go, a full app reload might be needed for I18nManager changes to fully apply.
+      // For bare workflow, it's more consistent.
     }
   }, [isRTL]);
 
@@ -68,4 +72,3 @@ const styles = StyleSheet.create({
     backgroundColor: DQ_BG,
   },
 });
-

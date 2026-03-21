@@ -6,37 +6,28 @@ import {
   ActivityIndicator,
   Platform,
   Text,
+  TouchableOpacity,
 } from "react-native";
-import { Stack, router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
 import { subscribeToActiveQuests } from "@/lib/firestore";
 import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
-import { t, getIsRTL } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
-import { Quest, Subject, Difficulty, QuestStatus } from "@/types";
-import * as Haptics from "expo-haptics";
+import { t, getIsRTL, getLang } from "@/i18n";
+import type { Quest, Subject, Difficulty } from "@/types";
+import { COLORS, SPACING, PIXEL_BORDER } from "@/constants/theme";
+import { MaterialIcons } from "@expo/vector-icons";
 
+const DQ_BG = COLORS.bgDark;
 const FONT_FAMILY = Platform.select({
   ios: "Courier New",
   android: "monospace",
   default: "monospace",
 });
 
-type FilterKey = "all" | "pending" | "inProgress" | "completed";
-
-const FILTERS: FilterKey[] = ["all", "pending", "inProgress", "completed"];
-
-function filterQuests(quests: Quest[], filter: FilterKey): Quest[] {
-  switch (filter) {
-    case "pending":
-    case "inProgress":
-    case "completed":
-      return quests.filter((q) => q.status === filter);
-    default:
-      return quests;
-  }
-}
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function formatDeadline(dateStr: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
@@ -46,53 +37,9 @@ function formatDeadline(dateStr: string, locale: string): string {
   }).format(new Date(dateStr));
 }
 
-type FilterTabsProps = {
-  current: FilterKey;
-  onChange: (f: FilterKey) => void;
-};
-
-function FilterTabs({ current, onChange }: FilterTabsProps) {
-  const filterLabel = (f: FilterKey) => {
-    if (f === "all") return t("quest.filter.all");
-    if (f === "pending") return t("quest.status.pending");
-    if (f === "inProgress") return t("quest.status.inProgress");
-    return t("quest.completed");
-  };
-
-  return (
-    <View style={tabStyles.row}>
-      {FILTERS.map((f) => (
-        <DQCommandMenu
-          key={f}
-          items={[{
-            label: filterLabel(f),
-            onPress: () => onChange(f),
-            accessibilityLabel: filterLabel(f),
-          }]}
-          style={current === f ? tabStyles.tabButtonActive : tabStyles.tabButton}
-        />
-      ))}
-    </View>
-  );
-}
-
-const tabStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    gap: SPACING.xs,
-    justifyContent: "center",
-    flexWrap: "wrap",
-  },
-  tabButton: {
-    flex: 1,
-    minWidth: 80,
-  },
-  tabButtonActive: {
-    flex: 1,
-    minWidth: 80,
-    backgroundColor: COLORS.primary, // Example active style
-  },
-});
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
 
 type QuestCardProps = {
   quest: Quest;
@@ -103,61 +50,65 @@ type QuestCardProps = {
 function QuestCard({ quest, onPress, isRTL }: QuestCardProps) {
   const subjectColor = COLORS[quest.subject as keyof typeof COLORS] ?? COLORS.other;
   const difficultyColor = COLORS[quest.difficulty as keyof typeof COLORS] ?? COLORS.normal;
-  const statusColor =
-    quest.status === "pending"
-      ? COLORS.gold
-      : quest.status === "inProgress"
-      ? COLORS.primary
-      : COLORS.exp;
+  const isOverdue = new Date(quest.deadlineDate) < new Date();
 
   return (
-    <DQWindow style={questCardStyles.card}>
+    <TouchableOpacity
+      style={questCardStyles.card}
+      onPress={() => onPress(quest.id)}
+      activeOpacity={0.7}
+      accessibilityLabel={t("quest.accessibility.quest_card", { title: quest.title })}
+      accessibilityRole="button"
+    >
       <View style={[questCardStyles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <View style={[questCardStyles.badge, { borderColor: subjectColor }]}>
-          <Text style={{ ...questCardStyles.badgeText, color: subjectColor }}>
+          <Text style={[questCardStyles.badgeText, { color: subjectColor }]} accessibilityLabel={t(`quest.subject.${quest.subject}`)}>
             {t(`quest.subject.${quest.subject}`)}
           </Text>
         </View>
         <View style={[questCardStyles.badge, { borderColor: difficultyColor }]}>
-          <Text style={{ ...questCardStyles.badgeText, color: difficultyColor }}>
+          <Text style={[questCardStyles.badgeText, { color: difficultyColor }]} accessibilityLabel={t(`quest.difficulty.${quest.difficulty}`)}>
             {t(`quest.difficulty.${quest.difficulty}`)}
           </Text>
         </View>
         <View style={questCardStyles.spacer} />
-        <Text style={questCardStyles.deadlineText}>
-          {formatDeadline(quest.deadlineDate, getIsRTL() ? "ar" : "ja")}
+        {isOverdue && (
+          <Text style={questCardStyles.overdueText} accessibilityLabel={t("quest.overdue")}>
+            {"⚠️ "}{t("quest.overdue")}
+          </Text>
+        )}
+        <Text style={questCardStyles.deadlineText} accessibilityLabel={formatDeadline(quest.deadlineDate, getLang())}>
+          {formatDeadline(quest.deadlineDate, getLang())}
         </Text>
       </View>
 
-      <Text style={questCardStyles.title}>{quest.title}</Text>
+      <Text style={questCardStyles.title} accessibilityLabel={quest.title}>
+        {quest.title}
+      </Text>
 
-      <View style={[questCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <Text style={questCardStyles.detailLabel}>{t("quest.estimated_minutes")}:</Text>
-        <Text style={questCardStyles.detailValue}>
-          {quest.estimatedMinutes} {t("common.minutes")}
+      <View style={[questCardStyles.rewardRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <Text style={questCardStyles.rewardText} accessibilityLabel={t("hero.exp_reward", { exp: quest.expReward })}>
+          {"✨ "}{quest.expReward} EXP
+        </Text>
+        <Text style={questCardStyles.rewardText} accessibilityLabel={t("hero.gold_reward", { gold: quest.goldReward })}>
+          {"💰 "}{quest.goldReward} G
         </Text>
       </View>
-
-      <View style={[questCardStyles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-        <Text style={questCardStyles.detailLabel}>{t("quest.status")}:</Text>
-        <Text style={{ ...questCardStyles.detailValue, color: statusColor }}>
-          {t(`quest.status.${quest.status}`)}
-        </Text>
-      </View>
-
-      <DQCommandMenu
-        items={[{ label: t("common.view_details"), onPress: () => onPress(quest.id), accessibilityLabel: t("common.view_details") }]}
-        style={questCardStyles.viewDetailsButton}
-      />
-    </DQWindow>
+    </TouchableOpacity>
   );
 }
 
 const questCardStyles = StyleSheet.create({
   card: {
+    backgroundColor: COLORS.windowBackground,
+    borderWidth: 2,
+    borderColor: COLORS.windowBorder,
+    borderRadius: PIXEL_BORDER.borderRadius,
+    padding: SPACING.md,
     marginBottom: SPACING.xs,
   },
   header: {
+    flexDirection: "row",
     alignItems: "center",
     gap: SPACING.xs,
     marginBottom: SPACING.xs,
@@ -169,44 +120,46 @@ const questCardStyles = StyleSheet.create({
     paddingVertical: 2,
   },
   badgeText: {
-    fontSize: FONT_SIZES.sm,
     fontFamily: FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: "bold",
   },
   spacer: {
     flex: 1,
   },
-  deadlineText: {
-    color: COLORS.gray,
-    fontSize: FONT_SIZES.sm,
+  overdueText: {
     fontFamily: FONT_FAMILY,
+    fontSize: 12,
+    color: COLORS.danger,
+    marginEnd: SPACING.xs,
+  },
+  deadlineText: {
+    fontFamily: FONT_FAMILY,
+    fontSize: 12,
+    color: COLORS.gray,
   },
   title: {
-    color: COLORS.cream,
-    fontSize: FONT_SIZES.lg,
     fontFamily: FONT_FAMILY,
+    fontSize: 18,
     fontWeight: "bold",
+    color: COLORS.cream,
     marginBottom: SPACING.sm,
   },
-  detailRow: {
+  rewardRow: {
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.xs,
   },
-  detailLabel: {
-    color: COLORS.cream,
-    fontSize: FONT_SIZES.md,
+  rewardText: {
     fontFamily: FONT_FAMILY,
-  },
-  detailValue: {
-    color: COLORS.white,
-    fontSize: FONT_SIZES.md,
-    fontFamily: FONT_FAMILY,
-    fontWeight: "bold",
-  },
-  viewDetailsButton: {
-    marginTop: SPACING.md,
+    fontSize: 16,
+    color: COLORS.gold,
   },
 });
+
+// ---------------------------------------------------------------------------
+// Main screen
+// ---------------------------------------------------------------------------
 
 export default function QuestsScreen() {
   const { user } = useAuth();
@@ -214,39 +167,34 @@ export default function QuestsScreen() {
   const insets = useSafeAreaInsets();
 
   const [quests, setQuests] = useState<Quest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterKey>("pending");
+  const [loading, setLoading] = useState(true);
 
-  const heroId = user?.uid ?? "";
+  const heroId = user?.uid ?? ""; // Assuming heroId is same as userId for simplicity
 
   useEffect(() => {
     if (!user) {
-      setIsLoading(false);
+      setLoading(false);
       return;
     }
-    const unsub = subscribeToActiveQuests(heroId, (q: Quest[]) => {
-      setQuests(q);
-      setIsLoading(false);
+    const unsub = subscribeToActiveQuests(heroId, (activeQuests) => {
+      setQuests(activeQuests);
+      setLoading(false);
     });
     return unsub;
   }, [user, heroId]);
 
-  const handleViewQuestDetails = useCallback((questId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/(app)/quests/${questId}`);
+  const handlePressQuest = useCallback((questId: string) => {
+    router.push({ pathname: "/(app)/battle/[questId]", params: { questId } });
   }, []);
 
   const handleCreateNewQuest = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push("/(app)/quests/new");
   }, []);
 
-  const filteredQuests = filterQuests(quests, filter);
-
-  if (isLoading) {
+  if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={COLORS.gold} size="large" />
+        <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
       </View>
     );
   }
@@ -256,43 +204,76 @@ export default function QuestsScreen() {
       <Stack.Screen
         options={{
           title: t("nav.quests"),
-          headerShown: false, // Custom header for DQ style
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ padding: SPACING.xs }}
+              accessibilityLabel={t("common.back")}
+            >
+              <MaterialIcons name={isRTL ? "arrow-forward-ios" : "arrow-back-ios"} size={24} color={COLORS.cream} />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={handleCreateNewQuest}
+              style={{ padding: SPACING.xs }}
+              accessibilityLabel={t("quest.create_new")}
+            >
+              <MaterialIcons name="add-circle-outline" size={24} color={COLORS.cream} />
+            </TouchableOpacity>
+          ),
+          headerStyle: {
+            backgroundColor: COLORS.bgDark,
+          },
+          headerTitleStyle: {
+            fontFamily: FONT_FAMILY,
+            color: COLORS.gold,
+            fontSize: 20,
+          },
         }}
       />
       <ScrollView
         style={styles.root}
         contentContainerStyle={[
           styles.content,
-          { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 },
+          { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + SPACING.md, paddingBottom: insets.bottom + SPACING.xxl },
         ]}
         showsVerticalScrollIndicator={false}
+        accessibilityLabel={t("nav.quests")}
       >
-        <DQMessageBox text={t("dq.quests.message")} speed={40} />
-
-        <DQWindow title={t("quest.filter.label")}>
-          <FilterTabs current={filter} onChange={setFilter} />
-        </DQWindow>
-
-        {filteredQuests.length === 0 ? (
-          <DQWindow>
-            <Text style={styles.emptyText}>
-              {filter === "pending"
-                ? t("dq.quests.no_pending")
-                : t("dq.quests.no_quests_found")}
-            </Text>
-          </DQWindow>
+        {quests.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>{"✨"}</Text>
+            <DQMessageBox
+              text={t("quest.no_quests_yet")}
+              speed={40}
+            />
+            <DQCommandMenu
+              items={[
+                { label: t("quest.create_new"), onPress: handleCreateNewQuest, accessibilityLabel: t("quest.create_new") },
+                { label: t("common.back"), onPress: () => router.back(), accessibilityLabel: t("common.back") },
+              ]}
+            />
+          </View>
         ) : (
-          filteredQuests.map((q) => (
-            <QuestCard key={q.id} quest={q} onPress={handleViewQuestDetails} isRTL={isRTL} />
-          ))
+          <>
+            <DQMessageBox
+              text={t("quest.choose_your_quest")}
+              speed={40}
+            />
+            <DQWindow title={t("quest.active_quests")}>
+              {quests.map((quest) => (
+                <QuestCard key={quest.id} quest={quest} onPress={handlePressQuest} isRTL={isRTL} />
+              ))}
+            </DQWindow>
+            <DQCommandMenu
+              items={[
+                { label: t("quest.create_new"), onPress: handleCreateNewQuest, accessibilityLabel: t("quest.create_new") },
+                { label: t("common.back"), onPress: () => router.back(), accessibilityLabel: t("common.back") },
+              ]}
+            />
+          </>
         )}
-
-        <DQCommandMenu
-          items={[
-            { label: t("dq.quests.create_new"), onPress: handleCreateNewQuest, accessibilityLabel: t("dq.quests.create_new") },
-            { label: t("common.back"), onPress: () => router.back(), accessibilityLabel: t("common.back") },
-          ]}
-        />
       </ScrollView>
     </>
   );
@@ -301,23 +282,27 @@ export default function QuestsScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
   content: {
-    padding: 16,
-    gap: 12,
+    padding: SPACING.md,
+    gap: SPACING.md,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: DQ_BG,
   },
-  emptyText: {
-    color: COLORS.gray,
-    fontSize: FONT_SIZES.md,
-    fontFamily: FONT_FAMILY,
-    textAlign: "center",
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: SPACING.md,
+    minHeight: 300, // Ensure it takes up enough space
+  },
+  emptyEmoji: {
+    fontSize: 60,
+    marginBottom: SPACING.sm,
   },
 });
-

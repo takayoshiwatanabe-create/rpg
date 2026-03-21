@@ -78,7 +78,7 @@ export default function CampScreen() {
   if (heroLoading) {
     return (
       <View style={styles.center} testID="activity-indicator">
-        <ActivityIndicator color={COLORS.gold} size="large" />
+        <ActivityIndicator color={COLORS.gold} size="large" accessibilityLabel={t("common.loading")} />
       </View>
     );
   }
@@ -108,13 +108,13 @@ export default function CampScreen() {
       {/* Hero Status Window — always visible */}
       <DQWindow title={t("hero.status")}>
         {/* Name + Level */}
-        <View style={styles.statusRow}>
+        <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
           <Text style={styles.heroName} accessibilityLabel={t("hero.name_label", { name: heroName })}>{heroName}</Text>
           <Text style={styles.levelText} accessibilityLabel={t("hero.level_label", { level: hero?.level ?? 1 })}>Lv.{hero?.level ?? 1}</Text>
         </View>
 
         {/* EXP bar — always visible, key growth indicator */}
-        <View style={styles.barRow}>
+        <View style={[styles.barRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
           <Text style={styles.barLabel} accessibilityLabel={t("hero.exp_label")}>EXP</Text>
           <View style={styles.barContainer} accessibilityLabel={t("hero.exp_progress_label", { current: expProgress.current, required: expProgress.required })}>
             <View style={[styles.bar, styles.barExp, { flex: expRatio || 0.01 }]} />
@@ -126,7 +126,7 @@ export default function CampScreen() {
         </View>
 
         {/* HP bar */}
-        <View style={styles.barRow}>
+        <View style={[styles.barRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
           <Text style={styles.barLabel} accessibilityLabel={t("hero.hp_label")}>HP</Text>
           <View style={styles.barContainer} accessibilityLabel={t("hero.hp_value_label", { current: hero?.hp ?? 0, max: hero?.maxHp ?? 0 })}>
             <View style={[styles.bar, styles.barHp, { flex: hero ? hero.hp / hero.maxHp : 1 }]} />
@@ -136,7 +136,7 @@ export default function CampScreen() {
         </View>
 
         {/* MP bar */}
-        <View style={styles.barRow}>
+        <View style={[styles.barRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
           <Text style={styles.barLabel} accessibilityLabel={t("hero.mp_label")}>MP</Text>
           <View style={styles.barContainer} accessibilityLabel={t("hero.mp_value_label", { current: hero?.mp ?? 0, max: hero?.maxMp ?? 0 })}>
             <View style={[styles.bar, styles.barMp, { flex: hero ? hero.mp / hero.maxMp : 1 }]} />
@@ -146,7 +146,7 @@ export default function CampScreen() {
         </View>
 
         {/* Gold */}
-        <View style={styles.statusRow}>
+        <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
           <Text style={styles.statusLabel} accessibilityLabel={t("hero.gold_label")}>{"💰 "}{t("hero.gold")}</Text>
           <Text style={styles.goldValue} accessibilityLabel={t("hero.gold_value_label", { gold: hero?.gold ?? 0 })}>{hero?.gold?.toLocaleString() ?? 0} G</Text>
         </View>
@@ -155,15 +155,15 @@ export default function CampScreen() {
       {/* Extended Status (toggle) — attack/defense details */}
       {showExtendedStatus && hero && (
         <DQWindow title={t("dq.camp.view_status")}>
-          <View style={styles.statusRow}>
+          <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
             <Text style={styles.statusLabel} accessibilityLabel={t("hero.attack_label")}>{"⚔️ "}{t("hero.attack")}</Text>
             <Text style={styles.statusValue}>{hero.attack}</Text>
           </View>
-          <View style={styles.statusRow}>
+          <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
             <Text style={styles.statusLabel} accessibilityLabel={t("hero.defense_label")}>{"🛡 "}{t("hero.defense")}</Text>
             <Text style={styles.statusValue}>{hero.defense}</Text>
           </View>
-          <View style={styles.statusRow}>
+          <View style={[styles.statusRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
             <Text style={styles.statusLabel} accessibilityLabel={t("hero.total_exp_label")}>{"✨ "}{t("hero.exp")}</Text>
             <Text style={styles.statusValue}>{hero.totalExp}</Text>
           </View>
@@ -289,4 +289,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-

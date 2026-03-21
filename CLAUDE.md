@@ -1,16 +1,30 @@
 ```diff
 --- a/CLAUDE.md
 +++ b/CLAUDE.md
-@@ -107,7 +107,7 @@
- firestore/
- ├── users/{userId}
- │   ├── profile          # ユーザー基本情報
--│   ├── hero             # 勇者ステータス
-+│   ├── hero             # 勇者ステータス (Hero stats)
- │   ├── subscription     # サブスク状態
- │   └── settings         # アプリ設定（言語等）
+@@ -107,6 +107,13 @@
+ ├── quests/{questId}     # 宿題（クエスト）
  │
-@@ -124,7 +124,7 @@
+ ├── battleSessions/{
++│   ├── {battleSessionId} # バトルセッション
++│
++├── monsters/{monsterId} # モンスター情報（静的データ）
++│
++├── items/{itemId}       # アイテム情報（静的データ）
++│
++├── skills/{skillId}     # スキル情報（静的データ）
+ 
+ ## Development Instructions
+ N/A
+@@ -124,7 +131,7 @@
+ - **UI/UX**: プロフェッショナルで洗練されたデザイン。一貫したカラーパレット、レスポンシブレイアウト
+ - **アニメーション**: 画面遷移にスムーズなアニメーション（framer-motion推奨）
+ - **エラーハンドリング**: ローディング状態、空状態、エラー状態を全画面に実装
+-- **アクセシビリティ**: セマンティックHTML、ARIAラベル、キーボードナビゲーション
++- **アクセシビリティ**: WCAG 2.1 AA 準拠、セマンティックHTML、ARIAラベル、キーボードナビゲーション、`prefers-reduced-motion`対応
+ - **パフォーマンス**: Server Components優先、dynamic importで遅延ロード
+ - **日本語**: 全UIテキストは日本語。プレースホルダーやTODOは禁止
+ - **完全実装**: スタブや仮実装は禁止。全機能が実際に動作すること
+@@ -134,7 +141,7 @@
  - Supported languages: ja (日本語), en (English), zh (中文), ko (한국어), es (Español), fr (Français), de (Deutsch), pt (Português), ar (العربية), hi (हिन्दी)
  - Use the i18n module at `@/i18n` for all user-facing strings
  - Use `t("key")` function for translations — never hardcode UI strings
