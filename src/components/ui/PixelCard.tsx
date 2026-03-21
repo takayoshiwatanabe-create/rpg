@@ -29,15 +29,15 @@ const styles = StyleSheet.create({
     borderColor: COLORS.windowBorder,
     borderRadius: PIXEL_BORDER.borderRadius,
     padding: SPACING.md,
-    shadowColor: COLORS.shadow, // Use the shadow color directly
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1, // Pixel shadows are usually opaque
-    shadowRadius: 0, // Pixel shadows have no blur
-    elevation: 4, // Android shadow
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
   highlighted: {
     backgroundColor: COLORS.bgLight,
     borderColor: COLORS.gold,
-    shadowColor: COLORS.goldDark, // Use goldDark for highlighted shadow
+    shadowColor: COLORS.goldDark,
   },
 });

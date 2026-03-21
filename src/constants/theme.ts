@@ -19,8 +19,11 @@ export const COLORS = {
 
   // Status/Semantic colors
   primary: "#228B22", // Green for positive actions, main buttons
+  primaryDark: "#1A6B1A", // Darker green for primary button border/shadow
   secondary: "#4682B4", // Steel blue for secondary actions
+  secondaryDark: "#356287", // Darker steel blue for secondary button border/shadow
   danger: "#FF4500", // Red-orange for warnings, HP, destructive actions
+  dangerDark: "#CC3700", // Darker red-orange for danger button border/shadow
   info: "#1E90FF", // Dodger blue for informational, MP
   exp: "#32CD32", // Lime green for EXP
   success: "#3CB371", // Medium sea green for success messages
@@ -81,4 +84,3 @@ export const FONT_FAMILY_SUB = Platform.select({
   android: "DotGothic16",
   default: "DotGothic16",
 });
-

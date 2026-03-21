@@ -8,7 +8,7 @@ export type MenuItem = {
   label: string;
   onPress: () => void;
   isDestructive?: boolean;
-  disabled?: boolean; // Added disabled prop
+  disabled?: boolean;
 };
 
 type DQCommandMenuProps = {
@@ -29,7 +29,7 @@ export const DQCommandMenu = React.memo(
               variant={item.isDestructive ? "danger" : "primary"}
               size="lg"
               style={styles.menuButton}
-              disabled={item.disabled} // Pass disabled prop
+              disabled={item.disabled}
             />
           ))}
         </View>

@@ -18,6 +18,7 @@ import { DQWindow, DQCommandMenu, DQMessageBox } from "@/components/ui";
 import { t, getIsRTL } from "@/i18n";
 import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile, Quest } from "@/types";
+import { COLORS } from "@/constants/theme";
 
 const DQ_BG = "#000011";
 const FONT_FAMILY = Platform.select({
@@ -34,12 +35,15 @@ export default function CampScreen() {
   const [hero, setHero] = useState<HeroProfile | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [heroLoading, setHeroLoading] = useState(true);
-  const [showStatus, setShowStatus] = useState(false);
+  const [showExtendedStatus, setShowExtendedStatus] = useState(false);
 
   const heroId = user?.uid ?? "";
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setHeroLoading(false);
+      return;
+    }
     const unsubHero = subscribeToHero(user.uid, heroId, (h: HeroProfile | null) => {
       setHero(h);
       setHeroLoading(false);
@@ -60,7 +64,7 @@ export default function CampScreen() {
   }, []);
 
   const handleViewStatus = useCallback(() => {
-    setShowStatus((prev) => !prev);
+    setShowExtendedStatus((prev) => !prev);
   }, []);
 
   const handleRecords = useCallback(() => {
@@ -73,8 +77,8 @@ export default function CampScreen() {
 
   if (heroLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#FFD700" size="large" />
+      <View style={styles.center} testID="activity-indicator">
+        <ActivityIndicator color={COLORS.gold} size="large" />
       </View>
     );
   }
@@ -84,11 +88,11 @@ export default function CampScreen() {
   const expRatio = expProgress.required > 0 ? expProgress.current / expProgress.required : 0;
 
   const menuItems = [
-    { label: t("dq.camp.go_quest"), onPress: handleGoQuest },
-    { label: t("dq.camp.create_quest"), onPress: handleCreateQuest },
-    { label: t("dq.camp.records"), onPress: handleRecords },
-    { label: t("dq.camp.view_status"), onPress: handleViewStatus },
-    { label: t("dq.camp.settings"), onPress: handleSettings },
+    { label: t("dq.camp.go_quest"), onPress: handleGoQuest, accessibilityLabel: t("dq.camp.go_quest") },
+    { label: t("dq.camp.create_quest"), onPress: handleCreateQuest, accessibilityLabel: t("dq.camp.create_quest") },
+    { label: t("dq.camp.records"), onPress: handleRecords, accessibilityLabel: t("dq.camp.records") },
+    { label: t("dq.camp.view_status"), onPress: handleViewStatus, accessibilityLabel: t("dq.camp.view_status") },
+    { label: t("dq.camp.settings"), onPress: handleSettings, accessibilityLabel: t("dq.camp.settings") },
   ];
 
   return (
@@ -99,19 +103,20 @@ export default function CampScreen() {
         { direction: isRTL ? "rtl" : "ltr", paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 },
       ]}
       showsVerticalScrollIndicator={false}
+      accessibilityLabel={t("dq.camp.accessibility.camp_screen")}
     >
       {/* Hero Status Window — always visible */}
-      <DQWindow title={t("hero.status") ?? "ステータス"}>
+      <DQWindow title={t("hero.status")}>
         {/* Name + Level */}
         <View style={styles.statusRow}>
-          <Text style={styles.heroName}>{heroName}</Text>
-          <Text style={styles.levelText}>Lv.{hero?.level ?? 1}</Text>
+          <Text style={styles.heroName} accessibilityLabel={t("hero.name_label", { name: heroName })}>{heroName}</Text>
+          <Text style={styles.levelText} accessibilityLabel={t("hero.level_label", { level: hero?.level ?? 1 })}>Lv.{hero?.level ?? 1}</Text>
         </View>
 
         {/* EXP bar — always visible, key growth indicator */}
         <View style={styles.barRow}>
-          <Text style={styles.barLabel}>EXP</Text>
-          <View style={styles.barContainer}>
+          <Text style={styles.barLabel} accessibilityLabel={t("hero.exp_label")}>EXP</Text>
+          <View style={styles.barContainer} accessibilityLabel={t("hero.exp_progress_label", { current: expProgress.current, required: expProgress.required })}>
             <View style={[styles.bar, styles.barExp, { flex: expRatio || 0.01 }]} />
             <View style={{ flex: 1 - (expRatio || 0.01) }} />
           </View>
@@ -122,8 +127,8 @@ export default function CampScreen() {
 
         {/* HP bar */}
         <View style={styles.barRow}>
-          <Text style={styles.barLabel}>HP</Text>
-          <View style={styles.barContainer}>
+          <Text style={styles.barLabel} accessibilityLabel={t("hero.hp_label")}>HP</Text>
+          <View style={styles.barContainer} accessibilityLabel={t("hero.hp_value_label", { current: hero?.hp ?? 0, max: hero?.maxHp ?? 0 })}>
             <View style={[styles.bar, styles.barHp, { flex: hero ? hero.hp / hero.maxHp : 1 }]} />
             <View style={{ flex: hero ? 1 - hero.hp / hero.maxHp : 0 }} />
           </View>
@@ -132,8 +137,8 @@ export default function CampScreen() {
 
         {/* MP bar */}
         <View style={styles.barRow}>
-          <Text style={styles.barLabel}>MP</Text>
-          <View style={styles.barContainer}>
+          <Text style={styles.barLabel} accessibilityLabel={t("hero.mp_label")}>MP</Text>
+          <View style={styles.barContainer} accessibilityLabel={t("hero.mp_value_label", { current: hero?.mp ?? 0, max: hero?.maxMp ?? 0 })}>
             <View style={[styles.bar, styles.barMp, { flex: hero ? hero.mp / hero.maxMp : 1 }]} />
             <View style={{ flex: hero ? 1 - hero.mp / hero.maxMp : 0 }} />
           </View>
@@ -142,24 +147,24 @@ export default function CampScreen() {
 
         {/* Gold */}
         <View style={styles.statusRow}>
-          <Text style={styles.statusLabel}>{"💰 "}{t("hero.gold")}</Text>
-          <Text style={styles.goldValue}>{hero?.gold?.toLocaleString() ?? 0} G</Text>
+          <Text style={styles.statusLabel} accessibilityLabel={t("hero.gold_label")}>{"💰 "}{t("hero.gold")}</Text>
+          <Text style={styles.goldValue} accessibilityLabel={t("hero.gold_value_label", { gold: hero?.gold ?? 0 })}>{hero?.gold?.toLocaleString() ?? 0} G</Text>
         </View>
       </DQWindow>
 
       {/* Extended Status (toggle) — attack/defense details */}
-      {showStatus && hero && (
+      {showExtendedStatus && hero && (
         <DQWindow title={t("dq.camp.view_status")}>
           <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>{"⚔️ "}{t("hero.attack")}</Text>
+            <Text style={styles.statusLabel} accessibilityLabel={t("hero.attack_label")}>{"⚔️ "}{t("hero.attack")}</Text>
             <Text style={styles.statusValue}>{hero.attack}</Text>
           </View>
           <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>{"🛡 "}{t("hero.defense")}</Text>
+            <Text style={styles.statusLabel} accessibilityLabel={t("hero.defense_label")}>{"🛡 "}{t("hero.defense")}</Text>
             <Text style={styles.statusValue}>{hero.defense}</Text>
           </View>
           <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>{"✨ "}{t("hero.exp")}</Text>
+            <Text style={styles.statusLabel} accessibilityLabel={t("hero.total_exp_label")}>{"✨ "}{t("hero.exp")}</Text>
             <Text style={styles.statusValue}>{hero.totalExp}</Text>
           </View>
         </DQWindow>
@@ -168,19 +173,20 @@ export default function CampScreen() {
       {/* Active quest count badge */}
       {quests.length > 0 && (
         <DQWindow>
-          <Text style={styles.questBadge}>
+          <Text style={styles.questBadge} accessibilityLabel={t("camp.activeQuests_count", { count: quests.length })}>
             {"⚔️ "}{t("camp.activeQuests")}: {quests.length}
           </Text>
         </DQWindow>
       )}
 
       {/* Command Menu */}
-      <DQCommandMenu items={menuItems} />
+      <DQCommandMenu items={menuItems} accessibilityLabel={t("dq.camp.accessibility.command_menu")} />
 
       {/* NPC Message */}
       <DQMessageBox
         text={t("dq.camp.greeting", { name: heroName })}
         speed={40}
+        accessibilityLabel={t("dq.camp.accessibility.npc_message")}
       />
     </ScrollView>
   );
@@ -284,3 +290,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+

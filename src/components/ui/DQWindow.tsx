@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, ViewStyle } from "react-native"; // Removed Platform import as FONT_SIZES is now from theme
+import { View, StyleSheet, ViewStyle } from "react-native";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import { PixelText } from "./PixelText";
 import { getIsRTL } from "@/i18n";
@@ -33,21 +33,21 @@ export function DQWindow({ children, title, style }: DQWindowProps) {
 
 const styles = StyleSheet.create({
   window: {
-    backgroundColor: COLORS.bgCard, // Using bgCard for general window background
+    backgroundColor: COLORS.bgCard,
     borderWidth: PIXEL_BORDER.borderWidth,
-    borderColor: COLORS.windowBorder, // Using general pixel border
+    borderColor: COLORS.windowBorder,
     borderRadius: PIXEL_BORDER.borderRadius,
     padding: SPACING.md,
-    shadowColor: COLORS.shadow, // Use the shadow color directly
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1, // Pixel shadows are usually opaque
-    shadowRadius: 0, // Pixel shadows have no blur
-    elevation: 4, // Android shadow
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
   titleContainer: {
     position: "absolute",
-    top: -FONT_SIZES.md / 2 - PIXEL_BORDER.borderWidth, // Adjust to sit on the border
-    backgroundColor: COLORS.bgCard, // Match window background
+    top: -FONT_SIZES.md / 2 - PIXEL_BORDER.borderWidth,
+    backgroundColor: COLORS.bgCard,
     paddingHorizontal: SPACING.xs,
     zIndex: 1,
   },

@@ -1,10 +1,10 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import { View, Animated, StyleSheet, Text, Platform } from "react-native";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { PIXEL_BORDER, FONT_FAMILY_MAIN, FONT_FAMILY_SUB, COLORS } from "@/constants/theme"; // Corrected import
+import { PIXEL_BORDER, FONT_FAMILY_MAIN, FONT_FAMILY_SUB, COLORS } from "@/constants/theme";
 
 const FONT_FAMILY = Platform.select({
-  ios: FONT_FAMILY_SUB, // Use sub font for general text
+  ios: FONT_FAMILY_SUB,
   android: FONT_FAMILY_SUB,
   default: FONT_FAMILY_SUB,
 });
@@ -19,7 +19,7 @@ interface BattleSceneProps {
   monsterMaxHp: number;
   message: string;
   showAttackFlash?: boolean;
-  onMessageComplete?: () => void;
+  onMessageComplete?: () => void; // This prop is not used in the component
 }
 
 const BattleScene: React.FC<BattleSceneProps> = ({
@@ -32,7 +32,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
   monsterMaxHp,
   message,
   showAttackFlash = false,
-  onMessageComplete,
+  // onMessageComplete, // Removed unused prop
 }) => {
   const reducedMotion = useReducedMotion();
 

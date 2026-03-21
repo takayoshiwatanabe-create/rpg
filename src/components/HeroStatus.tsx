@@ -1,12 +1,10 @@
 import React from "react";
-import { View, StyleSheet } from "react-native"; // Removed Platform import as FONT_FAMILY is now from theme
+import { View, StyleSheet } from "react-native";
 import { PixelText, PixelCard } from "@/components/ui";
 import { t } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme"; // FONT_FAMILY is no longer needed here as PixelText handles it
+import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
 import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile } from "@/types";
-
-// FONT_FAMILY is now handled by PixelText internally based on theme.ts
 
 type HeroStatusProps = {
   hero: HeroProfile;

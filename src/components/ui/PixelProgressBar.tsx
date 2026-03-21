@@ -3,7 +3,7 @@ import { View, StyleSheet, Animated, Easing } from "react-native";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import { PixelText } from "./PixelText";
 import type { TextColor } from "@/types";
-import { getIsRTL } from "@/i18n"; // Import getIsRTL
+import { getIsRTL } from "@/i18n";
 
 export type PixelProgressBarProps = {
   value: number;
@@ -68,8 +68,6 @@ export function PixelProgressBar({
             {
               backgroundColor: (COLORS as Record<string, string>)[color] ?? COLORS.gold,
               width: barWidth,
-              // Adjust position for RTL if needed, though width animation handles it for fill
-              // For a simple bar, `left: 0` (LTR) or `right: 0` (RTL) would be needed if not using width directly
             },
           ]}
         />
@@ -102,7 +100,7 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: "100%",
     position: "absolute",
-    left: 0, // Default to LTR fill direction
+    left: 0,
   },
   valueText: {
     position: "absolute",

@@ -1,12 +1,10 @@
 import React from "react";
-import { View, StyleSheet } from "react-native"; // Removed Platform import as FONT_FAMILY is now from theme
+import { View, StyleSheet } from "react-native";
 import { PixelText, PixelCard } from "@/components/ui";
 import { t } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme"; // FONT_FAMILY is no longer needed here as PixelText handles it
+import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER } from "@/constants/theme";
 import { expProgressInCurrentLevel } from "@/lib/expCalculator";
 import type { HeroProfile } from "@/types";
-
-// FONT_FAMILY is now handled by PixelText internally based on theme.ts
 
 type RewardDisplayProps = {
   hero: HeroProfile;
@@ -24,7 +22,7 @@ function formatStudyTime(totalSeconds: number): string {
   if (hours > 0) {
     return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   }
-  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`; // Ensure minutes are always two digits
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
 export const RewardDisplay = React.memo(

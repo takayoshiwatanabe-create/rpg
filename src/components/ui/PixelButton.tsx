@@ -6,7 +6,7 @@ import {
   GestureResponderEvent,
   ViewStyle,
   TextStyle,
-} from "react-native"; // Removed Platform import as FONT_SIZES is now from theme
+} from "react-native";
 import { COLORS, SPACING, PIXEL_BORDER, FONT_SIZES } from "@/constants/theme";
 import { PixelText } from "./PixelText";
 
@@ -106,20 +106,20 @@ const styles = StyleSheet.create({
     borderWidth: PIXEL_BORDER.borderWidth,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: COLORS.shadow, // Apply shadow to buttons
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
-    elevation: 4, // Android shadow
+    elevation: 4,
   },
   // Variants
   primary: {
-    backgroundColor: COLORS.primary, // Use primary color from theme
-    borderColor: COLORS.primaryDark, // Assuming primaryDark exists or use a darker version of primary
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primaryDark,
   },
   secondary: {
     backgroundColor: COLORS.secondary,
-    borderColor: COLORS.secondaryDark, // Assuming secondaryDark exists or use a darker version of secondary
+    borderColor: COLORS.secondaryDark,
   },
   danger: {
     backgroundColor: COLORS.danger,
@@ -128,13 +128,13 @@ const styles = StyleSheet.create({
   ghost: {
     backgroundColor: "transparent",
     borderColor: "transparent",
-    shadowOpacity: 0, // No shadow for ghost buttons
+    shadowOpacity: 0,
     elevation: 0,
   },
   disabled: {
     opacity: 0.6,
-    backgroundColor: COLORS.darkGray, // Darker background for disabled
-    borderColor: COLORS.gray, // Gray border for disabled
+    backgroundColor: COLORS.darkGray,
+    borderColor: COLORS.gray,
   },
   // Sizes
   sm: {
@@ -156,19 +156,19 @@ const styles = StyleSheet.create({
   },
   // Text Variants
   text_primary: {
-    color: COLORS.cream, // Use cream for primary button text
+    color: COLORS.cream,
   },
   text_secondary: {
-    color: COLORS.cream, // Use cream for secondary button text
+    color: COLORS.cream,
   },
   text_danger: {
-    color: COLORS.cream, // Use cream for danger button text
+    color: COLORS.cream,
   },
   text_ghost: {
-    color: COLORS.cream, // Use cream for ghost button text
+    color: COLORS.cream,
   },
   textDisabled: {
-    color: COLORS.gray, // Use gray for disabled text
+    color: COLORS.gray,
   },
   // Text Sizes
   text_sm: {

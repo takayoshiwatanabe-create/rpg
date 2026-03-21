@@ -1,17 +1,17 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, StyleSheet, Platform, TouchableOpacity } from "react-native"; // Added TouchableOpacity
+import { View, StyleSheet, Platform, TouchableOpacity } from "react-native";
 import { PixelText } from "./PixelText";
 import { PixelCard } from "./PixelCard";
 import { SPACING, FONT_SIZES, COLORS } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
-import { getIsRTL } from "@/i18n"; // Import getIsRTL
+import { getIsRTL } from "@/i18n";
 
 type DQMessageBoxProps = {
   text: string;
   speed?: number; // milliseconds per character
   variant?: "default" | "error" | "info";
   onComplete?: () => void;
-  skippable?: boolean; // Added skippable prop
+  skippable?: boolean;
 };
 
 export const DQMessageBox = React.memo(
@@ -19,7 +19,7 @@ export const DQMessageBox = React.memo(
     const [displayedText, setDisplayedText] = useState("");
     const currentIndex = useRef(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const isTypingComplete = useRef(false); // Track if typing is complete
+    const isTypingComplete = useRef(false);
     const isRTL = getIsRTL();
 
     const completeTyping = () => {
@@ -48,7 +48,7 @@ export const DQMessageBox = React.memo(
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           }
         } else {
-          completeTyping(); // Call completeTyping to set isTypingComplete and call onComplete
+          completeTyping();
         }
       }, speed);
     };
@@ -60,7 +60,7 @@ export const DQMessageBox = React.memo(
           clearInterval(timerRef.current);
         }
       };
-    }, [text, speed]); // Restart typing if text or speed changes
+    }, [text, speed]);
 
     const textColor =
       variant === "error"
@@ -73,14 +73,14 @@ export const DQMessageBox = React.memo(
       if (skippable && !isTypingComplete.current) {
         completeTyping();
       } else if (isTypingComplete.current) {
-        onComplete?.(); // If typing is complete, a tap can trigger the next action
+        onComplete?.();
       }
     };
 
     return (
       <TouchableOpacity
         onPress={handlePress}
-        activeOpacity={skippable || isTypingComplete.current ? 0.7 : 1} // Only show active opacity if skippable or complete
+        activeOpacity={skippable || isTypingComplete.current ? 0.7 : 1}
         style={[styles.touchableContainer, { direction: isRTL ? "rtl" : "ltr" }]}
       >
         <PixelCard variant="default" style={styles.container}>
@@ -89,7 +89,7 @@ export const DQMessageBox = React.memo(
           </PixelText>
           {!isTypingComplete.current && (
             <View style={[styles.typingIndicator, {
-              [isRTL ? "left" : "right"]: SPACING.sm, // Position indicator based on RTL
+              [isRTL ? "left" : "right"]: SPACING.sm,
             }]}>
               <PixelText variant="caption" color="gold">
                 ▼
@@ -104,21 +104,20 @@ export const DQMessageBox = React.memo(
 
 const styles = StyleSheet.create({
   touchableContainer: {
-    width: "100%", // Ensure TouchableOpacity takes full width
+    width: "100%",
   },
   container: {
     padding: SPACING.md,
-    minHeight: 80, // Ensure consistent height
+    minHeight: 80,
     justifyContent: "center",
-    position: "relative", // For positioning the typing indicator
+    position: "relative",
   },
   text: {
-    fontSize: FONT_SIZES.lg, // Use FONT_SIZES.lg for body text
+    fontSize: FONT_SIZES.lg,
     lineHeight: FONT_SIZES.lg * 1.4,
   },
   typingIndicator: {
     position: "absolute",
     bottom: SPACING.xs,
-    // Right or Left will be set dynamically based on RTL
   },
 });

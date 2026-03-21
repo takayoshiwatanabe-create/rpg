@@ -1,27 +1,22 @@
 import React from "react";
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native"; // Removed Platform import as FONT_FAMILY is now from theme
+import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import { PixelText, PixelCard } from "@/components/ui";
 import { t, getLang } from "@/i18n";
-import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER, FONT_FAMILY_MAIN } from "@/constants/theme"; // FONT_FAMILY is no longer needed here as PixelText handles it
+import { COLORS, SPACING, FONT_SIZES, PIXEL_BORDER, FONT_FAMILY_MAIN } from "@/constants/theme";
 import type { Quest, Subject, Difficulty } from "@/types";
 import { getMonster } from "@/constants/monsters";
-
-// FONT_FAMILY is now handled by PixelText internally based on theme.ts,
-// but for emojis, we might want a specific font that supports them well,
-// or rely on system defaults. For now, using FONT_FAMILY_MAIN for consistency.
 
 type QuestCardProps = {
   quest: Quest;
   onPress: (questId: string) => void;
   isRTL: boolean;
-  variant?: "default" | "highlighted"; // Allow variant prop
+  variant?: "default" | "highlighted";
 };
 
 function formatDeadline(dateStr: string, locale: string): string {
-  // Ensure the date string is valid before formatting
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) {
-    return t("common.invalid_date"); // Fallback for invalid dates
+    return t("common.invalid_date");
   }
   return new Intl.DateTimeFormat(locale, {
     year: "numeric",
@@ -121,6 +116,6 @@ const styles = StyleSheet.create({
   },
   monsterEmoji: {
     fontSize: FONT_SIZES.md,
-    fontFamily: FONT_FAMILY_MAIN, // Use main font for emojis if available, or a system emoji font
+    fontFamily: FONT_FAMILY_MAIN,
   },
 });
